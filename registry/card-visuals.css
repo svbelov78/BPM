@@ -1,0 +1,36 @@
+/* Figma 641:4221 — the 24 px sphere is stationary. Only the glass boundary changes. */
+/* Cards/Process 578:294: bottom-align the footer groups, but center the name inside Owner. */
+.entity-card .card-footer{align-items:flex-end;margin-top:auto}
+.entity-card .card-footer .owner{align-items:center}
+.efficiency-value{font-variant-numeric:tabular-nums}
+.efficiency-number{display:inline-flex;align-items:baseline;justify-content:flex-end;flex-shrink:0}
+.bpm-efficiency-glyph{display:inline-block;position:relative;flex:0 0 24px;width:24px;height:24px;overflow:visible;--efficiency-color:#34c759;--efficiency-glass-end:.031;--efficiency-blur:2px}
+.bpm-efficiency-glyph.efficiency-red{--efficiency-color:var(--red,#ff383c)}
+.bpm-efficiency-glyph.efficiency-yellow{--efficiency-color:#ffcc00}
+.bpm-efficiency-glyph.efficiency-blue{--efficiency-color:var(--blue,#0088ff)}
+.bpm-efficiency-glyph.efficiency-green{--efficiency-color:#34c759}
+.bpm-efficiency-glyph.efficiency-on-table{--efficiency-glass-end:0}
+.efficiency-sphere{position:absolute;inset:0;width:24px;height:24px;border-radius:50%;background:var(--efficiency-color)}
+.efficiency-curtain{position:absolute;left:var(--efficiency-curtain);top:-8px;width:var(--efficiency-curtain-width);height:40px;background:linear-gradient(90deg,rgba(255,255,255,.012),rgba(255,255,255,var(--efficiency-glass-end)));-webkit-backdrop-filter:blur(var(--efficiency-blur));backdrop-filter:blur(var(--efficiency-blur));pointer-events:none}
+.efficiency-curtain-edge{position:absolute;left:var(--efficiency-edge);top:-8px;width:1px;height:40px;background:rgba(255,255,255,.5383);pointer-events:none}
+.efficiency-blur-fallback{display:none}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.efficiency-curtain{overflow:hidden}.efficiency-blur-fallback{display:block;position:absolute;left:calc(-1 * var(--efficiency-curtain));top:8px;width:24px;height:24px;border-radius:50%;background:var(--efficiency-color);filter:blur(var(--efficiency-blur))}}
+/* Updated More actions (579:364): Menu Plus glyph at 16 px inside the 24 px circle. */
+.entity-card .card-more{top:24px;right:24px;width:24px;height:24px;border-radius:50%;padding:0;background:var(--panel);display:flex;align-items:center;justify-content:center}
+.entity-card .card-more img{display:block;width:16px;height:16px}
+.entity-card .card-more::after{content:"";position:absolute;inset:-8px;border-radius:50%}
+.entity-card:is(:hover,:focus-within) .card-header>.status,.entity-card:has(.card-more[aria-expanded=true]) .card-header>.status{margin-right:32px}
+.entity-card:has(.card-more[aria-expanded=true]) .card-more{opacity:1}
+:root{--indigo:#6155f5}
+.card-id{display:flex;align-items:center;gap:8px;min-width:0}
+/* Keep the exported SVG intact; its alpha silhouette is tinted with the exact Indigo token. */
+.favorite-heart{display:inline-flex;width:24px;height:24px;flex:0 0 24px;overflow:hidden;vertical-align:middle}
+.favorite-heart img{display:block;width:24px;height:24px;flex:none;transform:translateX(-24px);filter:drop-shadow(24px 0 0 var(--indigo))}
+/* Reserve a full status line when the favorite mark adds width to the ID group. */
+.entity-card:has(.favorite-heart) .card-header>.status{grid-row:2;grid-column:1/-1;margin-right:0}
+.entity-card:has(.favorite-heart) .card-count{grid-row:1;grid-column:2;padding-right:32px}
+.inline-bookmark{width:24px;height:24px}
+.action-menu img{width:24px;height:24px}
+@media(max-width:999px){.entity-card .card-header>.status{margin-right:32px}}
+@media(max-width:767px){.entity-card .card-more{top:20px;right:20px}.entity-card .card-header>.status,.entity-card:is(:hover,:focus-within) .card-header>.status,.entity-card:has(.card-more[aria-expanded=true]) .card-header>.status{margin-right:0}.entity-card .card-count{padding-right:32px}.entity-card:has(.favorite-heart){height:auto;min-height:304px}.entity-card:has(.favorite-heart) .card-count{grid-row:3;grid-column:1/-1;padding-right:0}.entity-card:has(.favorite-heart) .card-id{grid-column:1/-1;padding-right:32px}}
+@media(max-width:359px){.entity-card .card-more{top:16px;right:16px}}

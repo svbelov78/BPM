@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f2f4f8">
+  <title>Реестр КП и П — Sber BPM</title>
+  <link rel="icon" href="assets/paths.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="menu.css">
+  <link rel="stylesheet" href="dropdown.css">
+  <link rel="stylesheet" href="calendar.css">
+  <link rel="stylesheet" href="card-visuals.css">
+  <link rel="stylesheet" href="loading.css">
+  <link rel="stylesheet" href="process-drawer.css">
+  <link rel="stylesheet" href="process-overview.css">
+  <link rel="stylesheet" href="process-sections.css">
+  <link rel="stylesheet" href="process-motion.css">
+  <script src="demo-data.js" defer></script>
+  <script src="calendar.js" defer></script>
+  <script src="card-visuals.js" defer></script>
+  <script src="loading.js" defer></script>
+  <script src="process-assets.js" defer></script>
+  <script src="process-overview.js" defer></script>
+  <script src="process-sections.js" defer></script>
+  <script src="process-motion.js" defer></script>
+  <script src="process-drawer.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">К реестру</a>
+  <header class="header">
+    <button class="icon-button mobile-menu" id="mobile-menu" aria-label="Открыть меню" aria-expanded="false" aria-controls="sidebar"><img src="assets/paths.svg" alt=""></button>
+    <a class="brand" href="./index.html" aria-label="Sber BPM — реестр"><img src="assets/logo.svg" alt="Sber BPM"></a>
+    <button class="header-search icon-button" id="global-search" aria-label="Перейти к поиску по реестру" data-tooltip="Поиск по реестру"><img src="assets/search.svg" alt=""></button>
+    <div class="header-actions">
+      <button class="notification-button icon-button" id="notifications" aria-label="Уведомления: 9" data-tooltip="Уведомления"><img src="assets/bell.svg" alt=""><span class="notification-count">9</span></button>
+      <button class="avatar profile-button" id="profile" aria-label="Профиль пользователя" data-tooltip="Иванов Иван Васильевич"><img src="assets/person.svg" alt=""></button>
+    </div>
+  </header>
+  <div class="sidebar-backdrop" id="sidebar-backdrop" hidden></div>
+  <aside class="sidebar" id="sidebar" aria-label="Главное меню">
+    <div class="menu-heading"><span class="menu-label">Меню</span><div class="menu-heading-actions"><button class="icon-button" id="collapse-menu" aria-label="Свернуть меню" aria-expanded="true"><img src="assets/collapse-menu.svg" alt=""></button><button class="icon-button" id="pin-menu" aria-label="Развернуть и закрепить меню" title="Развернуть и закрепить меню" hidden><img src="assets/menu-right.svg" alt=""></button></div></div>
+    <nav class="navigation">
+      <button class="nav-item" data-service="Мой кабинет" data-tooltip="Мой кабинет"><span class="nav-tile"><img src="assets/home.svg" alt=""></span><span class="menu-label">Мой кабинет</span><img class="nav-chevron" src="assets/chevron-down.svg" alt=""></button>
+      <div class="nav-divider"></div>
+      <button class="nav-item" id="paths-nav" aria-expanded="true" aria-controls="paths-submenu" data-tooltip="Пути и процессы"><span class="nav-tile"><img src="assets/paths.svg" alt=""></span><span class="menu-label">Пути и процессы</span><img class="nav-chevron" src="assets/chevron-down.svg" alt=""></button>
+      <div class="submenu" id="paths-submenu">
+        <a href="#main" class="subitem current" aria-current="page">Реестр КП и П</a>
+        <button class="subitem" id="top-paths">TOP КП</button>
+        <button class="subitem" data-service="Задачи">Задачи</button>
+        <button class="subitem" data-service="Инсайты">Инсайты</button>
+        <button class="subitem" data-service="Редизайны">Редизайны</button>
+      </div>
+      <div class="nav-divider"></div>
+      <button class="nav-item" data-service="LeanLab" data-tooltip="LeanLab"><span class="nav-tile"><img src="assets/leanlab.svg" alt=""></span><span class="menu-label">LeanLab</span></button>
+      <div class="nav-divider"></div>
+      <button class="nav-item" id="gemba-nav" aria-expanded="true" aria-controls="gemba-submenu" data-tooltip="Гемба"><span class="nav-tile"><img src="assets/gemba.svg" alt=""></span><span class="menu-label">Гемба</span><img class="nav-chevron" src="assets/chevron-up.svg" alt=""></button>
+      <div class="submenu" id="gemba-submenu"><button class="subitem" data-service="Отчёты Гемба">Отчёты</button><button class="subitem" data-service="Дашборд Гемба">Дашборд</button></div>
+      <div class="nav-divider"></div>
+      <button class="nav-item" data-service="Методология, контакты, FAQ" data-tooltip="Методология, контакты, FAQ"><span class="nav-tile"><img src="assets/methodology.svg" alt=""></span><span class="menu-label">Методология, контакты, FAQ</span><img class="nav-chevron" src="assets/chevron-down.svg" alt=""></button>
+    </nav>
+    <div class="menu-footer"><button class="nav-item" data-service="Настройки" data-tooltip="Настройки"><span class="nav-tile"><img src="assets/settings.svg" alt=""></span><span class="menu-label">Настройки</span></button></div>
+  </aside>
+  <main id="main" tabindex="-1">
+    <section class="registry-panel" aria-labelledby="page-title">
+      <div class="title-row"><h1 id="page-title">Пути и процессы</h1><div class="view-controls">
+        <button id="favorites" class="favorite-filter" aria-label="Только избранное" aria-pressed="false" data-tooltip="Только избранное"><span class="favorite-heart" aria-hidden="true"><img src="assets/liked.svg" alt=""></span><span id="favorite-count">2</span></button>
+        <button id="export" class="icon-button" aria-label="Экспортировать реестр" data-tooltip="Экспорт"><img src="assets/download.svg" alt=""></button>
+        <div class="view-switch" role="group" aria-label="Вид реестра"><button id="table-view" class="icon-button" aria-label="Табличный вид" aria-pressed="false" data-tooltip="Таблица"><img src="assets/table.svg" alt=""></button><button id="cards-view" class="icon-button selected" aria-label="Карточный вид" aria-pressed="true" data-tooltip="Карточки"><img src="assets/cards.svg" alt=""></button></div>
+      </div></div>
+      <div class="filters" id="filters">
+        <div class="filter-primary">
+          <div class="entity-tabs" role="group" aria-label="Тип сущности"><button class="active" id="paths-tab" aria-pressed="true" data-entity="paths">Клиентские пути</button><button id="processes-tab" aria-pressed="false" data-entity="processes">Процессы</button></div>
+          <div class="search-field field"><img src="assets/search.svg" alt=""><input id="registry-search" type="search" placeholder="Поиск ID, названию…" aria-label="Поиск по ID, названию или владельцу" autocomplete="off"><button id="clear-search" class="small-icon" aria-label="Очистить поиск" hidden><img src="assets/close.svg" alt=""></button></div>
+          <button id="mobile-filters-toggle" class="mobile-filters-toggle" aria-expanded="false" aria-controls="status-select filter-grid"><span id="mobile-filters-label">Фильтры</span><img src="assets/chevron-down-filter.svg" alt=""></button>
+          <div id="status-select" class="select-host"></div>
+        </div>
+        <div class="filter-grid" id="filter-grid">
+          <div id="block-select" class="select-host"></div><div id="division-select" class="select-host"></div><div id="process-select" class="select-host"></div><div id="owner-select" class="select-host"></div>
+          <button id="date-filter" class="field date-filter" aria-expanded="false" aria-haspopup="dialog"><span class="field-content"><span class="internal-label">Дата создания</span><span id="date-summary" class="single-value">21.08.2001 → 13.09.2026</span></span><img src="assets/calendar.svg" alt=""></button>
+          <div id="sort-select" class="select-host"></div>
+        </div>
+      </div>
+      <section class="applied-filters" id="selected-filters" aria-label="Применённые фильтры" hidden><div id="selected-filter-groups" class="applied-filter-groups"></div><button id="reset-filters" class="clear-all-filters" aria-label="Сбросить фильтры" data-tooltip="Сбросить все фильтры"><img src="assets/close.svg" alt=""></button></section>
+      <div class="result-tools" id="result-tools" hidden><span id="results-count"></span></div>
+      <div id="results" aria-label="Результаты реестра"></div>
+      <div class="pagination" id="pagination"><div id="size-select" class="select-host"></div><nav id="page-buttons" aria-label="Страницы реестра"></nav><span id="page-range" class="page-range"></span></div>
+      <p class="demo-note">Демонстрационные данные · Sber BPM</p>
+    </section>
+  </main>
+  <div class="sr-only" id="result-announcement" role="status" aria-live="polite" aria-atomic="true"></div>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <dialog id="export-dialog" class="modal" aria-labelledby="export-title"><form id="export-form"><div class="modal-heading"><h2 id="export-title">Экспорт реестра</h2><button type="button" class="icon-button" data-close-dialog aria-label="Закрыть"><img src="assets/close.svg" alt=""></button></div><p class="secondary">Выберите данные для выгрузки в CSV.</p><label class="radio-row"><input type="radio" name="export-scope" value="filtered" checked>Все результаты с текущими фильтрами</label><label class="radio-row"><input type="radio" name="export-scope" value="page">Только текущая страница</label><div class="modal-actions"><button type="button" class="button secondary-button" data-close-dialog>Отмена</button><button class="button primary-button" type="submit">Скачать CSV</button></div></form></dialog>
+  <dialog id="detail-dialog" class="modal detail-modal" aria-labelledby="detail-title"><div class="modal-heading"><h2 id="detail-title"></h2><button class="icon-button" data-close-dialog aria-label="Закрыть"><img src="assets/close.svg" alt=""></button></div><div id="detail-content"></div></dialog>
+  <dialog id="process-drawer" class="pd-drawer" aria-labelledby="pd-title"></dialog>
+  <noscript><div class="noscript">Для поиска, фильтров и переключения видов включите JavaScript.</div></noscript>
+</body>
+</html>

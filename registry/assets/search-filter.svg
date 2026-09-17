@@ -1,0 +1,12 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Icon/24/Search" clip-path="url(#clip0_0_270)">
+<g id="IconSearch24">
+</g>
+<path id="Vector 42" fill-rule="evenodd" clip-rule="evenodd" d="M1 9.5C1 4.2533 5.2533 0 10.5 0C15.7467 0 20 4.2533 20 9.5C20 11.5985 19.3196 13.5382 18.1673 15.1103L22.1149 19.4966C22.6769 20.1209 22.6278 21.053 22.0035 21.615C21.3791 22.1769 20.447 22.1278 19.8851 21.5035L16.033 17.2233C14.4748 18.3416 12.5643 19 10.5 19C5.2533 19 1 14.7467 1 9.5ZM4 9.5C4 5.91016 6.91016 3 10.5 3C14.0898 3 17 5.91016 17 9.5C17 13.0898 14.0898 16 10.5 16C6.91016 16 4 13.0898 4 9.5Z" fill="#7F7F7F"/>
+</g>
+<defs>
+<clipPath id="clip0_0_270">
+<rect width="24" height="24" fill="white"/>
+</clipPath>
+</defs>
+</svg>

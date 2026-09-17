@@ -1,0 +1,13 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Icon/24/Share" clip-path="url(#clip0_0_6298)">
+<g id="IconShare24">
+</g>
+<path id="Line 2" d="M10.75 17.5V1.5H13.25V17.5H10.75ZM13.23 17.48L13.25 17.5C13.25 18.2 12.7 18.75 12 18.75C11.3 18.75 10.75 18.2 10.75 17.5L10.77 17.48H13.23ZM12 3.2678L5.81282 9.45495C5.31784 9.94993 4.54002 9.94993 4.04505 9.45495C3.55007 8.95998 3.55007 8.18216 4.04505 7.68718L11.1161 0.6161C11.6111 0.1211 12.3889 0.1211 12.8839 0.6161L19.955 7.68718C20.4499 8.18216 20.4499 8.95998 19.955 9.45495C19.46 9.94993 18.6822 9.94993 18.1872 9.45495L12 3.2678Z" fill="#7F7F7F"/>
+<path id="Rectangle 53" d="M16.5 13H18C19.6569 13 21 14.3431 21 16V19C21 20.6569 19.6569 22 18 22H6C4.34315 22 3 20.6569 3 19V16C3 14.3431 4.34315 13 6 13H7" stroke="#7F7F7F" stroke-width="2.5"/>
+</g>
+<defs>
+<clipPath id="clip0_0_6298">
+<rect width="24" height="24" fill="white"/>
+</clipPath>
+</defs>
+</svg>

@@ -1,0 +1,12 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Trend" clip-path="url(#clip0_0_6567)">
+<g id="IconArrowUp24">
+</g>
+<path id="Line 2(Border)" fill-rule="evenodd" clip-rule="evenodd" d="M10.75 6.3713L4.82538 12.2959C4.23141 12.8899 3.29803 12.8899 2.70406 12.2959C2.11009 11.702 2.11009 10.7686 2.70406 10.1746L11.1893 1.6893C11.7833 1.0954 12.7167 1.0954 13.3107 1.6893L21.796 10.1746C22.3899 10.7686 22.3899 11.702 21.796 12.2959C21.202 12.8899 20.2686 12.8899 19.6746 12.2959L13.75 6.3713V23.25H10.75V6.3713Z" fill="#34C759"/>
+</g>
+<defs>
+<clipPath id="clip0_0_6567">
+<rect width="24" height="24" fill="white"/>
+</clipPath>
+</defs>
+</svg>

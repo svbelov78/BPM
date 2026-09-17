@@ -1,0 +1,35 @@
+/* Main Menu 510:28 / 520:282 / 520:128; service template grid 756:9. */
+:root{--sidebar:299px}
+.sidebar{padding-bottom:24px;overflow:hidden}
+.navigation{min-height:0;flex-shrink:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}
+.navigation>.nav-item,.submenu,.nav-divider{flex-shrink:0}
+.nav-item{min-height:56.288528px;padding:8.144264px 12px 8.144264px 8px}
+.nav-item .menu-label{flex:1}
+.nav-tile{background:linear-gradient(90deg,#eed9ff,#ceeaff)}
+.nav-item[data-service="Настройки"] .nav-tile{background:rgba(26,26,26,.2)}
+.nav-divider{margin:0 0 0 48px}
+.menu-heading-actions{display:flex;align-items:center;gap:16px;flex-shrink:0}
+.menu-heading #collapse-menu,.menu-heading #pin-menu{width:24px;height:24px}
+.menu-heading #collapse-menu img{transform:none}
+.menu-footer,.menu-collapsed .menu-footer{gap:0;flex-shrink:0;padding-top:0;min-height:40px}
+.menu-footer .nav-item{height:40px;min-height:40px;padding:0 12px 0 8px}
+@media(min-width:768px){
+  .sidebar{bottom:0;background:transparent}
+  .menu-collapsed .sidebar{bottom:24px;background:white;border-radius:24px;box-shadow:inset 0 0 0 1px var(--border)}
+  .menu-collapsed:not(.menu-peek) .sidebar{align-items:center}
+  .menu-collapsed:not(.menu-peek) .menu-heading{height:88px;min-height:88px;width:100%;justify-content:center}
+  .menu-collapsed:not(.menu-peek) .navigation{width:100%;align-items:center;gap:24.288528px;padding:8.144264px 0}
+  .menu-collapsed:not(.menu-peek) .nav-item{width:40px;height:40px;min-height:40px;padding:0;justify-content:center}
+  .menu-collapsed:not(.menu-peek) .menu-footer{align-items:center;width:100%}
+  .menu-collapsed #collapse-menu img{transform:none}
+  .menu-collapsed.menu-peek .sidebar{width:299px;z-index:180;align-items:stretch}
+  .menu-collapsed.menu-peek .menu-heading{justify-content:space-between}
+  .menu-collapsed.menu-peek .menu-label,.menu-collapsed.menu-peek .nav-chevron{display:block;animation:menu-dissolve .1s ease-out}
+  .menu-collapsed.menu-peek .submenu:not([hidden]){display:flex;animation:menu-dissolve .1s ease-out}
+  .menu-collapsed.menu-peek .nav-divider{display:block}
+  .menu-collapsed.menu-peek .navigation .nav-item{padding:8.144264px 12px 8.144264px 8px;justify-content:flex-start}
+  .menu-collapsed.menu-peek .menu-footer .nav-item{padding:0 12px 0 8px;justify-content:flex-start}
+}
+@media(max-width:767px){.sidebar,.menu-collapsed .sidebar{width:min(299px,100vw);padding-bottom:24px}.menu-heading #collapse-menu,.menu-heading #pin-menu{width:34px;height:34px}.navigation{padding-bottom:20px}.menu-footer{margin-top:auto}}
+@keyframes menu-dissolve{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.sidebar *{animation:none!important}}

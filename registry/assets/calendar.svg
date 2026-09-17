@@ -1,0 +1,13 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Icon/24/One Date" clip-path="url(#clip0_0_239)">
+<g id="IconOneDate24">
+</g>
+<path id="path" d="M17.5 3H17V2.5C17 1.671 16.328 1 15.5 1C14.672 1 14 1.671 14 2.5V3H10V2.5C10 1.671 9.328 1 8.5 1C7.672 1 7 1.671 7 2.5V3H6.5C3.468 3 1 5.467 1 8.5V17.5C1 20.533 3.468 23 6.5 23H17.5C20.532 23 23 20.533 23 17.5V8.5C23 5.467 20.532 3 17.5 3ZM17.5 20H6.5C5.121 20 4 18.878 4 17.5V7.91431C4 7.36202 4.44772 6.91431 5 6.91431H19C19.5523 6.91431 20 7.36202 20 7.91431V17.5C20 18.878 18.879 20 17.5 20Z" fill="#7F7F7F"/>
+<path id="Rectangle 31" d="M9 9H7C6.44772 9 6 9.44772 6 10V12C6 12.5523 6.44772 13 7 13H9C9.55228 13 10 12.5523 10 12V10C10 9.44772 9.55228 9 9 9Z" fill="#7F7F7F"/>
+</g>
+<defs>
+<clipPath id="clip0_0_239">
+<rect width="24" height="24" fill="white"/>
+</clipPath>
+</defs>
+</svg>

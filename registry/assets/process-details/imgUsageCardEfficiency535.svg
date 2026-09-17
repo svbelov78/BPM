@@ -1,0 +1,14 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Efficiency/Small Glyph">
+<circle id="Sphere" cx="12" cy="20" r="12" fill="#FFCC00"/>
+<foreignObject x="11.84" y="-2" width="30.16" height="44"><div xmlns="http://www.w3.org/1999/xhtml" style="backdrop-filter:blur(1px);clip-path:url(#bgblur_0_0_6180_clip_path);height:100%;width:100%"></div></foreignObject><rect id="Curtain" data-figma-bg-blur-radius="2" x="13.84" width="26.16" height="40" fill="url(#paint0_linear_0_6180)"/>
+<rect id="Curtain edge" opacity="0.5383" x="12.84" width="1" height="40" fill="white"/>
+</g>
+<defs>
+<clipPath id="bgblur_0_0_6180_clip_path" transform="translate(-11.84 2)"><rect x="13.84" width="26.16" height="40"/>
+</clipPath><linearGradient id="paint0_linear_0_6180" x1="13.84" y1="20" x2="40" y2="20" gradientUnits="userSpaceOnUse">
+<stop stop-color="white" stop-opacity="0.012"/>
+<stop offset="1" stop-color="white" stop-opacity="0.031"/>
+</linearGradient>
+</defs>
+</svg>

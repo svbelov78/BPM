@@ -1,0 +1,21 @@
+/* Intro transforms leave the Figma sphere, curtain, and final chart dimensions
+   untouched. Each graph starts once when it enters the scrollable Drawer. */
+[data-pd-motion-number]{display:inline-block;white-space:nowrap;font-variant-numeric:tabular-nums}
+[data-pd-motion-group="efficiency"][data-pd-motion-state="pending"] .pd-sphere-image{opacity:0;transform:translateY(90px)}
+[data-pd-motion-group="efficiency"][data-pd-motion-state="running"] .pd-sphere-image{animation:pd-sphere-rise 1100ms cubic-bezier(.16,1,.3,1) both}
+[data-pd-motion-group="dynamics"][data-pd-motion-state] .pd-dynamics-bar{transform-origin:center bottom}
+[data-pd-motion-group="dynamics"][data-pd-motion-state="pending"] .pd-dynamics-bar{opacity:0;transform:scaleY(0)}
+[data-pd-motion-group="dynamics"][data-pd-motion-state="running"] .pd-dynamics-bar{animation:pd-dynamics-grow 620ms cubic-bezier(.22,1,.36,1) both;animation-delay:calc(var(--pd-bar-index,0)*75ms)}
+[data-pd-motion-group="operations"][data-pd-motion-state] .pd-operation-chart>span{transform-origin:left center}
+[data-pd-motion-group="operations"][data-pd-motion-state="pending"] .pd-operation-chart>span{opacity:0;transform:scaleX(0)}
+[data-pd-motion-group="operations"][data-pd-motion-state="running"] .pd-operation-chart>span{animation:pd-operations-grow 750ms cubic-bezier(.22,1,.36,1) both}
+[data-pd-motion-group="operations"][data-pd-motion-state="running"] .pd-operation-chart>span:nth-child(2){animation-delay:120ms}
+[data-pd-motion-group="operations"][data-pd-motion-state="running"] .pd-operation-chart>span:nth-child(3){animation-delay:240ms}
+[data-pd-motion-group="table"][data-pd-motion-state="pending"] .bpm-efficiency-glyph{opacity:0}
+[data-pd-motion-group="table"][data-pd-motion-state="running"] .bpm-efficiency-glyph{animation:pd-efficiency-reveal 700ms ease-out both}
+@keyframes pd-sphere-rise{from{opacity:0;transform:translateY(90px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pd-dynamics-grow{from{opacity:0;transform:scaleY(0)}to{opacity:1;transform:scaleY(1)}}
+@keyframes pd-operations-grow{from{opacity:0;transform:scaleX(0)}to{opacity:1;transform:scaleX(1)}}
+@keyframes pd-efficiency-reveal{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){[data-pd-motion-state] .pd-sphere-image,[data-pd-motion-state] .pd-dynamics-bar,[data-pd-motion-state] .pd-operation-chart>span,[data-pd-motion-state] .bpm-efficiency-glyph{animation:none!important;opacity:1!important;transform:none!important}}
+@media print{[data-pd-motion-state] .pd-sphere-image,[data-pd-motion-state] .pd-dynamics-bar,[data-pd-motion-state] .pd-operation-chart>span,[data-pd-motion-state] .bpm-efficiency-glyph{animation:none!important;opacity:1!important;transform:none!important}}

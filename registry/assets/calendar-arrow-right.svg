@@ -1,0 +1,12 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Icon/24/Arrow Right" clip-path="url(#clip0_0_78)">
+<g id="IconArrowRight24">
+</g>
+<path id="Line 2(Border)" fill-rule="evenodd" clip-rule="evenodd" d="M11.9191 7L7.9694 3.05025C7.5734 2.65427 7.5734 2.03202 7.9694 1.63604C8.36533 1.24006 8.9876 1.24006 9.3836 1.63604L15.0405 7.29287C15.4364 7.68887 15.4364 8.31113 15.0405 8.70713L9.3836 14.3639C8.9876 14.7599 8.36533 14.7599 7.9694 14.3639C7.5734 13.968 7.5734 13.3457 7.9694 12.9497L11.9191 9H0.666667V7H11.9191Z" fill="#7F7F7F"/>
+</g>
+<defs>
+<clipPath id="clip0_0_78">
+<rect width="16" height="16" fill="white"/>
+</clipPath>
+</defs>
+</svg>
