@@ -25,10 +25,15 @@ const model = loaded.BPM_STRUCTURE_PATHS;
 const rows = source.rows.map(indices => indices.map(index => index < 0 ? null : source.strings[index].trim()));
 const bucketFor = value => value === null ? 4 : value > 85 ? 0 : value > 65 ? 1 : value > 45 ? 2 : 3;
 
-// Exact pre-extension process output: records, hierarchy, owners, IDs and scales.
-assert.equal(crypto.createHash('sha256').update(JSON.stringify(processes)).digest('hex'),
+// Preserve the exact pre-extension data baseline while allowing only the two
+// intentional palette changes, checked separately in test-efficiency-palette.cjs.
+// Normalize a plain clone, never the live model used by the remaining assertions.
+const legacyProcesses = plain(processes);
+legacyProcesses.colors[1].color = '#6155f5';
+legacyProcesses.colors[4].color = '#d1d9e6';
+assert.equal(crypto.createHash('sha256').update(JSON.stringify(legacyProcesses)).digest('hex'),
   '2c377056d152fb22902e66d9e08e966c2d5ac431c66d140d69d0a12cb81395b0',
-  'The full process model remains unchanged');
+  'The full process model remains unchanged except for the two verified palette colors');
 assert.equal(processes.total, 913);
 assert.deepEqual(plain(processes.maxima), [120, 60, 126, 77, 35]);
 assert.equal(new Set(source.rows.map(row => source.strings[row[6]])).size, 199);

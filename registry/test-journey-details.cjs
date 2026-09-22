@@ -43,7 +43,7 @@ async function openFrom(page, target, entity, checkLoading = false) {
 async function closeByEscape(page, trigger) {
   await page.keyboard.press('Escape');
   await page.locator('#process-drawer[open]').waitFor({state: 'hidden'});
-  if (trigger) assert.ok(await trigger.evaluate(element => document.activeElement === element), 'Escape restores focus to the registry entry point');
+  if (trigger) await page.waitForFunction(element => document.activeElement === element, await trigger.elementHandle());
 }
 
 async function verifyAnchors(drawer) {

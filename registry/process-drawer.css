@@ -8,6 +8,10 @@
 .pd-drawer[open]::backdrop{animation:pd-backdrop-in .3s ease-out both}
 .pd-drawer.pd-is-closing::backdrop{animation:pd-backdrop-in .24s ease-in reverse both}
 .pd-layout{height:100%;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 160px;gap:24px}
+/* Process-only shell, Figma 1115:33557 / 1122:35208. Journey retains its own layout. */
+.pd-drawer[data-pd-entity="processes"]{padding:32px 24px 40px;border-radius:32px;box-shadow:none}
+.pd-drawer[data-pd-entity="processes"]::backdrop{background:#00244433;backdrop-filter:none}
+.pd-drawer[data-pd-entity="processes"] .pd-anchor{letter-spacing:-.119px}
 .pd-main{position:relative;min-width:0;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-width:none;container:process-content / inline-size;display:flex;flex-direction:column;gap:24px;scroll-behavior:smooth}
 .pd-main::-webkit-scrollbar{display:none}.pd-main:focus{outline:none}
 .pd-navigation{min-width:0;display:flex;flex-direction:column;gap:40px;align-items:flex-end}
@@ -59,6 +63,7 @@
 @media(max-width:767px){.pd-drawer{inset:0;width:100%;max-width:100%;height:100dvh;padding:0;border-radius:0}.pd-layout{display:flex;flex-direction:column-reverse;gap:0}.pd-navigation{gap:12px;align-items:stretch;padding:12px 16px;background:var(--bg);border-bottom:1px solid var(--border)}.pd-navigation-actions{gap:12px}.pd-navigation-actions:before{content:'Деталка процесса';font-size:17px;font-weight:590;margin-right:auto}.pd-anchors{flex-direction:row;align-items:center;gap:4px;overflow-x:auto;scrollbar-width:none}.pd-anchor{flex:none;font-size:13px;padding:6px 12px;min-height:34px;line-height:22px}.pd-main{padding:16px;gap:16px;flex:1}.pd-section{border-radius:20px}.pd-section-heading{padding:20px 16px}.pd-section-heading h2{font-size:22px;line-height:26px}.pd-section-content{padding:0 16px 20px}.pd-notice{bottom:16px;max-width:calc(100% - 24px);width:max-content}.pd-control{width:36px;height:36px}.pd-demo-note{padding-bottom:24px}}
 @media(max-width:767px){.pd-drawer{--pd-rebound:-5px;--pd-settle:2px}.pd-skeleton{padding:20px 16px}.pd-skeleton-row{gap:16px}}
 @media(max-width:767px){.pd-drawer[data-pd-entity="paths"] .pd-navigation-actions:before{content:'Деталка клиентского пути'}}
+@media(max-width:767px){.pd-drawer[data-pd-entity="processes"]{padding:0;border-radius:0}}
 @media(prefers-reduced-motion:reduce){.pd-drawer[open],.pd-drawer[open]::backdrop{animation:none}.pd-main{scroll-behavior:auto}.pd-section-chevron{transition:none}}
 @media print{.pd-drawer[open]{animation:none;transform:none;opacity:1}.pd-skeleton,.pd-loading-announcement{display:none!important}.pd-is-loading .pd-loading-block>:not(.pd-skeleton),.pd-is-loading .pd-demo-note{visibility:visible}}
 @media print{body.pd-drawer-open>*:not(#process-drawer){display:none!important}body.pd-drawer-open{overflow:visible!important;background:#fff}.pd-drawer[open]{position:static!important;display:block!important;width:100%!important;height:auto!important;max-height:none!important;max-width:none!important;padding:0!important;border-radius:0;box-shadow:none;overflow:visible!important}.pd-drawer::backdrop{display:none}.pd-layout,.pd-main{display:block!important;height:auto!important;overflow:visible!important;container-type:normal}.pd-main>*{margin-bottom:16px}.pd-navigation,.pd-notice,.pd-drawer [data-pd-demo],.pd-drawer [data-pd-action]{display:none!important}.pd-section{break-inside:auto}.pd-drawer table{min-width:0!important;font-size:10px!important}.pd-drawer table img{max-width:16px;max-height:16px}.pd-drawer .pd-table-scroll{overflow:visible!important}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}

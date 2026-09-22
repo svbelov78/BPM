@@ -5,11 +5,13 @@
   'use strict';
   const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const percentValue = value => {
+    if (value === null || value === undefined || String(value).trim() === '') return null;
     const number = Number(String(value).replace(',', '.'));
-    return Number.isFinite(number) ? Math.max(0, Math.min(100, number)) : 0;
+    return Number.isFinite(number) ? Math.max(0, Math.min(100, number)) : null;
   };
   function glyph(value, table = false) {
     const percent = percentValue(value);
+    if (percent === null) return '<span class="efficiency-glyph bpm-efficiency-glyph efficiency-unrated" aria-hidden="true"><span class="efficiency-sphere"></span></span>';
     const color = percent < 45 ? 'red' : percent < 65 ? 'yellow' : percent < 85 ? 'blue' : 'green';
     const edge = Number((24 * percent / 100).toFixed(4));
     const curtain = percent === 0 ? -8 : edge + 1;
@@ -18,6 +20,7 @@
   }
   function efficiency(row, table = false) {
     const percent = percentValue(row.efficiency);
+    if (percent === null) return `<span class="efficiency${table?' table-efficiency':''}" role="img" aria-label="Эффективность не оценивалась">${glyph(null, table)}<span class="efficiency-value" aria-hidden="true">—</span></span>`;
     const [whole, fraction] = String(percent).split('.');
     const delta = Number(row.delta) || 0;
     const label = String(percent).replace('.', ',');

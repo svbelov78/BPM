@@ -62,7 +62,11 @@ body.structure-mode #structure-mode>.applied-filters{margin-bottom:16px}
 .structure-segment-count{display:block;height:18px;color:var(--text);font-size:13px;line-height:18px;font-weight:400;letter-spacing:-.039px;white-space:nowrap}
 .structure-track{display:block;position:relative;height:16px;min-height:16px;border-radius:2px;isolation:isolate;overflow:hidden}
 .structure-track::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background:var(--segment-color,var(--border));opacity:.25}
+.structure-segment[data-bucket="1"] .structure-track::before{opacity:.15}
+.structure-segment[data-bucket="4"] .structure-track::before{content:none;background:none}
 .structure-fill{display:block;width:100%;height:100%;border-radius:inherit;background:var(--segment-color,var(--border));transform-origin:left center}
+/* Keep the unrated outline at 1 px while its fill retains the shared scaleX animation. */
+.structure-segment[data-bucket="4"] .structure-track::after{content:"";position:absolute;inset:0 auto 0 0;width:calc(100% * var(--structure-fill-ratio,0));border-radius:inherit;box-shadow:inset 0 0 0 1px var(--efficiency-unrated-border);pointer-events:none}
 .structure-chart[data-chart-type="2"]{width:422px;min-width:422px}
 .structure-chart[data-chart-type="2"] .structure-bars{flex-basis:364px;width:364px;min-width:364px;gap:4px}
 .structure-chart[data-chart-type="2"] .structure-track{height:22px;min-height:22px}
@@ -149,7 +153,7 @@ body.structure-mode #structure-mode>.applied-filters{margin-bottom:16px}
 .structure-table>tbody>tr[data-structure-record]:hover>td>.structure-row-more,.structure-table>tbody>tr[data-structure-record]:focus-within>td>.structure-row-more{opacity:1}
 .structure-no-efficiency{color:var(--secondary);font-size:13px}
 .structure-bucket-0 .bpm-efficiency-glyph{--efficiency-color:#34c759}
-.structure-bucket-1 .bpm-efficiency-glyph{--efficiency-color:#6155f5}
+.structure-bucket-1 .bpm-efficiency-glyph{--efficiency-color:var(--efficiency-on-track-gradient)}
 .structure-bucket-2 .bpm-efficiency-glyph{--efficiency-color:#ffcc00}
 .structure-bucket-3 .bpm-efficiency-glyph{--efficiency-color:#ff383c}
 .structure-table td>.structure-no-efficiency{display:block;margin-top:4px}

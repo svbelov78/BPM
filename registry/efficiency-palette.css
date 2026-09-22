@@ -1,0 +1,14 @@
+/* Figma 03.28 • Efficiency (643:24, 687:4945) and
+ * 03.31 • Structure Chart (987:12, 1027:14909), verified 22.09.2026.
+ * Dedicated efficiency tokens: do not recolor brand blue / favorite Indigo.
+ * The two gradient stops and normalized transform are shared by both pages.
+ * Narrow structure segments set their own aspect-ratio-correct angle.
+ */
+:root {
+  --efficiency-on-track-start: #accbb4;
+  --efficiency-on-track-end: #a3a3a3;
+  --efficiency-on-track-gradient: linear-gradient(206.23194deg, var(--efficiency-on-track-start) 16.697%, var(--efficiency-on-track-end) 83.495%);
+  --efficiency-on-track-stripe: linear-gradient(183.426715deg, var(--efficiency-on-track-start) 16.697%, var(--efficiency-on-track-end) 83.495%);
+  --efficiency-unrated-fill: #fff;
+  --efficiency-unrated-border: #7f7f7f;
+}

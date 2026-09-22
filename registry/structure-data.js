@@ -12,10 +12,10 @@
 
   var colors = [
     { key: 'green', label: 'Лидеры · >85%', color: '#34c759' },
-    { key: 'indigo', label: 'On track · >65–85%', color: '#6155f5' },
+    { key: 'indigo', label: 'On track · >65–85%', color: 'var(--efficiency-on-track-gradient)' },
     { key: 'yellow', label: 'Есть отставания · >45–65%', color: '#ffcc00' },
     { key: 'red', label: 'Критическое отставание · ≤45%', color: '#ff383c' },
-    { key: 'grey', label: 'Не оценивались', color: '#d1d9e6' }
+    { key: 'grey', label: 'Не оценивались', color: 'var(--efficiency-unrated-fill)' }
   ];
   var profiles = [
     [55, 22, 12, 7, 4], [22, 36, 19, 12, 11], [31, 14, 27, 18, 10],

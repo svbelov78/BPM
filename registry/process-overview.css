@@ -49,6 +49,8 @@
 .pd-dynamics-bar{display:block;flex:1;min-width:0;background:var(--bg);border-top:4px solid #34c759}
 .pd-dynamics-negative{border-top-color:var(--red)}
 .pd-dynamics-warning{border-top-color:#ff8d28}
+.pd-dynamics-on-track{position:relative;border-top-color:transparent}
+.pd-dynamics-on-track::before{content:'';position:absolute;left:0;right:0;top:-4px;height:4px;background:var(--efficiency-on-track-stripe)}
 .pd-dynamics-empty{border-top:0}
 .pd-dynamics-labels{display:flex;justify-content:space-between;padding-top:4px;padding-right:calc(100% / 12);font-size:13px;line-height:18px;color:var(--secondary);letter-spacing:-.039px}
 .pd-dynamics-labels span:last-child{color:var(--text)}
@@ -104,3 +106,69 @@
 @container pd-technology (max-width:1080px){.pd-technology-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pd-technology-operations{grid-column:1/-1}.pd-technology-grid>.pd-technology-operations{border-left:0;padding-left:0;padding-top:24px;border-top:1px solid var(--text)}.pd-operation-chart{max-width:330px}.pd-operation-legend{max-width:420px}}
 @container pd-technology (max-width:680px){.pd-technology-grid{grid-template-columns:minmax(0,1fr)}.pd-technology-grid>div+div{border-left:0;padding-left:0;padding-top:24px;border-top:1px solid var(--text)}.pd-technology-operations{grid-column:auto}.pd-system-columns{gap:16px}}
 @media print{.pd-process-actions,.pd-period-button{display:none}.pd-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pd-overview-panel,.pd-about-panel,.pd-technology-grid{break-inside:avoid}.pd-sphere-curtain{background:linear-gradient(180deg,#ffffff99,#fff)}}
+
+/* Updated Process Details instance 1122:37241. These refinements deliberately
+   exclude the customer-journey drawer, which shares the base UI above. */
+.pd-drawer:not(.jd-drawer) .pd-heading-labels>.pd-tag,
+.pd-drawer:not(.jd-drawer) .pd-overview-tags>.pd-tag{color:var(--secondary);border:0;box-shadow:inset 0 0 0 1px var(--border)}
+.pd-drawer:not(.jd-drawer) .pd-process-actions .pd-action-button{height:50px;flex:none;border:0;box-shadow:inset 0 0 0 1px var(--border)}
+.pd-drawer:not(.jd-drawer) .pd-process-actions .pd-action-button:active{box-shadow:var(--click-shadow)}
+.pd-drawer:not(.jd-drawer) .pd-overview-grid{grid-template-columns:minmax(0,341fr) minmax(0,342fr) minmax(278px,278fr) minmax(278px,278fr)}
+.pd-drawer:not(.jd-drawer) .pd-field-label{font-weight:510}
+.pd-drawer:not(.jd-drawer) .pd-field-status{display:block}
+.pd-drawer:not(.jd-drawer) .pd-status-dot{display:inline;margin:0 4px 0 0;background:none;color:var(--pd-green);font:inherit;line-height:inherit}
+.pd-drawer:not(.jd-drawer) .pd-technology-field{gap:16px}
+.pd-drawer:not(.jd-drawer) .pd-overview-tags{padding-top:0}
+.pd-drawer:not(.jd-drawer) .pd-efficiency-widget,
+.pd-drawer:not(.jd-drawer) .pd-dynamics-widget{min-height:440.266px}
+.pd-drawer:not(.jd-drawer) .pd-sphere-viewport{height:281.266px}
+.pd-drawer:not(.jd-drawer) .pd-dynamics-widget{gap:0}
+.pd-drawer:not(.jd-drawer) .pd-dynamics-plot{margin-top:81.133px;margin-bottom:85.133px}
+.pd-drawer:not(.jd-drawer) .pd-dynamics-unstriped{border-top:0}
+.pd-drawer:not(.jd-drawer) .pd-dynamics-labels{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;padding-right:0}
+.pd-drawer:not(.jd-drawer) .pd-dynamics-labels span{text-align:center}
+.pd-drawer:not(.jd-drawer) .pd-dynamics-labels span:last-child{grid-column:11}
+.pd-drawer:not(.jd-drawer) .pd-about-panel{background:var(--bg)}
+.pd-drawer:not(.jd-drawer) .pd-people-grid{grid-template-columns:minmax(0,290.666fr) minmax(0,618.667fr) minmax(0,305.333fr)}
+.pd-drawer:not(.jd-drawer) .pd-person{flex-direction:column;align-items:stretch;gap:4px}
+.pd-drawer:not(.jd-drawer) .pd-person-line{display:flex;gap:8px;align-items:flex-start;min-height:32px;min-width:0}
+.pd-drawer:not(.jd-drawer) .pd-person-name{flex:1;min-width:0;overflow-wrap:break-word}
+.pd-drawer:not(.jd-drawer) .pd-person-avatar>.pd-icon{flex-basis:18px}
+.pd-drawer:not(.jd-drawer) .pd-person-copy{padding-left:40px}
+.pd-drawer:not(.jd-drawer) .pd-person-copy>p:first-child{display:block;min-height:0}
+.pd-drawer:not(.jd-drawer) .pd-person-copy .pd-tag--green{border-color:var(--pd-green)}
+.pd-drawer:not(.jd-drawer) .pd-technology-section{border:0;background:var(--bg);box-shadow:inset 0 0 0 1px var(--border)}
+.pd-drawer:not(.jd-drawer) .pd-technology-grid{grid-template-columns:minmax(0,433.1fr) minmax(0,452.566fr) minmax(0,279fr);column-gap:49px}
+.pd-drawer:not(.jd-drawer) .pd-technology-grid>div{position:relative}
+.pd-drawer:not(.jd-drawer) .pd-technology-grid>div+div{padding-left:0;border-left:0}
+.pd-drawer:not(.jd-drawer) .pd-technology-grid>div+div::before{content:'';position:absolute;top:0;bottom:0;left:-25px;width:1px;background:var(--text)}
+.pd-drawer:not(.jd-drawer) .pd-technology-list li{position:relative}
+.pd-drawer:not(.jd-drawer) .pd-technology-list li+li{border-top:0}
+.pd-drawer:not(.jd-drawer) .pd-technology-list li:not(:last-child)::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:var(--pd-divider)}
+.pd-drawer:not(.jd-drawer) .pd-ai-list .pd-icon{flex:none}
+.pd-drawer:not(.jd-drawer) .pd-operation-auto{background:var(--blue)}
+.pd-drawer:not(.jd-drawer) .pd-operation-user{background:var(--pd-indigo)}
+.pd-drawer:not(.jd-drawer) .pd-operation-manual{background:var(--pd-green)}
+.pd-drawer:not(.jd-drawer) .pd-operation-legend .pd-legend-dot{flex-basis:12px}
+@container pd-overview (min-width:661px){
+  .pd-drawer:not(.jd-drawer) .pd-process-actions [data-pd-action="favorite"]{width:72px}
+  .pd-drawer:not(.jd-drawer) .pd-process-actions [data-pd-action="export"]{width:93px}
+  .pd-drawer:not(.jd-drawer) .pd-process-actions [data-pd-action="print"]{width:140px}
+}
+@container pd-overview (max-width:1160px){
+  .pd-drawer:not(.jd-drawer) .pd-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pd-drawer:not(.jd-drawer) .pd-people-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@container pd-overview (max-width:660px){
+  .pd-drawer:not(.jd-drawer) .pd-overview-grid,
+  .pd-drawer:not(.jd-drawer) .pd-people-grid{grid-template-columns:minmax(0,1fr)}
+}
+@container pd-technology (max-width:1080px){
+  .pd-drawer:not(.jd-drawer) .pd-technology-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pd-drawer:not(.jd-drawer) .pd-technology-grid>.pd-technology-operations::before{display:none}
+}
+@container pd-technology (max-width:680px){
+  .pd-drawer:not(.jd-drawer) .pd-technology-grid{grid-template-columns:minmax(0,1fr)}
+  .pd-drawer:not(.jd-drawer) .pd-technology-grid>div+div::before{display:none}
+}
+@media print{.pd-drawer:not(.jd-drawer) .pd-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}

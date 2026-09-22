@@ -1,4 +1,4 @@
-/* Process Details/Content (Figma 894:6), composed from the existing BPM UI kit. */
+/* Process Details · Drawer 10 columns (Figma 1115:31908 / 1122:35208). */
 (() => {
   'use strict';
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -61,7 +61,7 @@
   }
   function sortTable(button) {
     const key=button.dataset.pdTable;
-    const table=button.closest('table') || dialog.querySelector(`table[data-pd-table="${CSS.escape(key || '')}"]`);
+    const table=button.closest('table') || dialog.querySelector(`table[data-pd-table-id="${CSS.escape(key || '')}"]`);
     if(!table?.tBodies[0])return;
     const index=Number(button.dataset.pdSort),th=button.closest('th');
     const descending=th?.getAttribute('aria-sort')==='ascending';
@@ -220,7 +220,7 @@
     dialog.dataset.pdEntity=row.entity;
     filters.insights={status:'all',source:''};filters.monitoring={status:'all'};
     const utilities={esc,icon,tag,section,efficiency:window.BpmCardVisuals.efficiency,isFavorite:options.isFavorite?.(row) || false};
-    const content=isJourney?window.BpmJourneyDetails.render(row,utilities):`${window.BpmProcessOverview.render(row,utilities)}${window.BpmProcessSections.render(row,utilities)}<p class="pd-demo-note">Детальные показатели, связанные сущности и документы — демонстрационные данные макета. Серверная часть не подключена.</p>`;
+    const content=isJourney?window.BpmJourneyDetails.render(row,utilities):`${window.BpmProcessOverview.render(row,utilities)}${window.BpmProcessSections.render(row,utilities)}`;
     const backlink=options.backRecord?`<button type="button" class="pd-backlink" data-pd-action="back">${icon('calendar-arrow-left')}<span>Назад к клиентскому пути</span></button>`:'';
     dialog.innerHTML=`<div class="pd-layout"><div class="pd-main" tabindex="-1">${backlink}${content}</div><aside class="pd-navigation" aria-label="Разделы ${entityTitle}"><div class="pd-navigation-actions"><button class="pd-control pd-share" data-pd-action="share" aria-label="Скопировать ссылку ${isJourney?'на клиентский путь':'на процесс'}" title="Поделиться">${icon('imgIcon24Share')}</button><button class="pd-control pd-close" data-pd-action="close" aria-label="Закрыть деталку ${entityTitle}" title="Закрыть (Esc)" autofocus>${icon('imgIcon24Exit')}</button></div><nav class="pd-anchors">${anchors.map(([id,label],index)=>`<button type="button" data-pd-anchor="${id}" class="pd-anchor${index===0?' is-active':''}"${index===0?' aria-current="location"':''}>${label}</button>`).join('')}</nav></aside></div><div class="pd-notice" role="status" aria-live="polite" hidden></div>`;
     const announcement=document.createElement('div');announcement.className='sr-only pd-loading-announcement';announcement.setAttribute('role','status');announcement.setAttribute('aria-live','polite');announcement.textContent=`Загрузка деталки ${entityTitle}…`;dialog.append(announcement);

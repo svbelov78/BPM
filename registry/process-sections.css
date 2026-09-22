@@ -110,3 +110,80 @@
 @container process-content (max-width:1200px){.pd-insights-toolbar{flex-wrap:wrap;gap:16px}.pd-data-status-filters{margin-left:auto}.pd-data-source{min-width:240px}.pd-monitoring-toolbar{flex-wrap:wrap}.pd-monitoring-toolbar .pd-data-alert{order:3;flex-basis:100%}.pd-data-filter{margin-left:auto}}
 @container process-content (max-width:600px){.pd-data-content{gap:16px}.pd-data-toolbar{flex-wrap:wrap;gap:12px}.pd-data-source{flex-basis:100%;min-width:0}.pd-data-status-filters{height:auto;overflow-x:auto;overscroll-behavior-x:contain;flex-basis:100%;padding-bottom:4px}.pd-data-alert-confirm{flex-wrap:wrap}.pd-data-alert-confirm p{flex-basis:calc(100% - 40px)}.pd-data-confirm{margin-left:32px}.pd-data-subtitle{font-size:20px;line-height:26px}.pd-data-table-scroll{border-radius:12px}.pd-data-filter-popup{width:min(268px,75vw)}}
 @media print{.pd-data-table-scroll{overflow:visible}.pd-data-table{min-width:0;font-size:9px;line-height:12px}.pd-data-table th,.pd-data-table td{padding:6px}.pd-data-table .pd-data-title{font-size:10px;line-height:14px}.pd-data-toolbar,.pd-data-alert-confirm,.pd-data-icon-action{display:none}.pd-data-table .pd-tag{font-size:8px;height:auto;white-space:normal}.pd-data-table col{width:auto!important}}
+
+/* Process Details · Drawer 10 columns, 1115:31908 (22.09.2026).
+   Local refinements only: customer-journey tables retain their existing styles. */
+.pd-process-section{border:0;box-shadow:inset 0 0 0 1px var(--border)}
+.pd-process-section>.pd-section-content{padding-top:8px}
+.pd-process-section .pd-data-table{min-width:1262.666px;border-collapse:separate}
+.pd-process-section .pd-data-table th{height:50px;font-size:13px;line-height:18px;letter-spacing:-.039px;vertical-align:bottom;padding:16px}
+.pd-process-section .pd-table-sort{display:flex;width:max-content;position:relative;min-height:18px;line-height:18px}
+.pd-process-section .pd-sort-arrow{position:absolute;left:calc(100% + 8px)}
+.pd-process-section .pd-table-sort[data-active=true] .pd-sort-arrow{position:static}
+.pd-process-section .pd-table-sort-icon>span:first-child{display:flex}
+.pd-process-section .pd-table-sort>span:first-child{overflow-wrap:normal;word-break:normal}
+.pd-process-section .pd-data-table tbody tr{background:var(--white)}
+.pd-process-section .pd-data-table td,
+.pd-process-section .pd-data-table tbody tr:hover td{background:transparent}
+.pd-process-section .pd-data-table .pd-tag{border:0;box-shadow:inset 0 0 0 1px var(--border)}
+.pd-process-section .pd-data-table .pd-tag--green{box-shadow:inset 0 0 0 1px var(--pd-green)}
+.pd-process-section .pd-data-table .pd-tag--red{box-shadow:inset 0 0 0 1px var(--red)}
+.pd-process-section .pd-data-table .pd-tag--blue{box-shadow:inset 0 0 0 1px var(--blue)}
+.pd-process-section .pd-data-table .pd-tag--yellow{box-shadow:inset 0 0 0 1px #ffcc00}
+.pd-process-section .pd-data-table .pd-tag--muted{box-shadow:none}
+.pd-process-section .pd-source-tag,.pd-process-section .pd-task-type{display:inline-flex}
+.pd-process-section .pd-data-table-monitoring th{height:68px}
+.pd-process-section .pd-data-table-monitoring th:nth-child(6){padding-left:12px;padding-right:12px}
+.pd-process-section .pd-data-header-value{color:var(--text)}
+.pd-process-section .pd-data-table-monitoring tbody tr{height:120px}
+.pd-process-section .pd-data-table-monitoring td{vertical-align:middle;padding-top:16px;padding-bottom:16px}
+.pd-process-section .pd-data-table-monitoring .pd-data-actions{padding:16px 0}
+.pd-process-section .pd-data-table-monitoring .pd-data-efficiency{text-align:center}
+.pd-process-section .pd-data-efficiency-empty{display:inline-flex;justify-content:center;min-width:110px}
+.pd-process-section .pd-data-table-monitoring [data-pd-key="monitoring-4"]{background:linear-gradient(90deg,#ffeefd 0%,#fff2e7 55%,#fff 100%)}
+.pd-process-section .pd-data-confirm{width:157px;height:50px;min-height:50px;padding:12px 24px;font-size:17px;line-height:24px;letter-spacing:-.51px;font-weight:590;border:0;border-radius:12px;box-shadow:inset 0 0 0 1px var(--border)}
+.pd-process-section .pd-monitoring-toolbar>.pd-data-add{width:232px}
+.pd-process-section .pd-insights-toolbar>.pd-data-add{width:211px}
+.pd-process-section#pd-tasks .pd-data-add{width:211px}
+.pd-process-section .pd-data-table-insights th{height:56px}
+.pd-process-section .pd-data-table-insights tbody tr{height:208px}
+.pd-process-section .pd-data-table-insights [data-pd-key="INS-000067"]{height:209px}
+.pd-process-section .pd-data-table-insights td{padding:24px 16px}
+.pd-process-section .pd-data-table-insights .pd-data-metadata>.pd-tag--muted{color:var(--secondary)}
+.pd-process-section .pd-data-table-tasks tbody tr{height:157px}
+.pd-process-section .pd-data-table-tasks [data-pd-key="task-4"]{height:156px}
+.pd-process-section .pd-data-table-tasks .pd-data-title-cell{padding:16px}
+.pd-process-section .pd-data-table-tasks :is([data-pd-key="task-1"],[data-pd-key="task-2"]) .pd-data-process-cell .pd-data-stack{gap:11px}
+.pd-process-section .pd-data-table-tasks .pd-data-title-cell:first-child .pd-data-metadata{flex-wrap:nowrap}
+.pd-process-section .pd-data-table-tasks .pd-task-type .pd-tag{height:24px;font-size:13px;line-height:18px;letter-spacing:-.039px;box-shadow:none}
+.pd-process-section .pd-data-table-tasks .pd-task-type-neutral .pd-tag{background:transparent;box-shadow:inset 0 0 0 1px #1a1a1a33}
+.pd-process-section .pd-data-table-tasks .pd-data-initiator{padding-top:51px}
+.pd-process-section .pd-data-table-tasks .pd-data-assignees{padding:51px 8px 16px}
+.pd-process-section .pd-data-table-tasks .pd-data-created{padding-top:48px;font-size:17px;line-height:24px;letter-spacing:-.119px}
+.pd-process-section .pd-data-table-tasks .pd-data-created span{font:inherit;color:var(--text)}
+.pd-process-section .pd-data-table-tasks .pd-data-deadline{padding-top:51px}
+.pd-process-section .pd-data-table-tasks .pd-data-tracker{font-size:17px;line-height:24px;letter-spacing:-.119px}
+.pd-process-section .pd-data-table-tasks .pd-data-task-status{padding-top:53px}
+.pd-process-section .pd-data-table-tasks .pd-data-status{gap:8px}
+.pd-process-section .pd-data-table-tasks .pd-data-row-highlighted{background:linear-gradient(90deg,#ffeefd 0%,#f1ffea 55%,#fff 100%)}
+.pd-process-section .pd-data-table-aris th{height:56px}
+.pd-process-section .pd-data-table-aris tbody tr{height:113px}
+.pd-process-section .pd-data-table-aris [data-pd-key="aris-0"]{height:117px}
+.pd-process-section .pd-data-table-aris td{padding:16px}
+.pd-process-section .pd-data-table-aris [data-pd-key="aris-0"] td:nth-child(2){padding-top:20px}
+.pd-process-section .pd-data-table-aris td:nth-child(3){padding-top:20px}
+.pd-process-section .pd-data-table-aris td:nth-child(4){padding-top:24px}
+.pd-process-section .pd-data-table-aris [data-pd-key="aris-0"] td:nth-child(4){padding-top:20px}
+.pd-process-section .pd-data-table-aris td:nth-child(5){padding-top:27px}
+.pd-process-section .pd-data-table-aris .pd-data-actions{padding-top:32px}
+.pd-process-section .pd-data-table-aris .pd-source-tag .pd-tag--yellow{color:#ff8d28;box-shadow:inset 0 0 0 1px #ff8d28}
+.pd-process-section .pd-data-table-consultant tbody tr{height:97px}
+.pd-process-section .pd-data-table-consultant [data-pd-key="document-1"]{height:145px}
+.pd-process-section .pd-data-table-consultant [data-pd-key="document-2"]{height:168px}
+.pd-process-section .pd-data-table-consultant td{padding:24px 16px}
+.pd-process-section .pd-data-table-consultant td:nth-child(2){font-weight:590;letter-spacing:-.51px}
+@media print{
+  .pd-process-section .pd-data-table{min-width:0;font-size:9px;line-height:12px}
+  .pd-process-section .pd-data-table th,.pd-process-section .pd-data-table td{height:auto;padding:6px;font-size:9px;line-height:12px}
+  .pd-process-section .pd-data-table tbody tr{height:auto}
+}

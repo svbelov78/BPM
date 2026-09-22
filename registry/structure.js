@@ -90,9 +90,10 @@
       const label=`${chartType==='2'?'Соотношение эффективности, доли от суммы':'Сравнение с лидером, общий масштаб'}. Всего ${entity==='paths'?'клиентских путей':'процессов'}: ${node.total}. ${model.colors.map((c,i)=>`${c.label}: ${node.buckets[i]}`).join('; ')}.`;
       const layout=chartLayout(node.buckets,model.maxima,chartType);
       const segments=layout.segments.map(({index:i,count,width,ratio})=>{
-        const color=chartType==='2'&&i===4?'var(--placeholder)':model.colors[i].color;
+        const gradientAngle=180+Math.atan(0.49416935443878174*(chartType==='2'?22:16)/(1.0028730630874634*Math.max(width,Number.EPSILON)))*180/Math.PI;
+        const color=i===1?`linear-gradient(${gradientAngle}deg,var(--efficiency-on-track-start) 16.697%,var(--efficiency-on-track-end) 83.495%)`:model.colors[i].color;
         const narrow=width<format(count).length*8;
-        return `<span class="structure-segment" data-count="${count}" data-bucket="${i}" style="flex:0 0 ${width}px;--segment-color:${color}" title="${esc(model.colors[i].label)}: ${count}"><span class="structure-segment-count${narrow?' is-narrow':''}" data-structure-number="${count}">${done?format(count):'0'}</span><span class="structure-track"><span class="structure-fill" data-fill="${ratio}" style="transform:scaleX(${done?ratio:0})"></span></span></span>`;
+        return `<span class="structure-segment" data-count="${count}" data-bucket="${i}" style="flex:0 0 ${width}px;--segment-color:${color}" title="${esc(model.colors[i].label)}: ${count}"><span class="structure-segment-count${narrow?' is-narrow':''}" data-structure-number="${count}">${done?format(count):'0'}</span><span class="structure-track"${i===4?` style="--structure-fill-ratio:${done?ratio:0}"`:''}><span class="structure-fill" data-fill="${ratio}" style="transform:scaleX(${done?ratio:0})"></span></span></span>`;
       }).join('');
       return `<span class="structure-chart-scroll"><span class="structure-chart" data-chart="${node.id}" data-chart-type="${chartType}" role="img" aria-label="${esc(label)}"><strong class="structure-total" data-structure-number="${node.total}" aria-hidden="true">${done?format(node.total):'0'}</strong><span class="structure-bars" aria-hidden="true">${segments}</span></span></span>`;
     }
@@ -240,7 +241,11 @@
     }
     function writeChart(chart,progress) {
       chart.querySelectorAll('[data-structure-number]').forEach(number=>number.textContent=format(Math.floor(Number(number.dataset.structureNumber)*progress)));
-      chart.querySelectorAll('[data-fill]').forEach(fill=>fill.style.transform=`scaleX(${Number(fill.dataset.fill)*progress})`);
+      chart.querySelectorAll('[data-fill]').forEach(fill=>{
+        const ratio=Number(fill.dataset.fill)*progress;
+        fill.style.transform=`scaleX(${ratio})`;
+        if(fill.parentElement.parentElement.dataset.bucket==='4')fill.parentElement.style.setProperty('--structure-fill-ratio',ratio);
+      });
     }
     function animateChart(chart) {
       if(animated.has(chart.dataset.chart)||motion.matches){writeChart(chart,1);return;}

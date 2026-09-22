@@ -51,7 +51,7 @@
 .jd-metric--positive{border-color:var(--pd-green)}.jd-metric--info{border-color:var(--blue)}.jd-metric--attention{border-color:#ffcc00}.jd-metric--danger{border-color:var(--red)}
 .jd-efficiency-trend{margin-left:auto}
 .jd-efficiency-glyph{--jd-color:var(--red);position:relative;display:block;flex:none;width:64px;height:64px;overflow:visible}
-.jd-efficiency--positive{--jd-color:#2ac653}.jd-efficiency--attention{--jd-color:#ffcc00}.jd-efficiency--indigo{--jd-color:#6155f5}.jd-efficiency--danger{--jd-color:#ff383c}
+.jd-efficiency--positive{--jd-color:#2ac653}.jd-efficiency--attention{--jd-color:#ffcc00}.jd-efficiency--indigo{--jd-color:var(--efficiency-on-track-gradient)}.jd-efficiency--danger{--jd-color:#ff383c}
 .jd-sphere-ball{display:block;position:absolute;width:64px;height:64px;left:0;top:0;border-radius:50%;background:var(--jd-color)}
 .jd-efficiency--zero .jd-sphere-ball{top:-9.974px}
 /* CSS blur is sigma; Figma radius 10.3896 exports as blur(5.195px). */

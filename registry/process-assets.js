@@ -1,5 +1,6 @@
 /* Exact SVG exports from Process Details/Content in the BPM design system. */
 window.BpmProcessAssets = Object.freeze({
+  imgProcessTableSort: 'assets/process-updated/table-sort.svg',
   imgIcon16LinkAlt: 'assets/process-details/imgIcon16LinkAlt.svg',
   imgIcon16Copy: 'assets/process-details/imgIcon16Copy.svg',
   imgIcon24ArrowDown: 'assets/process-details/imgIcon24ArrowDown.svg',
