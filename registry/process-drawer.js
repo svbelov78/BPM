@@ -5,7 +5,8 @@
   const icon = (name, className = '') => `<img class="pd-icon ${esc(className)}" src="${esc(window.BpmProcessAssets?.[name] || `assets/${name}.svg`)}" alt="" width="24" height="24">`;
   const tag = (label, tone = '', iconName = '') => `<span class="pd-tag${tone ? ` pd-tag--${esc(tone)}` : ''}">${esc(label)}${iconName ? icon(iconName,'pd-icon-16') : ''}</span>`;
   const section = (id,title,count,content,options={}) => `<details class="pd-section ${esc(options.className || '')}" id="pd-${esc(id)}"${options.open === false ? '' : ' open'}><summary class="pd-section-heading"><h2>${esc(title)}${count !== null && count !== undefined && count !== '' ? ` <span class="pd-counter">${esc(count)}</span>` : ''}</h2>${icon('chevron-up','pd-section-chevron')}</summary><div class="pd-section-content">${content}</div></details>`;
-  const anchors = [['about','О процессе'],['monitoring','Мониторинг'],['insights','Инсайты'],['tasks','Задачи'],['documents','Документы']];
+  const processAnchors = [['about','О процессе'],['monitoring','Мониторинг'],['insights','Инсайты'],['tasks','Задачи'],['documents','Документы']];
+  let anchors=processAnchors;
   let dialog,main,row,options,selects=[],scrollFrame,toastTimer,returnFocus,loadingTimer,closingTimer;
   let opening=0,closing=false;
   const LOADING_DURATION=2000;
@@ -36,9 +37,9 @@
     cancelAnimationFrame(scrollFrame);
     scrollFrame=requestAnimationFrame(()=>{
       const top=main.getBoundingClientRect().top+80;
-      let active='about';
+      let active=anchors[0][0];
       for(const [id] of anchors){const node=dialog.querySelector(`#pd-${id}`);if(node && node.getBoundingClientRect().top<=top)active=id;}
-      if(main.scrollTop+main.clientHeight>=main.scrollHeight-3)active='documents';
+      if(main.scrollTop+main.clientHeight>=main.scrollHeight-3)active=anchors[anchors.length-1][0];
       setActive(active);
     });
   }
@@ -83,10 +84,48 @@
     window.addEventListener('afterprint',restore);
     window.print();
   }
+  function toggleJourneyProcesses(expanded) {
+    const button=dialog.querySelector('[data-jd-toggle-processes]');
+    const list=dialog.querySelector('#jd-included-processes');
+    if(!button||!list)return;
+    button.setAttribute('aria-expanded',String(expanded));
+    list.querySelectorAll('[data-jd-extra-process]').forEach(process=>process.hidden=!expanded);
+    const label=button.querySelector('[data-jd-toggle-label]');
+    if(label)label.textContent=expanded?'Свернуть':'Показать все';
+    syncAnchor();
+  }
+  function openJourneyProcess(index) {
+    const record=Number.isInteger(index)?window.BpmJourneyDetails?.getProcesses?.(row)?.[index]:null;
+    if(!record){notify('Данные этого процесса пока не подключены.');return;}
+    const resumeState={
+      scrollTop:main.scrollTop,
+      expanded:dialog.querySelector('[data-jd-toggle-processes]')?.getAttribute('aria-expanded')==='true',
+      summaryHidden:dialog.querySelector('#jd-observation-synthesis')?.hidden || false,
+      sections:[...main.querySelectorAll('details[id]')].map(node=>[node.id,node.open]),
+      processIndex:index
+    };
+    const backConfiguration={...options,trigger:returnFocus,resumeState,skipLoading:true};
+    open(record,{...options,trigger:returnFocus,skipLoading:false,resumeState:null,backRecord:row,backConfiguration});
+  }
   function handleClick(event) {
     dialog.querySelectorAll('.pd-data-filter[open]').forEach(filter=>{if(!filter.contains(event.target))filter.open=false;});
     const link=event.target.closest('a[href^="#pd-"]');if(link){event.preventDefault();goTo(link.getAttribute('href').slice(4));return;}
     const anchor=event.target.closest('[data-pd-anchor]');if(anchor){goTo(anchor.dataset.pdAnchor);return;}
+    const summaryAction=event.target.closest('[data-jd-dismiss-summary],[data-jd-show-summary]');
+    if(summaryAction){
+      const summary=dialog.querySelector('#jd-observation-synthesis');
+      if(summary){
+        const hidden=summaryAction.hasAttribute('data-jd-dismiss-summary');summary.hidden=hidden;
+        const show=dialog.querySelector('[data-jd-show-summary]');show?.setAttribute('aria-expanded',String(!hidden));
+        if(hidden)show?.focus({preventScroll:true});else summary.scrollIntoView({block:'nearest',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});
+        syncAnchor();
+      }
+      return;
+    }
+    const journeyToggle=event.target.closest('[data-jd-toggle-processes]');
+    if(journeyToggle){toggleJourneyProcesses(journeyToggle.getAttribute('aria-expanded')!=='true');return;}
+    const journeyProcess=event.target.closest('[data-jd-process]');
+    if(journeyProcess){openJourneyProcess(Number(journeyProcess.dataset.jdProcess));return;}
     const status=event.target.closest('[data-pd-status]');
     if(status){const scope=status.dataset.pdScope || status.closest('[data-pd-scope]')?.dataset.pdScope || 'insights';if(filters[scope]){filters[scope].status=status.dataset.pdStatus;dialog.querySelectorAll(`[data-pd-status]`).forEach(button=>{if((button.dataset.pdScope || button.closest('[data-pd-scope]')?.dataset.pdScope || 'insights')===scope){const selected=button===status;button.classList.toggle('is-active',selected);button.setAttribute('aria-pressed',String(selected));}});filterRows(scope);}const popover=status.closest('.pd-data-filter');if(popover){popover.open=false;popover.querySelector('summary').focus();}return;}
     const sort=event.target.closest('[data-pd-sort]');if(sort){sortTable(sort);return;}
@@ -94,8 +133,9 @@
     if(action){
       switch(action.dataset.pdAction){
         case 'close':close();break;
-        case 'copy':copy(action.dataset.pdValue || action.dataset.pdCopy || `П ${row.number}`);break;
-        case 'share':copy(`${location.href.split('#')[0]}#process=${encodeURIComponent(row.id)}`);break;
+        case 'copy':copy(action.dataset.pdValue || action.dataset.pdCopy || row.code || `${row.entity==='paths'?'КП':'П'} ${row.number}`);break;
+        case 'share':copy(`${location.href.split('#')[0]}#${row.entity==='paths'?'journey':'process'}=${encodeURIComponent(row.id)}`);break;
+        case 'back':if(options.backRecord)open(options.backRecord,options.backConfiguration || {});break;
         case 'favorite':{
           options.toggleFavorite?.(row);
           const selected=options.isFavorite?.(row) || false;
@@ -121,7 +161,7 @@
     dialog.querySelectorAll('.pd-skeleton').forEach(node=>node.remove());
     dialog.querySelectorAll('.pd-loading-block').forEach(node=>node.classList.remove('pd-loading-block'));
     const announcement=dialog.querySelector('.pd-loading-announcement');
-    if(announcement)announcement.textContent='Деталка процесса загружена';
+    if(announcement)announcement.textContent=row?.entity==='paths'?'Деталка клиентского пути загружена':'Деталка процесса загружена';
     if(wasLoading&&animate&&dialog.open&&!closing)window.BpmProcessMotion?.start(dialog);
   }
   function beginLoading() {
@@ -146,8 +186,9 @@
     window.BpmProcessMotion?.cancel(dialog);finishLoading(false);
     document.body.classList.remove('pd-drawer-open');selects.forEach(select=>select.close());selects=[];
     window.BpmCardVisuals.cancelCounters(dialog);cancelAnimationFrame(scrollFrame);clearTimeout(toastTimer);
-    const trigger=returnFocus?.isConnected ? returnFocus : document.querySelector(`[data-detail="${CSS.escape(row?.id || '')}"]`);
-    if(restoreFocus)(trigger || document.getElementById('processes-tab'))?.focus({preventScroll:true});
+    const id=CSS.escape(row?.id || '');
+    const trigger=returnFocus?.isConnected ? returnFocus : document.querySelector(`[data-detail="${id}"],[data-structure-detail="${id}"]`);
+    if(restoreFocus)(trigger || document.getElementById(row?.entity==='paths'?'paths-tab':'processes-tab'))?.focus({preventScroll:true});
   }
   function setup() {
     dialog=document.getElementById('process-drawer');
@@ -172,10 +213,17 @@
     if(main){cleanup(false);if(dialog.open)dialog.close();}
     opening++;
     row=record;options=configuration;returnFocus=configuration.trigger || document.activeElement;
+    const isJourney=row.entity==='paths';
+    const entityTitle=isJourney?'клиентского пути':'процесса';
+    anchors=isJourney?window.BpmJourneyDetails.anchors:processAnchors;
+    dialog.classList.toggle('jd-drawer',isJourney);
+    dialog.dataset.pdEntity=row.entity;
     filters.insights={status:'all',source:''};filters.monitoring={status:'all'};
     const utilities={esc,icon,tag,section,efficiency:window.BpmCardVisuals.efficiency,isFavorite:options.isFavorite?.(row) || false};
-    dialog.innerHTML=`<div class="pd-layout"><div class="pd-main" tabindex="-1">${window.BpmProcessOverview.render(row,utilities)}${window.BpmProcessSections.render(row,utilities)}<p class="pd-demo-note">Детальные показатели, связанные сущности и документы — демонстрационные данные макета. Серверная часть не подключена.</p></div><aside class="pd-navigation" aria-label="Разделы процесса"><div class="pd-navigation-actions"><button class="pd-control pd-share" data-pd-action="share" aria-label="Скопировать ссылку на процесс" title="Поделиться">${icon('imgIcon24Share')}</button><button class="pd-control pd-close" data-pd-action="close" aria-label="Закрыть деталку процесса" title="Закрыть (Esc)" autofocus>${icon('imgIcon24Exit')}</button></div><nav class="pd-anchors">${anchors.map(([id,label],index)=>`<button type="button" data-pd-anchor="${id}" class="pd-anchor${index===0?' is-active':''}"${index===0?' aria-current="location"':''}>${label}</button>`).join('')}</nav></aside></div><div class="pd-notice" role="status" aria-live="polite" hidden></div>`;
-    const announcement=document.createElement('div');announcement.className='sr-only pd-loading-announcement';announcement.setAttribute('role','status');announcement.setAttribute('aria-live','polite');announcement.textContent='Загрузка деталки процесса…';dialog.append(announcement);
+    const content=isJourney?window.BpmJourneyDetails.render(row,utilities):`${window.BpmProcessOverview.render(row,utilities)}${window.BpmProcessSections.render(row,utilities)}<p class="pd-demo-note">Детальные показатели, связанные сущности и документы — демонстрационные данные макета. Серверная часть не подключена.</p>`;
+    const backlink=options.backRecord?`<button type="button" class="pd-backlink" data-pd-action="back">${icon('calendar-arrow-left')}<span>Назад к клиентскому пути</span></button>`:'';
+    dialog.innerHTML=`<div class="pd-layout"><div class="pd-main" tabindex="-1">${backlink}${content}</div><aside class="pd-navigation" aria-label="Разделы ${entityTitle}"><div class="pd-navigation-actions"><button class="pd-control pd-share" data-pd-action="share" aria-label="Скопировать ссылку ${isJourney?'на клиентский путь':'на процесс'}" title="Поделиться">${icon('imgIcon24Share')}</button><button class="pd-control pd-close" data-pd-action="close" aria-label="Закрыть деталку ${entityTitle}" title="Закрыть (Esc)" autofocus>${icon('imgIcon24Exit')}</button></div><nav class="pd-anchors">${anchors.map(([id,label],index)=>`<button type="button" data-pd-anchor="${id}" class="pd-anchor${index===0?' is-active':''}"${index===0?' aria-current="location"':''}>${label}</button>`).join('')}</nav></aside></div><div class="pd-notice" role="status" aria-live="polite" hidden></div>`;
+    const announcement=document.createElement('div');announcement.className='sr-only pd-loading-announcement';announcement.setAttribute('role','status');announcement.setAttribute('aria-live','polite');announcement.textContent=`Загрузка деталки ${entityTitle}…`;dialog.append(announcement);
     main=dialog.querySelector('.pd-main');main.addEventListener('scroll',syncAnchor,{passive:true});
     dialog.querySelectorAll('details').forEach(node=>node.addEventListener('toggle',syncAnchor));
     dialog.showModal();document.body.classList.add('pd-drawer-open');main.scrollTop=0;
@@ -185,7 +233,21 @@
       selects.push(options.createSelect(source.id,{label:'Источники',options:values.map(value=>({value,label:value})),onChange:values=>{filters.insights.source=values[0] || '';filterRows('insights');}}));
     }
     window.BpmProcessMotion?.prepare(dialog);
-    beginLoading();
+    if(options.resumeState){
+      toggleJourneyProcesses(options.resumeState.expanded);
+      const summary=dialog.querySelector('#jd-observation-synthesis');
+      if(summary){summary.hidden=Boolean(options.resumeState.summaryHidden);dialog.querySelector('[data-jd-show-summary]')?.setAttribute('aria-expanded',String(!summary.hidden));}
+      for(const [id,isOpen] of options.resumeState.sections || []){
+        const node=dialog.querySelector(`#${CSS.escape(id)}`);if(node)node.open=isOpen;
+      }
+      main.scrollTo({top:options.resumeState.scrollTop || 0,behavior:'instant'});
+      dialog.querySelector(`[data-jd-process="${options.resumeState.processIndex}"]`)?.focus({preventScroll:true});
+      syncAnchor();
+    }
+    if(options.skipLoading){
+      dialog.classList.add('pd-has-entered');
+      finishLoading(false);window.BpmProcessMotion?.finish(dialog);
+    }else beginLoading();
   }
   function close(){
     if(!dialog?.open||closing)return;

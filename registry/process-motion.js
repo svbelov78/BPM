@@ -14,15 +14,22 @@
     return {
       element, final, prefix:match[1], separator:match[3] || ',', suffix:match[5], precision,
       magnitude:Number(`${match[2]}.${match[4] || '0'}`), scale:10 ** precision,
-      minWidth:element.style.minWidth
+      minWidth:element.style.minWidth,
+      wholeNode:element.querySelector('[data-pd-number-whole]'),
+      fractionNode:element.querySelector('[data-pd-number-fraction]')
     };
   }
   function writeNumber(counter, value) {
     const [whole, fraction] = value.toFixed(counter.precision).split('.');
-    counter.element.textContent = `${counter.prefix}${whole}${fraction ? counter.separator + fraction : ''}${counter.suffix}`;
+    const decimal = `${fraction ? counter.separator + fraction : ''}${counter.suffix}`;
+    if(counter.wholeNode && counter.fractionNode) {
+      counter.wholeNode.textContent = `${counter.prefix}${whole}`;
+      counter.fractionNode.textContent = decimal;
+    } else counter.element.textContent = `${counter.prefix}${whole}${decimal}`;
   }
   function restoreNumber(counter) {
-    counter.element.textContent = counter.final;
+    if(counter.wholeNode && counter.fractionNode) writeNumber(counter,counter.magnitude);
+    else counter.element.textContent = counter.final;
     if (counter.minWidth) counter.element.style.minWidth = counter.minWidth;
     else counter.element.style.removeProperty('min-width');
   }
@@ -86,7 +93,8 @@
     if (!group.numbers.length) return;
     // Measure the final string, then reserve its width while counting from zero.
     group.numbers.forEach(counter => {
-      counter.element.textContent = counter.final;
+      if(counter.wholeNode && counter.fractionNode) writeNumber(counter,counter.magnitude);
+      else counter.element.textContent = counter.final;
       counter.element.style.minWidth = `${counter.element.getBoundingClientRect().width}px`;
       writeNumber(counter, 0);
     });

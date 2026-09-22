@@ -6,9 +6,11 @@
   const image = (name, cls = '') => `<img src="assets/${esc(name)}.svg" alt=""${cls ? ` class="${cls}"` : ''}>`;
   const favoriteIcon = (cls='',name='liked',label='В избранном') => `<span class="favorite-heart ${cls}" ${label?`role="img" aria-label="${esc(label)}"`:'aria-hidden="true"'}>${image(name)}</span>`;
   const data = window.BPM_DATA || [];
+  const allRecords = [...data,...(window.BPM_STRUCTURE?.records || []),...(window.BPM_STRUCTURE_PATHS?.records || [])];
   const defaults = {from:'2001-08-21',to:'2026-09-13'};
   const state = {entity:'paths',view:'cards',query:'',filters:{status:[],block:[],division:[],process:[],owner:[]},sort:'id-asc',sorts:{cards:'id-asc',table:'id-asc'},from:defaults.from,to:defaults.to,page:1,size:20,favoritesOnly:false,top:false,favorites:new Set(['paths-1232','paths-1233'])};
-  try { const saved = JSON.parse(localStorage.getItem('bpm-registry-favorites')); if (Array.isArray(saved)) state.favorites = new Set(saved.filter(id => data.some(row => row.id === id))); } catch (_) { /* Storage may be unavailable for local files. */ }
+  try { const saved = JSON.parse(localStorage.getItem('bpm-registry-favorites')); if (Array.isArray(saved)) state.favorites = new Set(saved.filter(id => allRecords.some(row => row.id === id))); } catch (_) { /* Storage may be unavailable for local files. */ }
+  let structureMode=false, structure;
   const selects = {};
   let activeSelect = null, datePopup = null, actionMenu = null, tooltip = null, toastTimer;
   const LOADING_DURATION = 2000;
@@ -58,7 +60,7 @@
       this.toggle.tabIndex = selected ? 0 : -1;
       this.toggle.setAttribute('aria-label',`${selected ? 'Очистить' : 'Открыть список'}: ${this.config.label}`);
       this.toggle.innerHTML = image(selected ? 'close' : this.config.icon || 'chevron-down-filter');
-      if (this.popup) { this.renderOptions(); positionPopup(this.popup,this.control,this.config.multiple ? 300 : 260); }
+      if (this.popup) { this.renderOptions(); positionPopup(this.popup,this.control,this.config.minPopupWidth ?? (this.config.multiple ? 300 : 260)); }
     }
     set(values, notify = false) { this.values = values; this.query = ''; this.refresh(); if (notify) this.config.onChange(values); }
     clear() {this.values=[];this.query='';this.input.value='';this.close();this.changed();this.suppressFocusOpen=true;this.input.focus({preventScroll:true});this.suppressFocusOpen=false;}
@@ -67,12 +69,12 @@
       if (this.popup) return;
       closeDate(); closeAction(); if (activeSelect) activeSelect.close();
       activeSelect = this; if (clear) this.query = ''; this.input.value = this.query;
-      this.popup = document.createElement('div'); this.popup.className = 'select-popup'; this.popup.id = `${this.id}-list`; this.popup.setAttribute('role','listbox'); this.popup.setAttribute('aria-label',this.config.label);
+      this.popup = document.createElement('div'); this.popup.className = `select-popup${this.config.popupClass?' '+this.config.popupClass:''}`; this.popup.id = `${this.id}-list`; this.popup.setAttribute('role','listbox'); this.popup.setAttribute('aria-label',this.config.label);
       if (this.config.multiple) this.popup.setAttribute('aria-multiselectable','true');
       (this.host.closest('dialog[open]') || document.body).append(this.popup); this.input.setAttribute('aria-expanded','true'); this.control.classList.add('is-open'); this.active = -1;
       this.popup.addEventListener('mousedown',e => e.preventDefault());
       this.popup.addEventListener('click',e => { const option=e.target.closest('[data-option]'); if (option) this.choose(option.dataset.option); });
-      this.renderOptions(); positionPopup(this.popup,this.control,this.config.multiple ? 300 : 260);
+      this.renderOptions(); positionPopup(this.popup,this.control,this.config.minPopupWidth ?? (this.config.multiple ? 300 : 260));
     }
     close() { if (!this.popup) return; this.popup.remove(); this.popup = null; this.query = ''; this.input.setAttribute('aria-expanded','false'); this.input.removeAttribute('aria-activedescendant'); this.control.classList.remove('is-open'); if (activeSelect === this) activeSelect = null; this.refresh(); }
     renderOptions() {
@@ -85,7 +87,7 @@
         return `<div role="option" id="${this.id}-option-${i}" class="select-option${i === this.active ? ' active' : ''}" data-option="${esc(o.value)}" aria-selected="${selected}">${this.config.multiple ? `<span class="option-check" aria-hidden="true">${selected ? image('tick') : ''}</span>` : ''}<span class="option-label">${esc(o.label)}</span>${selected && !this.config.multiple ? image('tick','selected-tick') : ''}</div>`;
       }).join('') : '<div class="popup-empty">Ничего не найдено</div>';
       if (this.active >= 0) this.input.setAttribute('aria-activedescendant',`${this.id}-option-${this.active}`); else this.input.removeAttribute('aria-activedescendant');
-      positionPopup(this.popup,this.control,this.config.multiple ? 300 : 260);
+      positionPopup(this.popup,this.control,this.config.minPopupWidth ?? (this.config.multiple ? 300 : 260));
     }
     choose(value) {
       if (!value) this.values = [];
@@ -142,7 +144,8 @@
     const active=state.sort.startsWith(`${key}-`),descending=active&&state.sort.endsWith('-desc');
     const nextDirection=active&&!descending?'по убыванию':'по возрастанию';
     const action=`${label}: сортировать ${key==='id'?'по ID ':''}${nextDirection}`;
-    return `<th scope="col"${active?` aria-sort="${descending?'descending':'ascending'}"`:''}><button type="button" class="table-sort-button" data-sort="${key}" data-active="${active}" aria-label="${esc(action)}"><span>${esc(label)}</span>${image('arrow-down',`table-sort-arrow${descending?' is-reversed':''}`)}</button></th>`;
+    const wrappedLabel=label==='Эффективность'?'Эф\u00adфек\u00adтив\u00adность':label;
+    return `<th scope="col"${active?` aria-sort="${descending?'descending':'ascending'}"`:''}><button type="button" class="table-sort-button" data-sort="${key}" data-active="${active}" aria-label="${esc(action)}"><span>${esc(wrappedLabel)}</span>${image('arrow-down',`table-sort-arrow${descending?' is-reversed':''}`)}</button></th>`;
   }
   function renderTable(rows, loading = false) {
     const process=state.entity==='processes';
@@ -180,6 +183,7 @@
     $('result-announcement').textContent=isLoading?'Загрузка реестра…':`${state.entity==='paths'?'Клиентские пути':'Процессы'}: найдено ${count}. Страница ${state.page} из ${pages}.`;
   }
   function loadResults() {
+    if(structureMode){structure.reload();return;}
     clearTimeout(loadingTimer);
     closeAction();
     isLoading=true;
@@ -191,6 +195,7 @@
     },LOADING_DURATION);
   }
   function render() {
+    if(structureMode){structure.refresh();return;}
     document.body.classList.toggle('table-view',state.view==='table');
     $('sort-select').hidden=state.view==='table';
     const rows=filteredRows(), pages=Math.max(1,Math.ceil(rows.length/state.size)); state.page=Math.min(state.page,pages);
@@ -223,7 +228,7 @@
     render();toast(add?'Добавлено в избранное':'Удалено из избранного');
   }
   async function copyId(row) {
-    const value=`${row.entity==='paths'?'КП':'П'} ${row.number}`;
+    const value=row.numberSimulated?row.code:`${row.entity==='paths'?'КП':'П'} ${row.number}`;
     try {await navigator.clipboard.writeText(value);toast(`Скопировано: ${value}`);} catch (_) {
       const area=document.createElement('textarea');area.value=value;area.style.position='fixed';area.style.opacity='0';document.body.append(area);area.select();const ok=document.execCommand('copy');area.remove();toast(ok?`Скопировано: ${value}`:`ID: ${value}`);
     }
@@ -233,18 +238,19 @@
     anchor.setAttribute('aria-expanded','true');
     actionMenu.innerHTML=`<button role="menuitem" data-favorite>${favoriteIcon('',state.favorites.has(row.id)?'dont-like':'liked','')}${state.favorites.has(row.id)?'Удалить из избранного':'Добавить в избранное'}</button>`;
     document.body.append(actionMenu);positionPopup(actionMenu,anchor,236);
-    actionMenu.addEventListener('click',e=>{if(e.target.closest('[data-favorite]')){closeAction();favorite(row);($('results').querySelector(`[data-menu="${row.id}"]`)||$('favorites')).focus({preventScroll:true});}});
+    actionMenu.addEventListener('click',e=>{if(e.target.closest('[data-favorite]')){closeAction();favorite(row);(structureMode?$('structure-list').querySelector(`[data-structure-menu="${row.id}"]`)||$('favorites'):$('results').querySelector(`[data-menu="${row.id}"]`)||$('favorites')).focus({preventScroll:true});}});
     actionMenu.addEventListener('keydown',e=>{if(['ArrowDown','ArrowUp'].includes(e.key)){e.preventDefault();const buttons=[...actionMenu.querySelectorAll('button')],i=buttons.indexOf(document.activeElement);buttons[(i+(e.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length].focus();}if(e.key==='Tab')closeAction(true);});
     actionMenu.querySelector('button').focus({preventScroll:true});
   }
   function openDetail(row, trigger = document.activeElement) {
+    if(!row)return;
     activeSelect?.close();closeDate();closeAction();hideTooltip();
-    if(row.entity==='processes'){
+    if(row.entity==='processes'||row.entity==='paths'){
       window.BpmProcessDrawer.open(row,{trigger,isFavorite:record=>state.favorites.has(record.id),toggleFavorite:favorite,createSelect:(id,config)=>new BpmSelect(id,config)});
       return;
     }
     $('detail-title').textContent=row.title;
-    $('detail-content').innerHTML=`<p class="secondary">${row.entity==='paths'?'Клиентский путь':'Процесс'} · ${row.number}</p><dl><dt>Блок</dt><dd>${esc(row.block)}</dd><dt>Дивизион</dt><dd>${esc(row.division)}</dd><dt>Владелец</dt><dd>${owner(row)}</dd><dt>Статус</dt><dd>${esc(row.status)}</dd><dt>Дата создания</dt><dd>${dateLabel(row.date)}</dd><dt>Эффективность</dt><dd>${efficiency(row)}</dd></dl><p class="demo-note">Демонстрационная запись. Редактирование и сохранение на сервер не подключены.</p><div class="modal-actions"><button class="button secondary-button" id="detail-favorite">${state.favorites.has(row.id)?'Удалить из избранного':'В избранное'}</button></div>`;
+    $('detail-content').innerHTML=`<p class="secondary">${row.entity==='paths'?'Клиентский путь':'Процесс'} · ${esc(row.numberSimulated?row.code:row.number)}</p><dl><dt>Блок</dt><dd>${esc(row.block)}</dd><dt>Дивизион</dt><dd>${esc(row.division)}</dd><dt>Владелец</dt><dd>${owner(row)}</dd><dt>Статус</dt><dd>${esc(row.status)}</dd><dt>Дата создания</dt><dd>${row.date?dateLabel(row.date):'Не указана'}</dd><dt>Эффективность</dt><dd>${row.efficiency===null?'Нет оценки':efficiency(row)}</dd>${row.linkedProcesses?`<dt>Связанных процессов</dt><dd>${row.linkedProcesses.length}</dd>`:''}</dl><p class="demo-note">${row.numberSimulated?'Название и связи — из Excel. ID КП и эффективность — демонстрационные.':'Демонстрационная запись.'} Редактирование и сохранение на сервер не подключены.</p><div class="modal-actions"><button class="button secondary-button" id="detail-favorite">${state.favorites.has(row.id)?'Удалить из избранного':'В избранное'}</button></div>`;
     $('detail-favorite').addEventListener('click',()=>{favorite(row);$('detail-favorite').textContent=state.favorites.has(row.id)?'Удалить из избранного':'В избранное';});
     $('detail-dialog').showModal();
   }
@@ -255,12 +261,14 @@
   const sizeOptions=()=> (state.view==='cards'?[20,40,60,80]:[25,50,75,100]).map(value=>({value:String(value),label:String(value)}));
   selects.size=new BpmSelect('size-select',{label:'Показывать',options:sizeOptions(),values:[String(state.size)],allowAll:false,onChange:values=>{state.size=Number(values[0]);changed();}});
   function changeView(view) {
+    if(structureMode)setStructure(false);
     if(view===state.view)return;
     activeSelect?.close();closeDate();state.view=view;state.sort=state.sorts[view];state.size=view==='cards'?20:25;state.page=1;selects.size.setOptions(sizeOptions());selects.size.set([String(state.size)]);
     if(view==='cards')selects.sort.set([state.sort]);
     ['table','cards'].forEach(value=>{$(`${value}-view`).classList.toggle('selected',value===view);$(`${value}-view`).setAttribute('aria-pressed',String(value===view));});loadResults();
   }
   function changeEntity(entity) {
+    if(structureMode)setStructure(false);
     activeSelect?.close();state.entity=entity;state.top=false;
     if(entity==='paths'&&state.sorts.table.startsWith('tags-')){state.sorts.table='id-asc';if(state.view==='table')state.sort='id-asc';}
     ['paths','processes'].forEach(value=>{$(`${value}-tab`).classList.toggle('active',value===entity);$(`${value}-tab`).setAttribute('aria-pressed',String(value===entity));});
@@ -280,7 +288,7 @@
     else{state.filters[key]=state.filters[key].filter(v=>v!==value);selects[key].set(state.filters[key]);}
     changed();const remaining=$('selected-filter-groups').querySelectorAll('button');(remaining[Math.min(index,remaining.length-1)]||$('registry-search')).focus({preventScroll:true});
   });
-  $('favorites').addEventListener('click',()=>{state.favoritesOnly=!state.favoritesOnly;changed();});
+  $('favorites').addEventListener('click',()=>{if(structureMode){structure.toggleFavorites();return;}state.favoritesOnly=!state.favoritesOnly;changed();});
   $('date-filter').addEventListener('click',openDate);
   $('table-view').addEventListener('click',()=>changeView('table'));
   $('cards-view').addEventListener('click',()=>changeView('cards'));
@@ -292,7 +300,7 @@
     if(!button){
       if(e.target.closest('button,a,input,select,textarea') || window.getSelection()?.toString())return;
       const card=e.target.closest('[data-record]');const record=card&&data.find(item=>item.id===card.dataset.record);
-      if(record?.entity==='processes')openDetail(record,card.querySelector('[data-detail]'));
+      if(record)openDetail(record,card.querySelector('[data-detail]'));
       return;
     }
     const row=data.find(item=>item.id===(button.dataset.copy||button.dataset.detail||button.dataset.menu));if(!row)return;
@@ -301,13 +309,20 @@
   $('page-buttons').addEventListener('click',e=>{const button=e.target.closest('[data-page]');if(!button||button.disabled)return;state.page=Number(button.dataset.page);loadResults();$('results').scrollIntoView({block:'start',behavior:'instant'});const current=$('page-buttons').querySelector('[aria-current]');current?.focus({preventScroll:true});});
   document.querySelectorAll('[data-close-dialog]').forEach(button=>button.addEventListener('click',()=>button.closest('dialog').close()));
   document.querySelectorAll('dialog:not(#process-drawer)').forEach(dialog=>dialog.addEventListener('click',e=>{if(e.target===dialog){const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();}}));
-  $('export').addEventListener('click',()=>{activeSelect?.close();$('export-dialog').showModal();});
+  $('export').addEventListener('click',()=>{
+    activeSelect?.close();
+    const radio=$('export-form').querySelector('[value="page"]');
+    radio.parentElement.lastChild.textContent=structureMode?'Только раскрытые таблицы':'Только текущая страница';
+    radio.disabled=structureMode&&!structure.exportRecords('page').length;
+    if(radio.disabled&&radio.checked)$('export-form').querySelector('[value="filtered"]').checked=true;
+    $('export-dialog').showModal();
+  });
   $('export-form').addEventListener('submit',e=>{
-    e.preventDefault();const scope=new FormData(e.currentTarget).get('export-scope');const rows=scope==='page'?selectedPage():filteredRows();
+    e.preventDefault();const scope=new FormData(e.currentTarget).get('export-scope');const rows=structureMode?structure.exportRecords(scope):scope==='page'?selectedPage():filteredRows();
     const cell=value=>{let text=String(value??'');if(/^[=+@-]/.test(text))text="'"+text;return '"'+text.replace(/"/g,'""')+'"';};
     const header=['Тип','ID','Название','Блок','Дивизион','Владелец','Статус','Дата создания','Эффективность, %','Динамика, п. п.'];
-    const csv='\uFEFF'+[header,...rows.map(row=>[row.entity==='paths'?'Клиентский путь':'Процесс',row.number,row.title,row.block,row.division,row.owner,row.status,dateLabel(row.date),String(row.efficiency).replace('.',','),row.delta])].map(row=>row.map(cell).join(';')).join('\r\n');
-    const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));const link=document.createElement('a');link.href=url;link.download=`Sber-BPM-${state.entity}-${new Date().toISOString().slice(0,10)}.csv`;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);$('export-dialog').close();toast(`Экспортировано записей: ${rows.length}`);
+    const csv='\uFEFF'+[header,...rows.map(row=>[row.entity==='paths'?'Клиентский путь':'Процесс',row.numberSimulated?row.code:row.number,row.title,row.block,row.division,row.owner,row.status,row.date?dateLabel(row.date):'',row.efficiency===null?'':String(row.efficiency).replace('.',','),row.delta])].map(row=>row.map(cell).join(';')).join('\r\n');
+    const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));const link=document.createElement('a');link.href=url;link.download=`Sber-BPM-${structureMode?'structure':state.entity}-${new Date().toISOString().slice(0,10)}.csv`;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);$('export-dialog').close();toast(`Экспортировано записей: ${rows.length}`);
   });
   let menuPreference='auto', menuPeekDismissed=false, keyboardMode=false, previousMobile=null;
   try {const saved=localStorage.getItem('bpm-registry-menu');if(['expanded','collapsed'].includes(saved))menuPreference=saved;} catch (_) {}
@@ -350,10 +365,10 @@
   $('sidebar').addEventListener('focusout',e=>{if(!$('sidebar').contains(e.relatedTarget)){menuPeekDismissed=false;setMenuPeek(false);}});
   [['paths-nav','paths-submenu'],['gemba-nav','gemba-submenu']].forEach(([buttonId,menuId])=>{$(buttonId).addEventListener('click',()=>{if(innerWidth>=768&&document.body.classList.contains('menu-collapsed')&&!document.body.classList.contains('menu-peek')){menuPeekDismissed=false;setMenuPeek(true);return;}const open=$(buttonId).getAttribute('aria-expanded')!=='true';$(buttonId).setAttribute('aria-expanded',String(open));$(menuId).hidden=!open;$(buttonId).querySelector('.nav-chevron').src=`assets/chevron-${open?'up':'down'}.svg`;});});
   $('top-paths').addEventListener('click',()=>{reset();changeEntity('paths');state.top=true;setSort('eff-desc');changed();closeMobile();window.scrollTo({top:0,behavior:'instant'});});
-  document.querySelector('.subitem.current').addEventListener('click',()=>{reset();closeMobile();});
+  document.querySelector('.subitem.current').addEventListener('click',()=>{if(structureMode)setStructure(false);reset();closeMobile();});
   document.querySelectorAll('.nav-item').forEach(button=>button.setAttribute('aria-label',button.dataset.tooltip || button.textContent.trim()));
   document.querySelectorAll('[data-service]').forEach(button=>button.addEventListener('click',()=>toast(`«${button.dataset.service}» — раздел вне демонстрационного реестра.`)));
-  $('global-search').addEventListener('click',()=>{$('registry-search').scrollIntoView({block:'center'});$('registry-search').focus({preventScroll:true});});
+  $('global-search').addEventListener('click',()=>{const input=$(structureMode?'structure-search':'registry-search');input.scrollIntoView({block:'center'});input.focus({preventScroll:true});});
   $('notifications').addEventListener('click',()=>toast('Счётчик взят из макета. Сервис уведомлений не подключён.'));
   $('profile').addEventListener('click',()=>toast('Демонстрационный профиль. Авторизация не подключена.'));
   document.addEventListener('pointerdown',e=>{keyboardMode=false;if(!$('sidebar').contains(e.target))setMenuPeek(false);if(activeSelect&&!activeSelect.host.contains(e.target)&&!activeSelect.popup?.contains(e.target))activeSelect.close();if(actionMenu&&!actionMenu.contains(e.target)&&!e.target.closest('[data-menu]'))closeAction();});
@@ -369,15 +384,49 @@
   document.addEventListener('mouseout',e=>{const target=e.target.closest('[data-tooltip]');if(target&&!target.contains(e.relatedTarget))hideTooltip();});
   document.addEventListener('focusin',e=>showTooltip(e.target.closest('[data-tooltip]')));
   document.addEventListener('focusout',hideTooltip);
-  document.addEventListener('scroll',e=>{hideTooltip();if(activeSelect&&e.target!==activeSelect.popup)positionPopup(activeSelect.popup,activeSelect.control,activeSelect.config.multiple?300:260);},true);
+  document.addEventListener('scroll',e=>{hideTooltip();if(activeSelect&&e.target!==activeSelect.popup)positionPopup(activeSelect.popup,activeSelect.control,activeSelect.config.minPopupWidth??(activeSelect.config.multiple?300:260));},true);
   window.addEventListener('resize',()=>{syncMenu();activeSelect?.close();closeAction();hideTooltip();});
-  function openSharedProcess(){
-    if(!location.hash.startsWith('#process='))return;
-    let id;try{id=decodeURIComponent(location.hash.slice(9));}catch(_){return;}
-    const row=data.find(record=>record.entity==='processes'&&record.id===id);if(!row)return;
-    if(state.entity!=='processes')changeEntity('processes');
-    openDetail(row,$('processes-tab'));
+  function openSharedDetail(){
+    const match=location.hash.match(/^#(process|journey|path)=(.+)$/);if(!match)return;
+    let id;try{id=decodeURIComponent(match[2]);}catch(_){return;}
+    const entity=match[1]==='process'?'processes':'paths';
+    let row=allRecords.find(record=>record.entity===entity&&record.id===id);
+    // Included demo processes are supplied by the journey renderer, while Excel
+    // processes already live in allRecords. Both retain reloadable share links.
+    if(!row&&entity==='processes'&&window.BpmJourneyDetails?.getProcesses){
+      for(const journey of allRecords.filter(record=>record.entity==='paths')){
+        row=window.BpmJourneyDetails.getProcesses(journey).find(record=>record.id===id);
+        if(row)break;
+      }
+    }
+    if(!row)return;
+    if(row.source==='xlsx'){
+      if(!structureMode)setStructure(true);
+      if(structure.getEntity()!==entity)document.querySelector(`[data-structure-entity="${entity}"]`)?.click();
+    }else{
+      if(structureMode)setStructure(false);
+      if(state.entity!==entity)changeEntity(entity);
+    }
+    openDetail(row,$(structureMode?'structure-toggle':`${entity}-tab`));
   }
-  window.addEventListener('hashchange',openSharedProcess);
-  syncMenu();loadResults();openSharedProcess();
+  function setStructure(value) {
+    if(value===structureMode)return;
+    activeSelect?.close();closeDate();closeAction();hideTooltip();clearTimeout(loadingTimer);isLoading=false;
+    window.BpmCardVisuals.cancelCounters($('results'));
+    structureMode=value;document.body.classList.toggle('structure-mode',value);
+    $('structure-toggle').setAttribute('aria-pressed',String(value));
+    $('structure-mode').hidden=!value;$('structure-search-wrap').hidden=!value;$('registry-search-wrap').hidden=value;
+    $('structure-entity-tabs').hidden=!value;
+    ['cards','table'].forEach(view=>{const selected=!value&&state.view===view;$(`${view}-view`).classList.toggle('selected',selected);$(`${view}-view`).setAttribute('aria-pressed',String(selected));});
+    if(value){document.body.classList.remove('table-view');structure.enter();}
+    else {structure.leave();loadResults();}
+  }
+  structure=window.BpmStructure.create({
+    createSelect:(id,config)=>new BpmSelect(id,config),isFavorite:row=>state.favorites.has(row.id),
+    detail:openDetail,copy:copyId,menu:openAction,
+    onChange:info=>{if(structureMode){$('favorites').setAttribute('aria-pressed',String(info.favoritesOnly));$('favorite-count').textContent=info.favoritesCount;}}
+  });
+  $('structure-toggle').addEventListener('click',()=>setStructure(!structureMode));
+  window.addEventListener('hashchange',openSharedDetail);
+  syncMenu();loadResults();openSharedDetail();
 })();

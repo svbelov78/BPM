@@ -1,0 +1,58 @@
+{
+  "figmaFile": "QdYByHLCCMIKfTI0O0SXiE",
+  "contentNode": "1082:17955",
+  "sourceNodes": [
+    "1067:3",
+    "1067:4",
+    "1067:5",
+    "1067:6",
+    "1067:7",
+    "1067:8"
+  ],
+  "updated": "2026-09-22",
+  "assets": [
+    {
+      "path": "assets/journey-details/crown.svg",
+      "exportUrl": "https://www.figma.com/api/mcp/asset/fc775c7d-cfaf-45c3-a745-2890bcd7ff8b.svg"
+    },
+    {
+      "path": "assets/journey-details/gemba.svg",
+      "exportUrl": "https://www.figma.com/api/mcp/asset/17b5fb15-49cd-4292-8788-d8f775e94b4a.svg"
+    },
+    {
+      "path": "assets/journey-details/monitoring.svg",
+      "exportUrl": "https://www.figma.com/api/mcp/asset/a3118c66-ef97-4b58-b743-968116610852.svg"
+    },
+    {
+      "path": "assets/journey-details/benchmarking.svg",
+      "exportUrl": "https://www.figma.com/api/mcp/asset/409916eb-d0b2-4b9e-8591-4a464a7bea60.svg"
+    },
+    {
+      "path": "assets/journey-details/eye.svg",
+      "exportUrl": "https://www.figma.com/api/mcp/asset/6ecbe2e8-faf6-43b6-9464-3f67a07c1e7f.svg"
+    },
+    {
+      "path": "assets/journey-details/ai.svg",
+      "exportUrl": "https://www.figma.com/api/mcp/asset/1c53a962-d5f1-4386-bdbe-bbf8565b3235.svg"
+    },
+    {
+      "path": "assets/journey-details/large-sphere-23.5.svg",
+      "exportUrl": "https://www.figma.com/api/mcp/asset/84a60328-527e-4eef-97d4-44743a1d77c2.svg"
+    },
+    {
+      "path": "assets/journey-details/positive.svg",
+      "exportUrl": "https://www.figma.com/api/mcp/asset/ba6863fc-3ac3-4a3a-b22a-da0289554fca.svg"
+    },
+    {
+      "path": "assets/journey-details/risk.svg",
+      "exportUrl": "https://www.figma.com/api/mcp/asset/27cfddfe-94e1-4e8c-a2f6-de6802ef8afb.svg"
+    },
+    {
+      "path": "assets/journey-details/trend.svg",
+      "exportUrl": "https://www.figma.com/api/mcp/asset/603d14c8-7301-4ac9-87a2-1e1c1163cf7d.svg"
+    }
+  ],
+  "supplement": "Bank logos reuse original decoded PDF image bytes; supplement-lightning.svg is an exact Figma export. Existing matching icons reuse process-assets.js.",
+  "blurMapping": "Figma radius25 -> CSS sigma12.5; scaled radius10.3896 -> CSS sigma5.195.",
+  "dataNotes": "Selected identity and Excel relationships preserved. Current overview23.5, scores, benchmark and four fallback process examples are demo fixture data."
+}

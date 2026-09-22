@@ -16,7 +16,12 @@
   <link rel="stylesheet" href="process-overview.css">
   <link rel="stylesheet" href="process-sections.css">
   <link rel="stylesheet" href="process-motion.css">
+  <link rel="stylesheet" href="journey-details.css">
+  <link rel="stylesheet" href="journey-supplement.css">
+  <link rel="stylesheet" href="structure.css">
   <script src="demo-data.js" defer></script>
+  <script src="structure-source.js" defer></script>
+  <script src="structure-data.js" defer></script>
   <script src="calendar.js" defer></script>
   <script src="card-visuals.js" defer></script>
   <script src="loading.js" defer></script>
@@ -24,7 +29,10 @@
   <script src="process-overview.js" defer></script>
   <script src="process-sections.js" defer></script>
   <script src="process-motion.js" defer></script>
+  <script src="journey-supplement.js" defer></script>
+  <script src="journey-details.js" defer></script>
   <script src="process-drawer.js" defer></script>
+  <script src="structure.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -69,13 +77,28 @@
         <button id="export" class="icon-button" aria-label="Экспортировать реестр" data-tooltip="Экспорт"><img src="assets/download.svg" alt=""></button>
         <div class="view-switch" role="group" aria-label="Вид реестра"><button id="table-view" class="icon-button" aria-label="Табличный вид" aria-pressed="false" data-tooltip="Таблица"><img src="assets/table.svg" alt=""></button><button id="cards-view" class="icon-button selected" aria-label="Карточный вид" aria-pressed="true" data-tooltip="Карточки"><img src="assets/cards.svg" alt=""></button></div>
       </div></div>
-      <div class="filters" id="filters">
-        <div class="filter-primary">
-          <div class="entity-tabs" role="group" aria-label="Тип сущности"><button class="active" id="paths-tab" aria-pressed="true" data-entity="paths">Клиентские пути</button><button id="processes-tab" aria-pressed="false" data-entity="processes">Процессы</button></div>
-          <div class="search-field field"><img src="assets/search.svg" alt=""><input id="registry-search" type="search" placeholder="Поиск ID, названию…" aria-label="Поиск по ID, названию или владельцу" autocomplete="off"><button id="clear-search" class="small-icon" aria-label="Очистить поиск" hidden><img src="assets/close.svg" alt=""></button></div>
-          <button id="mobile-filters-toggle" class="mobile-filters-toggle" aria-expanded="false" aria-controls="status-select filter-grid"><span id="mobile-filters-label">Фильтры</span><img src="assets/chevron-down-filter.svg" alt=""></button>
-          <div id="status-select" class="select-host"></div>
+      <div id="structure-toolbar" class="structure-toolbar filter-primary">
+        <button id="structure-toggle" class="button structure-toggle" aria-pressed="false" aria-controls="structure-mode"><img src="assets/sber.svg" alt="">Структура</button>
+        <div class="entity-tabs" role="group" aria-label="Тип сущности"><button class="active" id="paths-tab" aria-pressed="true" data-entity="paths">Клиентские пути</button><button id="processes-tab" aria-pressed="false" data-entity="processes">Процессы</button></div>
+        <div id="structure-entity-tabs" class="entity-tabs structure-tabs" role="group" aria-label="Тип сущности в структуре" hidden><button id="structure-paths-tab" data-structure-entity="paths" aria-pressed="false">Клиентские пути <span id="structure-path-count">—</span></button><button id="structure-processes-tab" data-structure-entity="processes" class="active" aria-pressed="true">Процессы <span id="structure-process-count">—</span></button></div>
+        <div id="registry-search-wrap" class="search-field field"><img src="assets/search.svg" alt=""><input id="registry-search" type="search" placeholder="Поиск ID, названию…" aria-label="Поиск по ID, названию или владельцу" autocomplete="off"><button id="clear-search" class="small-icon" aria-label="Очистить поиск" hidden><img src="assets/close.svg" alt=""></button></div>
+        <div id="structure-search-wrap" class="search-field field" hidden><img src="assets/search.svg" alt=""><input id="structure-search" type="search" placeholder="Поиск блока, подразделения, продукта…" aria-label="Поиск в структуре процессов" autocomplete="off"><button id="structure-clear-search" class="small-icon" aria-label="Очистить поиск в структуре" hidden><img src="assets/close.svg" alt=""></button></div>
+        <button id="mobile-filters-toggle" class="mobile-filters-toggle" aria-expanded="false" aria-controls="status-select filter-grid"><span id="mobile-filters-label">Фильтры</span><img src="assets/chevron-down-filter.svg" alt=""></button>
+        <div id="status-select" class="select-host"></div>
+      </div>
+      <section id="structure-mode" aria-label="Структура процессов" hidden>
+        <div class="structure-filters">
+          <div id="structure-block" class="select-host"></div><div id="structure-division" class="select-host"></div><div id="structure-owner" class="select-host"></div>
+          <label class="structure-chart-control" title="Соотношение эффективности — Structure Chart 2. Сравнение с лидером — Structure Chart 1, общий масштаб."><span class="structure-chart-label" id="structure-quantity-label">Соотношение<br>эффективности</span><input id="structure-chart-toggle" type="checkbox" role="switch" aria-label="Сравнение с лидером — Structure Chart 1" aria-describedby="structure-chart-hint" checked><span class="structure-switch-track" aria-hidden="true"><span class="structure-switch-knob"></span></span><span class="structure-chart-label is-active" id="structure-comparison-label">Сравнение<br>с лидером</span></label>
+          <div id="structure-sort" class="select-host"></div>
         </div>
+        <p id="structure-chart-hint" class="sr-only">Выключено: Соотношение эффективности, Structure Chart 2 — сегменты заполняют всю площадь диаграммы. Включено: Сравнение с лидером, Structure Chart 1 — общий масштаб с подложками.</p>
+        <section class="applied-filters" id="structure-selected" aria-label="Фильтры структуры" hidden><div id="structure-chips" class="applied-filter-groups"></div><button id="structure-reset" class="clear-all-filters" aria-label="Сбросить фильтры структуры"><img src="assets/close.svg" alt=""></button></section>
+        <div class="structure-list" id="structure-list" aria-label="Блоки и подразделения"></div>
+        <p class="structure-note"><span id="structure-data-note">Структура, клиентские пути и процессы — из файла «15092026_структура для подготовки мока данных.xlsx».</span> Эффективность и ФИО руководителей блоков и подразделений — демонстрационные. <span id="structure-chart-note">Масштаб графиков общий.</span> <a href="STRUCTURE-SOURCES.md" target="_blank" rel="noopener">Источник и правила</a></p>
+        <details class="structure-source-issues"><summary>Особенности исходных данных</summary><p id="structure-source-issues"></p></details>
+      </section>
+      <div class="filters" id="filters">
         <div class="filter-grid" id="filter-grid">
           <div id="block-select" class="select-host"></div><div id="division-select" class="select-host"></div><div id="process-select" class="select-host"></div><div id="owner-select" class="select-host"></div>
           <button id="date-filter" class="field date-filter" aria-expanded="false" aria-haspopup="dialog"><span class="field-content"><span class="internal-label">Дата создания</span><span id="date-summary" class="single-value">21.08.2001 → 13.09.2026</span></span><img src="assets/calendar.svg" alt=""></button>

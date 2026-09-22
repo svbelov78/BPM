@@ -1,0 +1,76 @@
+/* Figma Customer Journey Details/Content. Responsive reflow, not scaled text. */
+.jd-drawer .pd-layout{grid-template-columns:minmax(0,1fr) 253px}
+.jd-overview-block{display:flex;flex-direction:column;gap:24px;min-width:0;flex:none}
+.jd-heading{gap:4px}.jd-heading .pd-title-actions{align-items:center}.jd-heading .pd-process-actions{gap:16px}
+.jd-icon-action{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;flex:none}
+.jd-icon-action:hover{background:var(--hover)}
+.jd-synthesis.pd-ai-summary{display:flex;flex-direction:column;align-items:stretch;gap:16px;padding:16px;border-radius:24px;background:linear-gradient(90deg,#ffeefd,#f1ffea 55%,#fff)}
+.jd-synthesis-heading{display:flex;gap:8px;align-items:center}.jd-synthesis-heading h2{font-size:17px;line-height:24px;font-weight:590;flex:1;margin:0}
+.jd-observation-group{display:flex;align-items:flex-start;gap:16px;font-size:17px;line-height:24px;letter-spacing:-.119px}
+.jd-observation-group ul{margin:0;padding-left:20px;min-width:0}.jd-observation-group li{padding-left:2px}
+.jd-overview-grid{display:grid;grid-template-columns:minmax(0,1fr) 367px;gap:24px;align-items:stretch}
+.jd-metadata{gap:24px;min-height:334px;justify-content:flex-start}
+.jd-overview-tags,.jd-process-tags{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.jd-technology-icons{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+.jd-drawer .pd-tag--orange{color:#ff8d28;border-color:#ff8d28}
+.jd-field{display:flex;flex-direction:column;gap:8px;min-width:0;font-size:17px;line-height:24px}
+.jd-field .pd-field-label{margin:0;text-transform:uppercase;font-size:9px;line-height:12px;font-weight:510;color:var(--text)}
+.jd-rating{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.jd-score{display:inline-flex;align-items:baseline;gap:4px;padding:4px 8px;border-radius:12px;white-space:nowrap;font-size:22px;line-height:26px;flex:none;font-weight:590}
+.jd-score small{font-size:17px;line-height:24px;font-weight:400;color:var(--text)}
+.jd-score--positive{color:var(--pd-green);background:#34c7591a}.jd-score--info{color:var(--blue);background:#0088ff1a}.jd-score--danger{color:var(--red);background:#ff383c1a}
+.jd-rating>.jd-score{font-size:26px;line-height:31px;font-weight:700}
+.jd-leader{display:inline-flex;gap:8px;align-items:center;background:#34c7591a;border-radius:12px;padding:8px;min-width:0}
+.jd-person{display:flex;align-items:center;gap:8px;min-width:0;flex:none;color:var(--text);font-size:17px;line-height:24px}
+.jd-person-copy{min-width:0}.jd-person-copy p{margin:0;overflow-wrap:break-word}.jd-person--compact .jd-person-role{font-size:13px;line-height:18px}
+.jd-widget.pd-overview-panel{height:334px;min-height:334px;gap:4px;padding:24px;overflow:hidden}
+.jd-widget .pd-sphere-viewport{height:183px;align-items:center;min-height:0}
+.jd-widget .pd-sphere-curtain{top:113.19px;height:194.81px;border-top:0;backdrop-filter:blur(12.5px);-webkit-backdrop-filter:blur(12.5px)}
+.jd-widget .pd-sphere-curtain:before{content:'';position:absolute;inset:0 0 auto;height:1px;background:#ffffff8a}
+.jd-section.pd-section{background:var(--white);border:0;border-radius:24px;min-width:0;flex:none}
+.jd-section-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:24px 24px 16px}
+.jd-section-heading h2{margin:0;font-size:22px;line-height:26px;font-weight:590;letter-spacing:-.066px;min-width:0}
+.jd-section-content{padding:0 24px 24px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.jd-description{color:var(--secondary);font-size:17px;line-height:24px;margin:0}
+.jd-subheading{display:flex;gap:8px;align-items:baseline;font-size:22px;line-height:26px;font-weight:590;margin:0}
+.jd-process-list{display:flex;flex-direction:column;gap:16px;min-width:0}
+.jd-process-card{display:flex;flex-direction:column;justify-content:space-between;gap:40px;min-height:229px;padding:24px;border:1px solid var(--border);border-radius:16px;background:var(--white);min-width:0;overflow:hidden}
+.jd-process-header{display:flex;gap:24px;align-items:flex-end;min-width:0}.jd-process-title-block{display:flex;flex-direction:column;gap:8px;flex:1;min-width:0}
+.jd-process-title-block h3{font-size:22px;line-height:26px;font-weight:590;letter-spacing:-.066px;margin:0}
+.jd-process-link{text-align:left;display:inline;font:inherit;color:inherit}.jd-process-link:hover{color:var(--blue)}
+.jd-process-header>.jd-person{max-width:330px}
+.jd-process-indicators{display:grid;grid-template-columns:minmax(280px,1.85fr) repeat(4,minmax(96px,1fr));gap:24px;align-items:center;min-width:0;overflow:visible}
+.jd-process-efficiency{display:flex;gap:24px;align-items:center;min-width:0;overflow:visible}
+.jd-sphere-slot{width:104px;height:64px;display:flex;align-items:center;justify-content:center;flex:none;overflow:visible}
+.jd-metric{display:flex;flex-direction:column;gap:8px;align-items:flex-start;min-width:0}
+.jd-metric-label{display:flex;gap:4px;align-items:center;font-size:9px;line-height:12px;font-weight:510;text-transform:uppercase;min-height:16px;max-width:100%;color:var(--text)}
+.jd-metric-label>.pd-icon{flex:none}.jd-metric-label>span{min-width:0}
+.jd-metric-value{display:inline-flex;align-items:baseline;padding:4px 8px;border:1px solid var(--border);border-radius:8px;white-space:nowrap}
+.jd-number{display:inline-flex;align-items:baseline;font-size:26px;line-height:31px;letter-spacing:-.078px;white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:400}
+.jd-number small{font-size:17px;line-height:24px;letter-spacing:-.119px}
+.jd-metric--positive{border-color:var(--pd-green)}.jd-metric--info{border-color:var(--blue)}.jd-metric--attention{border-color:#ffcc00}.jd-metric--danger{border-color:var(--red)}
+.jd-efficiency-trend{margin-left:auto}
+.jd-efficiency-glyph{--jd-color:var(--red);position:relative;display:block;flex:none;width:64px;height:64px;overflow:visible}
+.jd-efficiency--positive{--jd-color:#2ac653}.jd-efficiency--attention{--jd-color:#ffcc00}.jd-efficiency--indigo{--jd-color:#6155f5}.jd-efficiency--danger{--jd-color:#ff383c}
+.jd-sphere-ball{display:block;position:absolute;width:64px;height:64px;left:0;top:0;border-radius:50%;background:var(--jd-color)}
+.jd-efficiency--zero .jd-sphere-ball{top:-9.974px}
+/* CSS blur is sigma; Figma radius 10.3896 exports as blur(5.195px). */
+.jd-curtain{display:block;position:absolute;left:-31.584px;top:var(--jd-curtain-top);width:127.169px;height:var(--jd-curtain-height);background:linear-gradient(180deg,#fff0,#fff);-webkit-backdrop-filter:blur(5.195px);backdrop-filter:blur(5.195px);pointer-events:none}
+.jd-curtain:before{content:'';position:absolute;inset:0 0 auto;height:.416px;background:#ffffff8a}.jd-efficiency--zero .jd-curtain:before{display:none}
+.jd-blur-fallback,.jd-large-blur-fallback{display:none}
+.jd-efficiency-unrated{width:64px;height:64px;display:grid;place-items:center;color:var(--secondary);font-size:26px}
+.jd-section-footer{display:flex;justify-content:flex-end}
+.jd-more-link{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:34px;color:var(--blue);font-size:17px;line-height:24px;border-radius:8px}
+.jd-more-link:hover{background:var(--hover)}.jd-more-link[aria-expanded=true]>.pd-icon{transform:rotate(180deg)}
+.jd-process-card[hidden],.jd-synthesis[hidden]{display:none}
+[data-pd-motion-group="journey-process"][data-pd-motion-state="pending"] .jd-sphere-ball{opacity:0;transform:translateY(24px)}
+[data-pd-motion-group="journey-process"][data-pd-motion-state="running"] .jd-sphere-ball{animation:jd-sphere-appear .8s cubic-bezier(.16,1,.3,1) both}
+@keyframes jd-sphere-appear{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.jd-curtain,.jd-widget .pd-sphere-curtain{overflow:hidden}.jd-blur-fallback{display:block;position:absolute;width:64px;height:64px;border-radius:50%;left:31.584px;top:calc(-1 * var(--jd-curtain-top));background:var(--jd-color);filter:blur(5.195px)}.jd-efficiency--zero .jd-blur-fallback{top:22.026px}.jd-large-blur-fallback{display:block;position:absolute;left:76px;top:-36.19px;width:154px;height:154px;background:url('assets/journey-details/large-sphere-23.5.svg') center/contain no-repeat;filter:blur(12.5px)}}
+@container process-content (max-width:1100px){.jd-overview-grid{grid-template-columns:minmax(0,1fr) 300px}.jd-process-indicators{grid-template-columns:repeat(4,minmax(0,1fr));gap:24px 16px}.jd-process-efficiency{grid-column:1/-1;max-width:360px}.jd-process-header{align-items:flex-start;flex-direction:column;gap:16px}.jd-process-header>.jd-person{max-width:100%}.jd-heading .pd-title-actions{flex-wrap:wrap}.jd-heading .pd-title-actions h1{flex-basis:100%}.jd-heading .pd-process-actions{margin-left:0}}
+@container process-content (max-width:740px){.jd-overview-grid{grid-template-columns:minmax(0,1fr)}.jd-metadata{height:auto;min-height:0}.jd-widget.pd-overview-panel{width:100%;min-width:0}.jd-technology-icons{gap:16px}.jd-section-heading{flex-wrap:wrap}.jd-process-card{padding:20px;gap:32px}.jd-heading .pd-title-actions h1{font-size:28px;line-height:34px}}
+@container process-content (max-width:450px){.jd-process-indicators{grid-template-columns:repeat(2,minmax(0,1fr))}.jd-process-efficiency{gap:12px;max-width:none}.jd-sphere-slot{width:80px}.jd-efficiency-trend{width:20px;height:20px;flex-basis:20px}.jd-section-heading{padding:20px 16px 16px}.jd-section-content{padding:0 16px 20px}.jd-process-card{padding:16px}.jd-process-title-block h3,.jd-subheading{font-size:20px;line-height:26px}.jd-person{font-size:15px;line-height:22px}.jd-observation-group{gap:8px}.jd-rating{align-items:flex-start}.jd-leader{font-size:15px;line-height:22px}.jd-heading .pd-process-actions{flex-wrap:wrap;gap:8px}.jd-heading .pd-action-button{padding:10px 16px}.jd-overview-tags{gap:8px}.jd-technology-icons{width:100%}.jd-metadata{padding:20px}}
+@media(max-width:1199px) and (min-width:768px){.jd-drawer .pd-layout{grid-template-columns:minmax(0,1fr) 215px}}
+@media(max-width:767px){.jd-drawer .pd-layout{display:flex}.jd-overview-block{gap:16px}.jd-drawer .pd-anchor{font-size:13px}.jd-drawer .pd-navigation-actions:before{content:'Деталка КП'}}
+@media(prefers-reduced-motion:reduce){[data-pd-motion-group] .jd-sphere-ball{animation:none!important;transform:none!important;opacity:1!important}}
+@media print{.jd-more-link,.jd-icon-action{display:none!important}.jd-process-card[hidden]{display:flex}.jd-sphere-ball{animation:none!important;opacity:1!important;transform:none!important}.jd-process-card{break-inside:avoid}.jd-overview-grid{grid-template-columns:minmax(0,1fr) 300px}}
