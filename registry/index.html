@@ -20,6 +20,9 @@
   <link rel="stylesheet" href="journey-details.css">
   <link rel="stylesheet" href="journey-supplement.css">
   <link rel="stylesheet" href="structure.css">
+  <link rel="stylesheet" href="task-visuals.css">
+  <link rel="stylesheet" href="task-drawer.css">
+  <link rel="stylesheet" href="tasks.css">
   <script src="demo-data.js" defer></script>
   <script src="structure-source.js" defer></script>
   <script src="structure-data.js" defer></script>
@@ -34,6 +37,10 @@
   <script src="journey-details.js" defer></script>
   <script src="process-drawer.js" defer></script>
   <script src="structure.js" defer></script>
+  <script src="task-data.js" defer></script>
+  <script src="task-visuals.js" defer></script>
+  <script src="task-drawer.js" defer></script>
+  <script src="tasks.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -55,9 +62,9 @@
       <div class="nav-divider"></div>
       <button class="nav-item" id="paths-nav" aria-expanded="true" aria-controls="paths-submenu" data-tooltip="Пути и процессы"><span class="nav-tile"><img src="assets/paths.svg" alt=""></span><span class="menu-label">Пути и процессы</span><img class="nav-chevron" src="assets/chevron-down.svg" alt=""></button>
       <div class="submenu" id="paths-submenu">
-        <a href="#main" class="subitem current" aria-current="page">Реестр КП и П</a>
+        <a href="#main" id="registry-nav" class="subitem current" aria-current="page">Реестр КП и П</a>
         <button class="subitem" id="top-paths">TOP КП</button>
-        <button class="subitem" data-service="Задачи">Задачи</button>
+        <a href="#tasks" id="tasks-nav" class="subitem">Задачи</a>
         <button class="subitem" data-service="Инсайты">Инсайты</button>
         <button class="subitem" data-service="Редизайны">Редизайны</button>
       </div>
@@ -72,7 +79,7 @@
     <div class="menu-footer"><button class="nav-item" data-service="Настройки" data-tooltip="Настройки"><span class="nav-tile"><img src="assets/settings.svg" alt=""></span><span class="menu-label">Настройки</span></button></div>
   </aside>
   <main id="main" tabindex="-1">
-    <section class="registry-panel" aria-labelledby="page-title">
+    <section id="registry-panel" class="registry-panel" aria-labelledby="page-title">
       <div class="title-row"><h1 id="page-title">Пути и процессы</h1><div class="view-controls">
         <button id="favorites" class="favorite-filter" aria-label="Только избранное" aria-pressed="false" data-tooltip="Только избранное"><span class="favorite-heart" aria-hidden="true"><img src="assets/liked.svg" alt=""></span><span id="favorite-count">2</span></button>
         <button id="export" class="icon-button" aria-label="Экспортировать реестр" data-tooltip="Экспорт"><img src="assets/download.svg" alt=""></button>
@@ -112,6 +119,7 @@
       <div class="pagination" id="pagination"><div id="size-select" class="select-host"></div><nav id="page-buttons" aria-label="Страницы реестра"></nav><span id="page-range" class="page-range"></span></div>
       <p class="demo-note">Демонстрационные данные · Sber BPM</p>
     </section>
+    <section id="tasks-panel" class="tasks-panel" aria-labelledby="tasks-title" hidden></section>
   </main>
   <div class="sr-only" id="result-announcement" role="status" aria-live="polite" aria-atomic="true"></div>
   <div class="toast" id="toast" role="status" hidden></div>

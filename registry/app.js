@@ -10,7 +10,7 @@
   const defaults = {from:'2001-08-21',to:'2026-09-13'};
   const state = {entity:'paths',view:'cards',query:'',filters:{status:[],block:[],division:[],process:[],owner:[]},sort:'id-asc',sorts:{cards:'id-asc',table:'id-asc'},from:defaults.from,to:defaults.to,page:1,size:20,favoritesOnly:false,top:false,favorites:new Set(['paths-1232','paths-1233'])};
   try { const saved = JSON.parse(localStorage.getItem('bpm-registry-favorites')); if (Array.isArray(saved)) state.favorites = new Set(saved.filter(id => allRecords.some(row => row.id === id))); } catch (_) { /* Storage may be unavailable for local files. */ }
-  let structureMode=false, structure;
+  let structureMode=false, structure, tasksMode=false, tasks, resumeStructure=false;
   const selects = {};
   let activeSelect = null, datePopup = null, actionMenu = null, tooltip = null, toastTimer;
   const LOADING_DURATION = 2000;
@@ -49,7 +49,7 @@
       this.refresh();
     }
     refresh() {
-      const multiple = this.config.multiple, labels = this.values.map(value => this.options.find(o => o.value === value)?.label || value);
+      const multiple = this.config.multiple, labels = this.values.map(value => this.config.valueLabel?.(value) ?? this.options.find(o => o.value === value)?.label ?? value);
       const selected = !!multiple && this.values.length > 0;
       const summary = selected ? `Выбрано ${this.values.length}` : '';
       this.host.classList.toggle('has-selection',selected);
@@ -183,6 +183,7 @@
     $('result-announcement').textContent=isLoading?'Загрузка реестра…':`${state.entity==='paths'?'Клиентские пути':'Процессы'}: найдено ${count}. Страница ${state.page} из ${pages}.`;
   }
   function loadResults() {
+    if(tasksMode)return;
     if(structureMode){structure.reload();return;}
     clearTimeout(loadingTimer);
     closeAction();
@@ -195,6 +196,7 @@
     },LOADING_DURATION);
   }
   function render() {
+    if(tasksMode)return;
     if(structureMode){structure.refresh();return;}
     document.body.classList.toggle('table-view',state.view==='table');
     $('sort-select').hidden=state.view==='table';
@@ -364,11 +366,12 @@
   $('sidebar').addEventListener('focusin',e=>{if(keyboardMode&&!menuPeekDismissed)setMenuPeek(true);});
   $('sidebar').addEventListener('focusout',e=>{if(!$('sidebar').contains(e.relatedTarget)){menuPeekDismissed=false;setMenuPeek(false);}});
   [['paths-nav','paths-submenu'],['gemba-nav','gemba-submenu']].forEach(([buttonId,menuId])=>{$(buttonId).addEventListener('click',()=>{if(innerWidth>=768&&document.body.classList.contains('menu-collapsed')&&!document.body.classList.contains('menu-peek')){menuPeekDismissed=false;setMenuPeek(true);return;}const open=$(buttonId).getAttribute('aria-expanded')!=='true';$(buttonId).setAttribute('aria-expanded',String(open));$(menuId).hidden=!open;$(buttonId).querySelector('.nav-chevron').src=`assets/chevron-${open?'up':'down'}.svg`;});});
-  $('top-paths').addEventListener('click',()=>{reset();changeEntity('paths');state.top=true;setSort('eff-desc');changed();closeMobile();window.scrollTo({top:0,behavior:'instant'});});
-  document.querySelector('.subitem.current').addEventListener('click',()=>{if(structureMode)setStructure(false);reset();closeMobile();});
+  $('top-paths').addEventListener('click',()=>{setService(false);history.replaceState(null,'','#main');reset();changeEntity('paths');state.top=true;setSort('eff-desc');changed();closeMobile();window.scrollTo({top:0,behavior:'instant'});});
+  $('registry-nav').addEventListener('click',e=>{e.preventDefault();setService(false);history.pushState(null,'','#main');if(structureMode)setStructure(false);reset();closeMobile();});
+  $('tasks-nav').addEventListener('click',e=>{e.preventDefault();setService(true);if(location.hash!=='#tasks')history.pushState(null,'','#tasks');closeMobile();window.scrollTo({top:0,behavior:'instant'});});
   document.querySelectorAll('.nav-item').forEach(button=>button.setAttribute('aria-label',button.dataset.tooltip || button.textContent.trim()));
   document.querySelectorAll('[data-service]').forEach(button=>button.addEventListener('click',()=>toast(`«${button.dataset.service}» — раздел вне демонстрационного реестра.`)));
-  $('global-search').addEventListener('click',()=>{const input=$(structureMode?'structure-search':'registry-search');input.scrollIntoView({block:'center'});input.focus({preventScroll:true});});
+  $('global-search').addEventListener('click',()=>{if(tasksMode){tasks.focusSearch();return;}const input=$(structureMode?'structure-search':'registry-search');input.scrollIntoView({block:'center'});input.focus({preventScroll:true});});
   $('notifications').addEventListener('click',()=>toast('Счётчик взят из макета. Сервис уведомлений не подключён.'));
   $('profile').addEventListener('click',()=>toast('Демонстрационный профиль. Авторизация не подключена.'));
   document.addEventListener('pointerdown',e=>{keyboardMode=false;if(!$('sidebar').contains(e.target))setMenuPeek(false);if(activeSelect&&!activeSelect.host.contains(e.target)&&!activeSelect.popup?.contains(e.target))activeSelect.close();if(actionMenu&&!actionMenu.contains(e.target)&&!e.target.closest('[data-menu]'))closeAction();});
@@ -387,6 +390,8 @@
   document.addEventListener('scroll',e=>{hideTooltip();if(activeSelect&&e.target!==activeSelect.popup)positionPopup(activeSelect.popup,activeSelect.control,activeSelect.config.minPopupWidth??(activeSelect.config.multiple?300:260));},true);
   window.addEventListener('resize',()=>{syncMenu();activeSelect?.close();closeAction();hideTooltip();});
   function openSharedDetail(){
+    if(location.hash==='#tasks'){setService(true);return;}
+    if((!location.hash||location.hash==='#main')&&tasksMode){setService(false);return;}
     const match=location.hash.match(/^#(process|journey|path)=(.+)$/);if(!match)return;
     let id;try{id=decodeURIComponent(match[2]);}catch(_){return;}
     const entity=match[1]==='process'?'processes':'paths';
@@ -400,6 +405,7 @@
       }
     }
     if(!row)return;
+    if(tasksMode)setService(false);
     if(row.source==='xlsx'){
       if(!structureMode)setStructure(true);
       if(structure.getEntity()!==entity)document.querySelector(`[data-structure-entity="${entity}"]`)?.click();
@@ -426,6 +432,26 @@
     detail:openDetail,copy:copyId,menu:openAction,
     onChange:info=>{if(structureMode){$('favorites').setAttribute('aria-pressed',String(info.favoritesOnly));$('favorite-count').textContent=info.favoritesCount;}}
   });
+  tasks=window.BpmTasks.create({
+    createSelect:(id,config)=>new BpmSelect(id,config),toast,
+    closePopups:()=>{activeSelect?.close();closeDate();closeAction();hideTooltip();},
+    openProcess:(id,trigger)=>{const row=allRecords.find(record=>record.entity==='processes'&&record.id===id);if(row)openDetail(row,trigger);else toast('Деталка связанного процесса пока не представлена в данных.');}
+  });
+  function setService(showTasks){
+    if(showTasks===tasksMode)return;
+    activeSelect?.close();closeDate();closeAction();hideTooltip();closeMobile();
+    if(showTasks){
+      resumeStructure=structureMode;if(structureMode)setStructure(false);
+      clearTimeout(loadingTimer);isLoading=false;window.BpmCardVisuals.cancelCounters($('results'));
+      tasksMode=true;document.body.classList.remove('table-view');$('registry-panel').hidden=true;tasks.enter();
+    }else{
+      tasks.leave();tasksMode=false;$('registry-panel').hidden=false;
+      if(resumeStructure){resumeStructure=false;setStructure(true);}else loadResults();
+    }
+    document.body.classList.toggle('tasks-mode',showTasks);
+    document.title=showTasks?'Задачи — Sber BPM':'Реестр КП и П — Sber BPM';
+    [['tasks-nav',showTasks],['registry-nav',!showTasks]].forEach(([id,current])=>{$(id).classList.toggle('current',current);if(current)$(id).setAttribute('aria-current','page');else $(id).removeAttribute('aria-current');});
+  }
   $('structure-toggle').addEventListener('click',()=>setStructure(!structureMode));
   window.addEventListener('hashchange',openSharedDetail);
   syncMenu();loadResults();openSharedDetail();

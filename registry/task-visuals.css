@@ -1,0 +1,118 @@
+/* Figma Tasks 1105:21363 / 1105:20723. Shared task components use the registry tokens. */
+.task-card{position:relative;display:flex;flex-direction:column;gap:16px;min-width:0;height:304px;padding:24px;border-radius:24px;background:var(--white);overflow:hidden;cursor:pointer}
+.task-card:hover{box-shadow:0 4px 6px #1a1a1a1f}
+.task-card:active{background:var(--positive);box-shadow:var(--click-shadow)}
+.tasks-cards-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(360px,100%),1fr));gap:24px;align-items:start}
+.task-card-header{display:flex;flex-direction:column;gap:8px;min-width:0;flex:none}
+.task-card-tags,.task-table-tags{display:flex;align-items:center;gap:4px;min-width:0}
+.task-card-tags{flex-wrap:wrap}
+.task-type-tag{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;max-width:100%;height:24px;padding:0 8px;border:1px solid var(--border);border-radius:8px;color:var(--secondary);font-size:13px;line-height:18px;letter-spacing:-.039px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-type-standard{background:#34c7591a;border-color:#34c759}
+.task-type-access{background:#6155f51a;border-color:var(--indigo,#6155f5);color:var(--indigo,#6155f5)}
+.task-type-inapplicable{background:#ff8d281a;border-color:#ff8d28;color:#ff8d28}
+.task-type-variant{background:#0088ff1a;border-color:var(--blue)}
+.task-id-badge{display:inline-flex;align-items:center;justify-content:center;gap:4px;flex-shrink:0;height:24px;padding:0 8px;background:var(--panel);border-radius:8px;font-size:13px;line-height:18px;letter-spacing:-.039px;white-space:nowrap}
+.task-id-badge:hover{background:var(--hover)}
+.task-id-badge:active{box-shadow:var(--click-shadow)}
+.task-id-badge img,.task-direction{display:block;flex:0 0 16px;width:16px;height:16px}
+.task-status{display:inline-flex;align-items:center;gap:8px;max-width:100%;font-size:17px;line-height:24px;letter-spacing:-.119px}
+.task-status>img{display:block;flex:0 0 12px;width:12px;height:12px}
+.task-status>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.task-status-date{white-space:nowrap}
+.task-card-body{container:task-card-body/size;display:flex;flex:1;flex-direction:column;gap:8px;min-height:0;min-width:0}
+.task-card-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-height:60px;overflow:hidden;text-align:left;font-size:22px;font-weight:400;line-height:30px;letter-spacing:-.154px;flex-shrink:0;overflow-wrap:anywhere}
+.task-card-title:hover{color:var(--blue)}
+.task-card-description{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-height:48px;flex-shrink:0;overflow:hidden;color:var(--secondary);font-size:17px;line-height:24px;letter-spacing:-.119px}
+/* Wrapped tags/footer reduce the body; keep only complete description lines.
+ * Two title lines (60) + gap (8) + one/two description lines (24/48). */
+@container task-card-body (max-height:115px){.task-card-description{-webkit-line-clamp:1;max-height:24px}}
+@container task-card-body (max-height:91px){.task-card-description{display:none}}
+.task-card-footer{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px;flex-shrink:0;margin-top:auto;min-width:0}
+.task-participant-route{display:inline-flex;align-items:center;gap:8px;flex-shrink:0}
+.task-avatar{position:relative;display:inline-flex;flex:0 0 32px;align-items:center;justify-content:center;width:32px;height:32px;overflow:hidden;border-radius:50%;background:var(--secondary);color:var(--white);font-size:13px;font-weight:400;line-height:18px;letter-spacing:-.039px}
+.task-avatar>img{display:block;width:18px;height:18px}
+.task-avatar-overflow{border:1px solid var(--white);background:var(--bg);color:var(--secondary)}
+.task-avatar-group{display:inline-flex;align-items:center;isolation:isolate}
+.task-avatar-group>.task-avatar{border:1px solid var(--white);margin-right:-5px}
+.task-avatar-group>.task-avatar:first-child{z-index:4}
+.task-avatar-group>.task-avatar:nth-child(2){z-index:3}
+.task-avatar-group>.task-avatar:nth-child(3){z-index:2}
+.task-avatar-group>.task-avatar:last-child{margin-right:0}
+.task-unassigned{color:var(--secondary);font-size:13px;line-height:18px}
+.task-deadline{display:inline-flex;align-items:center;gap:8px;flex-shrink:0;height:32px;white-space:nowrap;font-size:17px;line-height:24px;letter-spacing:-.119px}
+.task-deadline>img{display:block;flex:0 0 32px;width:32px;height:32px}
+.task-deadline.is-overdue{color:var(--red)}
+.task-highlight{background:linear-gradient(90deg,#ffeefd 0%,#fff2e7 55%,#fff 100%)}
+.tasks-table-scroll{container-type:inline-size;width:100%;max-width:100%;min-width:0;overflow:auto;overscroll-behavior-x:contain;scrollbar-width:thin;border-radius:16px;background:var(--white)}
+.tasks-table-scroll:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+.tasks-table{table-layout:fixed;width:100%;min-width:1485px;border-collapse:separate;border-spacing:0;text-align:left;font-size:17px;line-height:24px;letter-spacing:-.119px}
+.tasks-table col{width:var(--task-column-width)}
+.task-heading-compact,.task-assignees-compact{display:none}
+.task-assignees-wide{display:inline-flex;vertical-align:middle}
+.task-assignee-count{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;color:var(--secondary);font-size:13px;line-height:18px}
+.tasks-table th{height:84px;padding:0;border:0;background:var(--bg);color:var(--secondary);font-size:17px;font-weight:400;line-height:24px;vertical-align:bottom;text-align:left}
+.task-sort-button{position:relative;display:flex;align-items:flex-end;gap:8px;width:100%;height:84px;padding:16px;text-align:left;font-size:17px;font-weight:400;line-height:24px;letter-spacing:-.119px}
+.task-sort-button:hover{background:var(--hover);color:var(--text)}
+.task-sort-icon{display:block;flex:0 0 16px;width:16px;height:16px;margin-bottom:4px;opacity:0;transition:opacity .12s}
+.task-sort-button:is(.is-sorted,:hover,:focus-visible) .task-sort-icon{opacity:1}
+.task-sort-icon.is-descending{transform:rotate(180deg)}
+.tasks-table th.task-col-created .task-sort-button{padding-inline:8px}
+.tasks-table td{height:180px;padding:0;border:0;border-bottom:1px solid var(--border);vertical-align:middle}
+.tasks-table tbody tr:last-child td{border-bottom:0}
+.task-table-row{cursor:pointer}
+.task-table-row:hover{background:var(--hover)}
+.task-table-row:active{background:var(--positive)}
+.tasks-table td.task-table-task{position:relative;padding:56px 16px 19px;vertical-align:top}
+.task-table-tags{position:absolute;left:16px;right:16px;top:24px;gap:8px;overflow:hidden}
+.task-table-tags .task-type-tag{display:block;flex:0 1 auto;min-width:0;padding-block:2px;text-align:center}
+.task-table-tags .task-type-default{border-color:transparent;background:#ff383c1a}
+.task-table-title,.task-table-description{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;width:100%;height:48px;overflow:hidden;font-size:17px;line-height:24px;text-align:left;overflow-wrap:anywhere}
+.task-table-title{font-weight:590;letter-spacing:-.51px}
+.task-table-title:hover{color:var(--blue)}
+.task-table-description{margin:8px 0 0;color:var(--secondary);letter-spacing:-.119px}
+.tasks-table td.task-table-process{padding:24px 16px;vertical-align:top}
+.task-table-process>.task-id-badge{min-width:80px}
+.task-process-link{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;width:100%;max-height:96px;overflow:hidden;font-size:17px;line-height:24px;letter-spacing:-.119px;text-align:left;overflow-wrap:anywhere}
+.task-process-link:hover{color:var(--blue)}
+.tasks-table td.task-table-initiator,.tasks-table td.task-table-assignees{padding:0 8px}
+.task-owner{display:flex;align-items:center;gap:8px;min-width:0}
+.task-owner-name{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-width:0;overflow-wrap:anywhere}
+.tasks-table td.task-table-created{padding:16px 8px 24px;white-space:nowrap}
+.tasks-table td.task-table-deadline{padding:0 10px}
+.tasks-table td.task-table-status{padding:0 4px}
+.task-muted{color:var(--secondary)}
+.tasks-table td.task-table-empty{height:200px;padding:32px 64px;color:var(--secondary);font-size:22px;line-height:30px;cursor:default}
+.task-skeleton-card,.task-skeleton-row{pointer-events:none;cursor:default}
+.task-skeleton-status{display:flex;align-items:center;gap:8px;height:24px}
+.task-skeleton-dot{width:12px;height:12px}
+.task-skeleton-title{width:90%;height:30px;margin-bottom:4px}
+.task-skeleton-body{gap:12px}
+.task-skeleton-lines{display:flex;flex:1;flex-direction:column;gap:12px;min-width:0}
+.task-skeleton-row .task-table-process>.skeleton-tag{margin-bottom:12px}
+.task-skeleton-row .task-avatar-group .skeleton-avatar{margin-right:-5px;border:1px solid var(--white)}
+.task-skeleton-row .task-table-task .task-skeleton-lines{padding-top:6px}
+.task-skeleton-row .task-owner>.task-skeleton-lines{display:flex}
+/* Compact table from Figma 1113:4240 and 1113:26111: 1005–1217px. */
+@container(max-width:1399px){
+  .tasks-table{min-width:1005px}
+  .tasks-table col.task-col-title{width:max(248px,calc(50cqw - 254.5px))}
+  .tasks-table col.task-col-processTitle{width:max(206px,calc(50cqw - 296.5px))}
+  .tasks-table col.task-col-initiator{width:72px}
+  .tasks-table col.task-col-assignees{width:56px}
+  .tasks-table col.task-col-created{width:120px}
+  .tasks-table col.task-col-deadline{width:154px}
+  .tasks-table col.task-col-status{width:149px}
+  .task-heading-wide,.task-assignees-wide,.task-table-initiator .task-owner .task-owner-name{display:none}
+  .task-heading-compact{display:inline}
+  .task-assignees-compact{display:inline-flex;vertical-align:middle}
+  .task-col-initiator .task-sort-button{padding-inline:0;gap:0}
+  .task-col-assignees .task-sort-button,.task-col-deadline .task-sort-button,.task-col-status .task-sort-button{padding-inline:8px}
+  .task-col-initiator .task-sort-icon,.task-col-assignees .task-sort-icon{position:absolute;margin:0 0 49px 0}
+  .task-table-initiator .task-owner{justify-content:center}
+  .tasks-table td.task-table-assignees{text-align:center}
+  .tasks-table td.task-table-deadline{padding-inline:0;text-align:center}
+  .task-skeleton-row .task-owner>.task-skeleton-lines{display:none}
+  .task-skeleton-row .task-avatar-group .skeleton-avatar:not(:first-child){display:none}
+}
+@media(max-width:767px){.tasks-cards-grid{gap:16px}.task-card{padding:24px}.task-card-tags{row-gap:6px}.task-card-title{-webkit-line-clamp:2}.task-card-footer .task-deadline{margin-left:auto}}
+@media(prefers-reduced-motion:reduce){.task-card{transition:none}}

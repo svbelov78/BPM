@@ -1,0 +1,22 @@
+{
+  "source": "BPM UI KIT — Nordic / Задачи",
+  "fileKey": "QdYByHLCCMIKfTI0O0SXiE",
+  "pageNode": "1102:2",
+  "downloaded": "2026-09-23",
+  "notes": "Exact Figma-exported SVG bytes; shared existing icons are reused without redrawing.",
+  "sources": {
+    "assets/tasks/arrow-right-24.svg": "Drawer type choices 1105:422 / Icon/24/Arrow Right 222:20",
+    "assets/tasks/empty.svg": "Table/Row Empty 1113:26032 / Icon/40/Zero State 224:20",
+    "assets/tasks/plus-blue.svg": "Table/Row Empty 1113:26032 / Icon/24/Plus Add 223:41",
+    "assets/tasks/plus-white.svg": "Tasks/Create 1104:364 / Button Blue 50",
+    "assets/tasks/copy.svg": "Cards/Task 1105:21744 and Task table 1105:20723 / Icon/16/Copy",
+    "assets/tasks/deadline-ontime.svg": "Cards/Task 1105:21744 / Time Tracker / On time",
+    "assets/tasks/deadline-overdue.svg": "Task table 1105:20723 / Time Tracker / Overdue",
+    "assets/tasks/direction-flow.svg": "Cards/Task 1105:21744 / Participants direction",
+    "assets/tasks/direction-related.svg": "Cards/Task 1105:21744 / Related counter direction",
+    "assets/tasks/person.svg": "Task table 1105:20723 / Icon/24/Person",
+    "assets/tasks/sort.svg": "Task table 1105:20723 / Sort header",
+    "assets/tasks/status-green.svg": "Cards/Task 1105:21744 / Status dot",
+    "assets/tasks/status-neutral.svg": "Task table 1105:20723 / Status dot"
+  }
+}
