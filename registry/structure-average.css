@@ -1,0 +1,53 @@
+/* Average efficiency composes the shared sphere/curtain glyph and integer percent.
+ * Load after structure-charts.css. Reserve 80 × 32 px through count animations.
+ */
+.structure-average-control{display:flex;align-items:center;justify-content:center;flex:0 0 181px;width:181px;height:50px;gap:16px;padding:13px 16px;border-radius:8px;background:var(--surface,var(--color-bg-nordic));cursor:pointer;user-select:none}
+.structure-average-label{display:block;flex:0 0 85px;width:85px;height:24px;color:var(--text);font-size:9px;line-height:12px;font-weight:510;letter-spacing:0;text-align:left;text-transform:uppercase}
+.structure-average-control>.structure-switch-track{background:var(--border)}
+.structure-average-control[aria-checked=true]>.structure-switch-track{background:#34c759}
+.structure-average-control[aria-checked=true]>.structure-switch-track>.structure-switch-knob{transform:translateX(24px)}
+.structure-average-control:hover>.structure-switch-track{box-shadow:inset 0 2px 4px #1a1a1a29}
+.structure-average-control:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+
+.structure-average.efficiency{display:inline-flex;align-items:center;justify-content:flex-start;flex:0 0 80px;gap:8px;width:80px;min-width:80px;height:32px;color:var(--text);font-size:17px;line-height:24px;font-weight:400;letter-spacing:-.119px;white-space:nowrap}
+/* Match the colored bars' center, not the chart plus its count labels.
+ * The layout observer accounts for mobile padding and native scrollbars.
+ * Relative positioning keeps the surrounding grid and chart in place.
+ */
+.structure-heading>.structure-average{position:relative;top:var(--average-align-y,10px)}
+.structure-average [data-average-number]{display:block}
+.structure-average .percent{font-size:13px;line-height:18px;margin-left:0}
+.structure-list:not(.has-average) .structure-average{display:none}
+
+/* The added 80 px metric and 24 px gap come out of the flexible owner track.
+ * The level offset preserves shared owner, average, and chart verticals.
+ */
+.structure-list.has-average{--structure-owner-width:clamp(152px,calc(100cqw - 1128px),376px)}
+.structure-list.has-average .structure-heading{grid-template-columns:minmax(0,1fr) var(--structure-owner-width) 80px 404px calc(40px + var(--metric-offset))}
+
+@container registry (max-width:1300px){
+  .structure-filters>.structure-average-control{flex:0 0 181px;width:181px}
+  .structure-filters>.structure-chart-control{flex:0 0 255px;width:255px}
+  .structure-filters>#structure-sort{flex:1 1 188px;width:auto}
+}
+@container registry (max-width:1204px){
+  .structure-list.has-average .structure-heading{grid-template-columns:calc(160px + var(--metric-offset)) 80px minmax(0,1fr) 24px;grid-template-areas:"title title title chevron" "owner average chart chart";gap:16px}
+  .structure-list.has-average .structure-title{grid-area:title}
+  .structure-list.has-average .structure-heading>.structure-owner{grid-area:owner;align-self:center;width:160px;justify-self:end}
+  .structure-list.has-average .structure-average{grid-area:average}
+  .structure-list.has-average .structure-chart-scroll{grid-area:chart;justify-self:start;width:404px}
+  .structure-list.has-average .structure-chevron{grid-area:chevron;align-self:center}
+}
+@container registry (max-width:760px){
+  .structure-filters>.structure-average-control{flex:1 1 181px;width:auto}
+  .structure-filters>.structure-chart-control{flex:1 1 255px;width:auto}
+  .structure-filters>#structure-sort{flex:1 1 188px}
+  .structure-list.has-average .structure-heading{grid-template-columns:calc(80px + var(--metric-offset)) minmax(0,1fr) 24px;grid-template-areas:"title title chevron" "owner owner owner" "average chart chart";gap:12px}
+  .structure-list.has-average .structure-heading>.structure-owner{width:calc(100% - 2 * var(--metric-offset));margin-inline:var(--metric-offset);justify-self:start}
+  .structure-list.has-average .structure-average{justify-self:end}
+  .structure-list.has-average .structure-heading>.structure-chart-scroll{width:calc(100% - var(--metric-offset));margin-inline:0 var(--metric-offset)}
+  .structure-list.has-average .structure-chevron{align-self:start}
+}
+@container registry (max-width:520px){
+  .structure-filters>.structure-average-control,.structure-filters>.structure-chart-control,.structure-filters>#structure-sort{flex:1 1 100%;width:100%}
+}

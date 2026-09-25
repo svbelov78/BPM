@@ -21,7 +21,7 @@
 .tasks-fields{display:grid;grid-template-columns:repeat(6,minmax(80px,1fr)) 264px;gap:16px}
 .tasks-fields>*{min-width:0}
 .tasks-panel .applied-filters{margin-bottom:24px}
-.tasks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:24px}
+.tasks-grid{--card-min-width:360px;--card-max-width:420px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:24px;justify-content:start}
 .tasks-panel .pagination{margin:24px 0 0}
 .tasks-empty{background:var(--white);padding:32px 64px;min-height:208px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;border-radius:16px}
 .tasks-empty>img{width:40px;height:40px}
@@ -49,4 +49,4 @@
 @container tasks (max-width:520px){.tasks-panel .title-row{flex-wrap:wrap}.tasks-primary{gap:12px}.tasks-create{width:100%}.tasks-search{min-width:100%}.tasks-tabs{min-width:100%;width:100%}.tasks-tabs button{font-size:15px}.tasks-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.tasks-date{grid-column:1/-1}#tasks-sort{width:100%}.tasks-empty{padding:32px 16px}.task-export-scopes{flex-direction:column}}
 @media(max-width:767px){.tasks-panel{padding:16px;border-radius:24px}.tasks-panel h1{font-size:24px;line-height:30px}.tasks-grid{gap:16px}.task-export{padding:24px;border-radius:24px}.task-export-scopes{flex-direction:column;gap:16px;margin-bottom:24px}.task-export .modal-actions{padding-top:24px}}
 @media(max-width:359px){.tasks-panel{padding:12px}.tasks-panel .view-controls{gap:12px}.tasks-panel h1{gap:6px}}
-@media print{.tasks-filters,.tasks-panel .view-controls,.tasks-panel .pagination{display:none!important}.tasks-panel{background:white;padding:0}.tasks-grid{grid-template-columns:repeat(2,1fr)}}
+@media print{.tasks-filters,.tasks-panel .view-controls,.tasks-panel .pagination{display:none!important}.tasks-panel{background:white;padding:0}.tasks-grid{grid-template-columns:repeat(2,1fr)!important}}

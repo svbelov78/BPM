@@ -1,0 +1,25 @@
+/* Figma Structure Chart 1 (994:4939) / Chart 2 (993:4666).
+ * Load after structure.css. Plot starts stay aligned inside the registry's
+ * shared chart column. The total's fixed gutter prevents different digit counts
+ * from shifting the plot within one presentation.
+ */
+.structure-chart-scroll{min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.structure-chart{display:flex;align-items:flex-end;gap:8px;width:404px;min-width:404px;max-width:none;height:42px;padding:0;font-variant-numeric:normal}
+.structure-total{display:block;flex:0 0 33px;width:33px;min-width:33px;padding:0;text-align:right;color:var(--text);font-size:17px;line-height:24px;font-weight:590;letter-spacing:-.51px;white-space:nowrap;transform:none}
+.structure-bars{display:flex;align-items:flex-start;gap:8px;flex:0 0 363px;width:363px;min-width:363px;height:42px}
+.structure-segment{display:flex;flex-direction:column;gap:2px;flex-grow:0;flex-shrink:0;min-width:0}
+.structure-segment-count{display:block;flex-shrink:0;height:18px;color:var(--text);font-size:13px;line-height:18px;font-weight:400;letter-spacing:-.039px;white-space:nowrap}
+.structure-chart[data-chart-type="1"] .structure-segment{overflow:hidden}
+.structure-segment-count.is-narrow{visibility:visible}
+.structure-track{display:block;position:relative;height:22px;min-height:22px;border-radius:2px;isolation:isolate;overflow:hidden}
+.structure-track::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background:var(--segment-color,var(--border));opacity:.25}
+.structure-segment[data-bucket="1"] .structure-track::before{opacity:.15}
+.structure-segment[data-bucket="4"] .structure-track::before{content:none;background:none}
+.structure-fill{display:block;width:100%;height:100%;border-radius:inherit;background:var(--segment-color,var(--border));transform-origin:left center}
+/* The outline is not scaled: it remains 1 px throughout the count animation. */
+.structure-segment[data-bucket="4"] .structure-track::after{content:"";position:absolute;inset:0 auto 0 0;width:calc(100% * var(--structure-fill-ratio,0));border-radius:inherit;box-shadow:inset 0 0 0 1px var(--efficiency-unrated-border);pointer-events:none}
+.structure-chart[data-chart-type="2"]{width:402px;min-width:402px}
+.structure-chart[data-chart-type="2"] .structure-total{flex-basis:30px;width:30px;min-width:30px;line-height:24px;transform:none}
+.structure-chart[data-chart-type="2"] .structure-bars{flex-basis:364px;width:364px;min-width:364px;gap:4px}
+.structure-chart[data-chart-type="2"] .structure-track{height:22px;min-height:22px}
+.structure-chart[data-chart-type="2"] .structure-track::before{content:none;background:none}

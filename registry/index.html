@@ -20,14 +20,20 @@
   <link rel="stylesheet" href="journey-details.css">
   <link rel="stylesheet" href="journey-supplement.css">
   <link rel="stylesheet" href="structure.css">
+  <link rel="stylesheet" href="structure-charts.css">
+  <link rel="stylesheet" href="structure-average.css">
+  <link rel="stylesheet" href="structure-incoming.css">
   <link rel="stylesheet" href="task-visuals.css">
   <link rel="stylesheet" href="task-drawer.css">
   <link rel="stylesheet" href="tasks.css">
+  <link rel="stylesheet" href="cabinet-cards.css">
+  <link rel="stylesheet" href="cabinet.css">
   <script src="demo-data.js" defer></script>
   <script src="structure-source.js" defer></script>
   <script src="structure-data.js" defer></script>
   <script src="calendar.js" defer></script>
   <script src="card-visuals.js" defer></script>
+  <script src="card-grid.js" defer></script>
   <script src="loading.js" defer></script>
   <script src="process-assets.js" defer></script>
   <script src="process-overview.js" defer></script>
@@ -36,19 +42,23 @@
   <script src="journey-supplement.js" defer></script>
   <script src="journey-details.js" defer></script>
   <script src="process-drawer.js" defer></script>
+  <script src="structure-charts.js" defer></script>
+  <script src="structure-incoming.js" defer></script>
   <script src="structure.js" defer></script>
   <script src="task-data.js" defer></script>
   <script src="task-visuals.js" defer></script>
   <script src="task-drawer.js" defer></script>
   <script src="tasks.js" defer></script>
+  <script src="cabinet-data.js" defer></script>
+  <script src="cabinet-cards.js" defer></script>
+  <script src="cabinet.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
-  <a class="skip-link" href="#main">К реестру</a>
+  <a class="skip-link" href="#main">К содержимому</a>
   <header class="header">
     <button class="icon-button mobile-menu" id="mobile-menu" aria-label="Открыть меню" aria-expanded="false" aria-controls="sidebar"><img src="assets/paths.svg" alt=""></button>
-    <a class="brand" href="./index.html" aria-label="Sber BPM — реестр"><img src="assets/logo.svg" alt="Sber BPM"></a>
-    <button class="header-search icon-button" id="global-search" aria-label="Перейти к поиску по реестру" data-tooltip="Поиск по реестру"><img src="assets/search.svg" alt=""></button>
+    <a class="brand" href="./index.html" aria-label="Sber BPM — Мой кабинет"><img src="assets/logo.svg" alt="Sber BPM"></a>
     <div class="header-actions">
       <button class="notification-button icon-button" id="notifications" aria-label="Уведомления: 9" data-tooltip="Уведомления"><img src="assets/bell.svg" alt=""><span class="notification-count">9</span></button>
       <button class="avatar profile-button" id="profile" aria-label="Профиль пользователя" data-tooltip="Иванов Иван Васильевич"><img src="assets/person.svg" alt=""></button>
@@ -58,7 +68,7 @@
   <aside class="sidebar" id="sidebar" aria-label="Главное меню">
     <div class="menu-heading"><span class="menu-label">Меню</span><div class="menu-heading-actions"><button class="icon-button" id="collapse-menu" aria-label="Свернуть меню" aria-expanded="true"><img src="assets/collapse-menu.svg" alt=""></button><button class="icon-button" id="pin-menu" aria-label="Развернуть и закрепить меню" title="Развернуть и закрепить меню" hidden><img src="assets/menu-right.svg" alt=""></button></div></div>
     <nav class="navigation">
-      <button class="nav-item" data-service="Мой кабинет" data-tooltip="Мой кабинет"><span class="nav-tile"><img src="assets/home.svg" alt=""></span><span class="menu-label">Мой кабинет</span><img class="nav-chevron" src="assets/chevron-down.svg" alt=""></button>
+      <button class="nav-item" id="cabinet-nav" data-tooltip="Мой кабинет"><span class="nav-tile"><img src="assets/home.svg" alt=""></span><span class="menu-label">Мой кабинет</span><img class="nav-chevron" src="assets/chevron-down.svg" alt=""></button>
       <div class="nav-divider"></div>
       <button class="nav-item" id="paths-nav" aria-expanded="true" aria-controls="paths-submenu" data-tooltip="Пути и процессы"><span class="nav-tile"><img src="assets/paths.svg" alt=""></span><span class="menu-label">Пути и процессы</span><img class="nav-chevron" src="assets/chevron-down.svg" alt=""></button>
       <div class="submenu" id="paths-submenu">
@@ -97,13 +107,15 @@
       <section id="structure-mode" aria-label="Структура процессов" hidden>
         <div class="structure-filters">
           <div id="structure-block" class="select-host"></div><div id="structure-division" class="select-host"></div><div id="structure-owner" class="select-host"></div>
-          <label class="structure-chart-control" title="Соотношение эффективности — Structure Chart 2. Сравнение с лидером — Structure Chart 1, общий масштаб."><span class="structure-chart-label" id="structure-quantity-label">Соотношение<br>эффективности</span><input id="structure-chart-toggle" type="checkbox" role="switch" aria-label="Сравнение с лидером — Structure Chart 1" aria-describedby="structure-chart-hint" checked><span class="structure-switch-track" aria-hidden="true"><span class="structure-switch-knob"></span></span><span class="structure-chart-label is-active" id="structure-comparison-label">Сравнение<br>с лидером</span></label>
+          <button type="button" id="structure-average-toggle" class="structure-average-control" role="switch" aria-checked="true" aria-label="Средняя эффективность" aria-describedby="structure-average-hint"><span class="structure-average-label">Средняя<br>эффективность</span><span class="structure-switch-track" aria-hidden="true"><span class="structure-switch-knob"></span></span></button>
+          <label class="structure-chart-control" title="Соотношение эффективности — Structure Chart 2. Сравнение с лидером — Structure Chart 1, общий масштаб."><span class="structure-chart-label is-active" id="structure-quantity-label">Соотношение<br>эффективности</span><input id="structure-chart-toggle" type="checkbox" role="switch" aria-label="Сравнение с лидером — Structure Chart 1" aria-describedby="structure-chart-hint"><span class="structure-switch-track" aria-hidden="true"><span class="structure-switch-knob"></span></span><span class="structure-chart-label" id="structure-comparison-label">Сравнение<br>с лидером</span></label>
           <div id="structure-sort" class="select-host"></div>
         </div>
         <p id="structure-chart-hint" class="sr-only">Выключено: Соотношение эффективности, Structure Chart 2 — сегменты заполняют всю площадь диаграммы. Включено: Сравнение с лидером, Structure Chart 1 — общий масштаб с подложками.</p>
+        <p id="structure-average-hint" class="sr-only">Показывает среднюю оценку уникальных сущностей в ветке с учётом фильтров. Без оценки не учитываются; нулевая оценка учитывается. На графике среднее округляется до целого от 0 до 100.</p>
         <section class="applied-filters" id="structure-selected" aria-label="Фильтры структуры" hidden><div id="structure-chips" class="applied-filter-groups"></div><button id="structure-reset" class="clear-all-filters" aria-label="Сбросить фильтры структуры"><img src="assets/close.svg" alt=""></button></section>
         <div class="structure-list" id="structure-list" aria-label="Блоки и подразделения"></div>
-        <p class="structure-note"><span id="structure-data-note">Структура, клиентские пути и процессы — из файла «15092026_структура для подготовки мока данных.xlsx».</span> Эффективность и ФИО руководителей блоков и подразделений — демонстрационные. <span id="structure-chart-note">Масштаб графиков общий.</span> <a href="STRUCTURE-SOURCES.md" target="_blank" rel="noopener">Источник и правила</a></p>
+        <p class="structure-note"><span id="structure-data-note">Структура, клиентские пути и процессы — из файла «15092026_структура для подготовки мока данных.xlsx».</span> Эффективность, ФИО руководителей блоков и подразделений и типы связи «Основной / Дополнительный» — демонстрационные. <span id="structure-chart-note">Масштаб графиков общий.</span> <a href="STRUCTURE-SOURCES.md" target="_blank" rel="noopener">Источник и правила</a></p>
         <details class="structure-source-issues"><summary>Особенности исходных данных</summary><p id="structure-source-issues"></p></details>
       </section>
       <div class="filters" id="filters">
@@ -120,6 +132,7 @@
       <p class="demo-note">Демонстрационные данные · Sber BPM</p>
     </section>
     <section id="tasks-panel" class="tasks-panel" aria-labelledby="tasks-title" hidden></section>
+    <section id="cabinet-panel" class="cabinet-panel" aria-labelledby="cabinet-title" hidden></section>
   </main>
   <div class="sr-only" id="result-announcement" role="status" aria-live="polite" aria-atomic="true"></div>
   <div class="toast" id="toast" role="status" hidden></div>

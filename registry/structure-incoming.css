@@ -1,0 +1,34 @@
+/* Figma 1166:6766, not the standalone 1172:5926 table.
+ * At 1551px: 16px gutters, 651 / 684 / 184px cells, 363px rows + 24px below.
+ * The first column follows the outer table minus its 16px inset, so owners
+ * keep one vertical across parent and incoming rows at every table width.
+ * Source content may wrap; only the reference rows have a fixed 90px minimum.
+ */
+.structure-incoming{min-width:0;max-width:100%;padding:0 16px 24px;background:var(--color-bg-nordic)}
+.structure-incoming>.structure-incoming-scroll{min-width:0;max-width:100%;overflow:auto;border:0;border-radius:0 16px 16px 16px;background:var(--white);overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.structure-incoming-table{width:100%;min-width:1100px;border-collapse:separate;border-spacing:0;table-layout:fixed;text-align:left;color:var(--text)}
+.structure-incoming-process-column{width:calc(100% - 868px)}
+.structure-incoming-table col:nth-child(2){width:684px}
+.structure-incoming-efficiency-column{width:184px}
+.structure-incoming .structure-incoming-table>tbody>tr>td{width:auto;height:auto;padding:0;border:0;vertical-align:top;background:var(--white);font-size:17px;line-height:24px}
+.structure-incoming .structure-incoming-table>tbody>tr:not(:last-child)>td{border-bottom:1px solid var(--color-border-divider,rgba(26,26,26,.2))}
+.structure-incoming-process{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;min-height:90px;padding:16px 16px 16px 24px}
+.structure-incoming-meta{display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-width:0;min-height:24px}
+.structure-incoming-meta>.id-badge,.structure-incoming-meta>.tag{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;height:24px;padding:0 8px;border-radius:8px;font-size:13px;line-height:18px;font-weight:400;letter-spacing:-.039px;white-space:nowrap}
+.structure-incoming-meta>.id-badge{gap:4px}
+.structure-incoming-meta>.id-badge>img{width:16px;height:16px}
+.structure-incoming-meta>.structure-incoming-relationship.is-primary{border-color:var(--efficiency-leader,#34c759)}
+.structure-incoming-title{display:block;max-width:100%;padding:0;text-align:left;font:inherit;font-size:17px;line-height:24px;font-weight:590;letter-spacing:-.51px;color:var(--text);overflow-wrap:anywhere}
+.structure-incoming-title:hover{color:var(--blue)}
+.structure-incoming .structure-incoming-table>tbody>tr>.structure-incoming-owner-cell,.structure-incoming .structure-incoming-table>tbody>tr>.structure-incoming-efficiency-cell{vertical-align:middle}
+.structure-incoming-owner{display:flex;align-items:center;gap:8px;min-width:0;min-height:90px;padding:6px 16px 0}
+.structure-incoming-owner>.avatar{width:32px;height:32px;background:var(--border)}
+.structure-incoming-owner-copy{display:flex;flex-direction:column;min-width:0;overflow-wrap:anywhere}
+.structure-incoming-owner-name{font-size:13px;line-height:18px;font-weight:400;letter-spacing:-.039px}
+.structure-incoming-owner-role{font-size:13px;line-height:18px;font-weight:400;letter-spacing:-.039px;color:var(--secondary)}
+.structure-incoming-efficiency{display:flex;align-items:center;min-height:90px;padding:4px 16px 0 40px}
+.structure-incoming-efficiency>.efficiency{height:24px;min-height:24px;min-width:0;gap:8px;padding:0;border-radius:0;background:none;font-size:17px;line-height:24px;font-weight:400;letter-spacing:-.119px}
+.structure-incoming-efficiency .efficiency-number{font-size:17px;line-height:24px}
+.structure-incoming-efficiency .fraction,.structure-incoming-efficiency .percent{margin:0;font-size:13px;line-height:18px;letter-spacing:-.039px}
+.structure-incoming .structure-incoming-table>tbody>tr.structure-incoming-empty>td{height:90px;padding:24px;color:var(--secondary)}
+.structure-incoming-scroll:focus-visible,.structure-incoming-title:focus-visible,.structure-incoming-meta>.id-badge:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}

@@ -9,10 +9,13 @@
     const number = Number(String(value).replace(',', '.'));
     return Number.isFinite(number) ? Math.max(0, Math.min(100, number)) : null;
   };
-  function glyph(value, table = false) {
+  function glyph(value, table = false, {color: colorOverride} = {}) {
     const percent = percentValue(value);
     if (percent === null) return '<span class="efficiency-glyph bpm-efficiency-glyph efficiency-unrated" aria-hidden="true"><span class="efficiency-sphere"></span></span>';
-    const color = percent < 45 ? 'red' : percent < 65 ? 'yellow' : percent < 85 ? 'blue' : 'green';
+    // Aggregate metrics can supply their unrounded methodology band without
+    // changing the rendering or existing percentage components' behavior.
+    const color = ['red', 'yellow', 'blue', 'green'].includes(colorOverride)
+      ? colorOverride : percent < 45 ? 'red' : percent < 65 ? 'yellow' : percent < 85 ? 'blue' : 'green';
     const edge = Number((24 * percent / 100).toFixed(4));
     const curtain = percent === 0 ? -8 : edge + 1;
     const style = `--efficiency-edge:${edge}px;--efficiency-curtain:${curtain}px;--efficiency-curtain-width:${40-curtain}px`;

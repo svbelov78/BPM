@@ -5,11 +5,12 @@
 .select-popup {
   padding: 4px;
   gap: 4px;
-  border-radius: 12px;
+  border-radius: 16px;
   background: #fff;
   box-shadow: 0 4px 12px rgba(26, 26, 26, .12);
   scrollbar-color: #d1d9e6 transparent;
 }
+.action-menu { border-radius: 16px; }
 .select-popup .select-option {
   min-height: 50px;
   padding: 13px 16px;

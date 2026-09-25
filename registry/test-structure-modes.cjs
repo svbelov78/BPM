@@ -62,12 +62,19 @@ async function chartType(page, type, keyboard = false) {
   }
   const geometry = await page.locator('.structure-chart-control').evaluate(control => {
     const box = control.getBoundingClientRect(), style = getComputedStyle(control);
+    const filters = control.closest('.structure-filters'), filterBox = filters.getBoundingClientRect();
+    const sortBox = filters.querySelector('#structure-sort').getBoundingClientRect();
+    const registry = control.closest('.registry-panel'), registryStyle = getComputedStyle(registry);
     const measure = selector => {
       const child = control.querySelector(selector).getBoundingClientRect();
       return {width: child.width, height: child.height, left: child.left - box.left, top: child.top - box.top};
     };
     return {
       width: box.width, height: box.height,
+      left: box.left, top: box.top,
+      registryWidth: registry.clientWidth - parseFloat(registryStyle.paddingLeft) - parseFloat(registryStyle.paddingRight),
+      filters: {width: filterBox.width, left: filterBox.left, gap: parseFloat(getComputedStyle(filters).columnGap)},
+      sort: {width: sortBox.width, height: sortBox.height, left: sortBox.left, top: sortBox.top},
       padding: [style.paddingTop, style.paddingRight, style.paddingBottom, style.paddingLeft],
       gap: style.columnGap,
       quantity: measure('#structure-quantity-label'),
@@ -77,14 +84,24 @@ async function chartType(page, type, keyboard = false) {
     };
   });
   const viewport = `${page.viewportSize().width}px`;
-  close(geometry.width, 255, `Figma chart control width at ${viewport}`, 0.1);
+  const stacked = geometry.registryWidth <= 520, sharedRow = geometry.registryWidth <= 1300;
+  const expectedWidth = stacked ? geometry.filters.width : sharedRow ? (geometry.filters.width - geometry.filters.gap) / 2 : 255;
+  close(geometry.width, expectedWidth, `Responsive chart control width at ${viewport}`, 0.1);
+  close(geometry.sort.width, sharedRow ? expectedWidth : 188, `Responsive sorting width at ${viewport}`, 0.1);
+  close(geometry.sort.height, 50, `Sorting field height at ${viewport}`, 0.1);
+  if (sharedRow) {
+    close(geometry.left, geometry.filters.left, `Chart control starts at the filter row edge at ${viewport}`, 0.1);
+    close(geometry.sort.left, stacked ? geometry.left : geometry.left + geometry.width + geometry.filters.gap, `Sorting horizontal placement at ${viewport}`, 0.1);
+    close(geometry.sort.top, stacked ? geometry.top + geometry.height + geometry.filters.gap : geometry.top, `Sorting vertical placement at ${viewport}`, 0.1);
+  }
   close(geometry.height, 50, `Figma chart control height at ${viewport}`, 0.1);
   assert.deepEqual(geometry.padding, ['13px', '16px', '13px', '16px'], `Figma chart control padding at ${viewport}`);
   assert.equal(geometry.gap, '16px', `Figma chart control gap at ${viewport}`);
+  const contentLeft = (expectedWidth - 223) / 2;
   for (const [part, expected] of Object.entries({
-    quantity: {width: 86, height: 24, left: 16, top: 13},
-    track: {width: 48, height: 24, left: 118, top: 13},
-    comparison: {width: 57, height: 24, left: 182, top: 13},
+    quantity: {width: 86, height: 24, left: contentLeft, top: 13},
+    track: {width: 48, height: 24, left: contentLeft + 102, top: 13},
+    comparison: {width: 57, height: 24, left: contentLeft + 166, top: 13},
     knob: {width: 20, height: 20}
   })) {
     for (const [dimension, value] of Object.entries(expected)) {
@@ -143,6 +160,8 @@ async function productFixture(page, modelName, multipleRows = false) {
 async function linkedPathFixture(page) {
   return page.evaluate(() => {
     for (const root of window.BPM_STRUCTURE_PATHS.roots) for (const division of root.children) for (const product of division.children) {
+      // Keep the chosen journey visible while every parent column is sorted.
+      if (product.total > 50) continue;
       const row = [...product.records].sort((a, b) => a.number - b.number).slice(0, 50).find(record => record.linkedProcessIds.length > 5 && record.linkedProcessIds.length <= 50);
       if (row) return {chain: [root.id, division.id, product.id], id: product.id, pathId: row.id};
     }
@@ -153,9 +172,10 @@ async function linkedPathFixture(page) {
 async function linkedTableStyles(panel) {
   return panel.evaluate(element => ({
     container: getComputedStyle(element.parentElement).backgroundColor,
-    rows: [...element.querySelectorAll(':scope > .structure-table-scroll > .structure-table > tbody > tr[data-record-entity="processes"]')].map(row => ({
+    rows: [...element.querySelectorAll('.structure-incoming-table > tbody > tr[data-record-entity="processes"]')].map(row => ({
       backgrounds: [...row.children].map(cell => getComputedStyle(cell).backgroundColor),
-      moreOpacity: getComputedStyle(row.querySelector('.structure-row-more')).opacity
+      titleColor: getComputedStyle(row.querySelector('.structure-incoming-title')).color,
+      copyBackground: getComputedStyle(row.querySelector('[data-structure-copy]')).backgroundColor
     }))
   }));
 }
@@ -210,6 +230,19 @@ function normalized(metrics) {
   assert.ok(metrics.label.includes(String(metrics.total)), 'Accessible chart label includes the total');
 }
 
+async function initialChartType(page) {
+  // Do not call chartType() here: its setter could conceal a wrong initial mode.
+  assert.equal(await page.locator('#structure-chart-toggle').isChecked(), false, 'The initial switch selects efficiency ratio rather than comparison with the leader');
+  assert.equal(await page.locator('#structure-quantity-label').evaluate(label => label.classList.contains('is-active')), true, 'Efficiency ratio is the initially active label');
+  assert.equal(await page.locator('#structure-comparison-label').evaluate(label => label.classList.contains('is-active')), false, 'Comparison with the leader is initially inactive');
+  assert.equal(await page.locator('.structure-switch-track').evaluate(track => getComputedStyle(track).backgroundColor), 'rgb(0, 136, 255)', 'The default efficiency-ratio track is blue');
+  const charts = page.locator('#structure-list > .structure-node > .structure-heading .structure-chart');
+  assert.ok(await charts.count() > 0, 'Default-mode charts render without changing the switch');
+  assert.deepEqual(await charts.evaluateAll(elements => [...new Set(elements.map(chart => chart.dataset.chartType))]), ['2'], 'All initial charts use Structure Chart 2');
+  await finalCounters(page, '#structure-list > .structure-node > .structure-heading .structure-chart');
+  for (let index = 0; index < await charts.count(); index++) normalized(await metrics(charts.nth(index)));
+}
+
 async function csvDownload(page, scope = 'filtered') {
   await page.locator('#export').click();
   await page.locator(`#export-form input[value="${scope}"]`).check();
@@ -247,6 +280,13 @@ async function mainFlow(browser) {
   try {
     await page.goto(url);
     await page.locator('.entity-card:not(.skeleton-card)').first().waitFor();
+    assert.equal(await page.locator('#global-search').count(), 0, 'The redundant gray search button is removed from the shared header');
+    await page.locator('#registry-search').fill('Нет такой сущности narrow-layout-regression');
+    await page.locator('#results .empty-state').waitFor();
+    assert.ok(await page.locator('#clear-search').isVisible(), 'The registry search retains its clear action');
+    await page.locator('#clear-search').click();
+    await page.locator('.entity-card:not(.skeleton-card)').first().waitFor();
+    assert.equal(await page.locator('#registry-search').inputValue(), '', 'The ordinary registry search still filters and clears without a header shortcut');
     await page.locator('#table-view').click();
     await page.locator('.registry-table [data-record]').first().waitFor();
     const regularEntity = await page.locator('#paths-tab[aria-pressed="true"], #processes-tab[aria-pressed="true"]').getAttribute('id');
@@ -261,6 +301,8 @@ async function mainFlow(browser) {
     assert.equal(await page.locator('.structure-heading[aria-expanded="true"]').count(), 0);
     assert.equal(await page.locator('#structure-processes-tab').getAttribute('aria-pressed'), 'true');
     await counters(page);
+    await initialChartType(page);
+    report('default efficiency-ratio selection, blue switch, and proportional Chart 2 before any mode changes');
     const tabsPosition = await page.evaluate(() => {
       const tabs = document.querySelector('#structure-entity-tabs');
       const box = tabs.getBoundingClientRect(), toggle = document.querySelector('#structure-toggle').getBoundingClientRect();
@@ -291,7 +333,9 @@ async function mainFlow(browser) {
     assert.match(pathId, /^structure-kp-/);
     const sourcePath = await page.evaluate(id => {
       const row = window.BPM_STRUCTURE_PATHS.records.find(record => record.id === id);
-      return {title: row.title, number: row.number, count: row.linkedProcessIds.length, linkedIds: [...row.linkedProcesses].sort((a, b) => a.number - b.number).map(record => record.id)};
+      return {title: row.title, number: row.number, count: row.linkedProcessIds.length,
+        linkedIds: [...row.linkedProcesses].sort((a, b) => a.number - b.number).map(record => record.id),
+        linkedRows: row.linkedProcesses.map(({id, number, owner, efficiency}) => ({id, number, owner, efficiency}))};
     }, pathId);
     assert.equal(await firstRow.locator('.structure-row-title').innerText(), sourcePath.title, 'Path name comes from the path model');
     assert.match(await firstRow.locator('.id-badge').innerText(), /КП/);
@@ -302,33 +346,62 @@ async function mainFlow(browser) {
     assert.equal(await drillButton.getAttribute('aria-expanded'), 'true');
     const drillPanel = page.locator(`[id="${drillPanelId}"]`);
     assert.ok(await drillPanel.isVisible());
+    assert.equal(await drillPanel.locator('.structure-incoming-table').count(), 1, 'Linked processes use the incoming insertion');
     assert.equal(await drillPanel.locator('tr[data-record-entity="processes"]').count(), sourcePath.count, 'All linked processes render together');
+    assert.equal(await drillPanel.locator('.structure-incoming-table tbody > tr > td').count(), sourcePath.count * 3, 'Incoming rows retain their three-column design');
+    assert.equal(await drillPanel.locator('[data-structure-sort], [data-structure-menu], [data-structure-close]').count(), 0, 'Incoming insertion has no duplicate sorting, context-menu or close controls');
     assert.equal(await drillPanel.locator('.structure-table-footer, .structure-pagination, [data-structure-page]').count(), 0, 'Linked-process lists with at most 50 records have no pagination controls');
     assert.deepEqual(await drillPanel.locator('tr[data-structure-record]').evaluateAll(rows => rows.map(row => row.dataset.structureRecord)), sourcePath.linkedIds, 'All actual source links render in initial ID order');
 
     await page.mouse.move(0, 0);
     await page.waitForTimeout(200);
     const idleStyles = await linkedTableStyles(drillPanel);
-    await drillPanel.locator('.structure-linked-title').hover();
+    assert.equal(idleStyles.rows.length, sourcePath.count, 'Hover checks inspect every actual incoming row');
+    await drillPanel.locator('.structure-incoming').hover({position: {x: 8, y: 8}});
     await page.waitForTimeout(200);
-    assert.deepEqual(await linkedTableStyles(drillPanel), idleStyles, 'Hovering the non-interactive linked-process container does not highlight its rows or reveal every action');
-    await drillPanel.locator('tr[data-record-entity="processes"] .structure-row-title').first().hover();
+    assert.deepEqual(await linkedTableStyles(drillPanel), idleStyles, 'Hovering the non-interactive insertion gutter does not highlight rows or actions');
+    await drillPanel.locator('tr[data-record-entity="processes"] .structure-incoming-title').first().hover();
     await page.waitForTimeout(200);
     const rowHoverStyles = await linkedTableStyles(drillPanel);
     assert.equal(rowHoverStyles.container, idleStyles.container, 'A nested row does not activate a hover background on its enclosing container');
     assert.deepEqual(rowHoverStyles.rows.slice(1), idleStyles.rows.slice(1), 'Hovering one linked row leaves every sibling row and action unchanged');
-    assert.notDeepEqual(rowHoverStyles.rows[0].backgrounds, idleStyles.rows[0].backgrounds, 'The individually interactive linked row retains its own hover');
-    assert.equal(rowHoverStyles.rows[0].moreOpacity, '1', 'Only the hovered row reveals its context-menu action');
+    assert.deepEqual(rowHoverStyles.rows[0].backgrounds, idleStyles.rows[0].backgrounds, 'Title hover preserves the incoming row background');
+    assert.notEqual(rowHoverStyles.rows[0].titleColor, idleStyles.rows[0].titleColor, 'The individual title retains its interactive hover');
+    assert.equal(rowHoverStyles.rows[0].titleColor, 'rgb(0, 136, 255)', 'Hovered incoming title uses the shared blue');
+    assert.equal(rowHoverStyles.rows[0].copyBackground, idleStyles.rows[0].copyBackground, 'Title hover does not activate the copy action');
 
-    await drillPanel.locator('[data-structure-sort][data-column="id"]').click();
+    const parentSort = async (key, direction) => {
+      const button = product.locator(`[data-structure-sort="${paths.id}"][data-column="${key}"]`);
+      for (let attempt = 0; attempt < 2; attempt++) {
+        if (await button.getAttribute('data-active') === 'true' && await button.locator('..').getAttribute('aria-sort') === direction) break;
+        await button.click();
+      }
+      assert.equal(await button.getAttribute('data-active'), 'true', `Parent ${key} is the selected sort`);
+      assert.equal(await button.locator('..').getAttribute('aria-sort'), direction);
+      assert.equal(await drillButton.getAttribute('aria-expanded'), 'true', 'Parent sorting retains the path expansion');
+    };
+    const expectedLinkedIds = (key, direction) => [...sourcePath.linkedRows].sort((a, b) => {
+      const value = key === 'owner' ? String(a.owner || '').localeCompare(String(b.owner || ''), 'ru')
+        : key === 'efficiency' ? (a.efficiency ?? -1) - (b.efficiency ?? -1) : a.number - b.number;
+      return (direction === 'descending' ? -value : value) || a.number - b.number;
+    }).map(row => row.id);
+    for (const key of ['owner', 'efficiency']) {
+      for (const direction of ['ascending', 'descending']) {
+        await parentSort(key, direction);
+        assert.deepEqual(await drillPanel.locator('tr[data-structure-record]').evaluateAll(rows => rows.map(row => row.dataset.structureRecord)), expectedLinkedIds(key, direction), `All linked rows follow parent ${key} ${direction}`);
+      }
+    }
+    assert.equal(await product.locator('[data-structure-sort][data-column="status"], [data-structure-sort][data-column="tags"]').count(), 0, 'Removed status/date and marks columns have no hidden sorting controls');
+    await parentSort('id', 'descending');
     const linkedIds = await drillPanel.locator('tr[data-structure-record]').evaluateAll(rows => rows.map(row => row.dataset.structureRecord));
-    assert.deepEqual(linkedIds, [...sourcePath.linkedIds].reverse(), 'Sorting applies to the complete linked-process list, including records beyond the old five-row limit');
-    assert.equal(await drillPanel.locator('th[aria-sort="descending"]').count(), 1);
+    assert.deepEqual(linkedIds, [...sourcePath.linkedIds].reverse(), 'Parent ID sorting applies to the complete linked-process list, including records beyond the old five-row limit');
+    assert.equal(await product.locator('.structure-table > thead > tr > th[aria-sort="descending"]').count(), 1, 'Parent remains the single visible sort control');
+    assert.equal(await drillPanel.locator('th[aria-sort], [data-structure-sort]').count(), 0, 'Incoming table adds no independent sort state');
     assert.equal(await drillPanel.locator('.structure-table-footer, .structure-pagination, [data-structure-page]').count(), 0, 'Sorting does not restore small linked-list pagination');
-    await drillPanel.evaluate(panel => { window.__structureModeTestLinkedTable = panel.querySelector('.structure-table'); });
+    await drillPanel.evaluate(panel => { window.__structureModeTestLinkedTable = panel.querySelector('.structure-incoming-table'); });
     await chartType(page, 2);
     assert.equal(await drillButton.getAttribute('aria-expanded'), 'true', 'Chart switch retains the linked-process expansion');
-    assert.ok(await drillPanel.evaluate(panel => panel.querySelector('.structure-table') === window.__structureModeTestLinkedTable), 'Chart switch preserves the linked-process table DOM');
+    assert.ok(await drillPanel.evaluate(panel => panel.querySelector('.structure-incoming-table') === window.__structureModeTestLinkedTable), 'Chart switch preserves the incoming table DOM');
     assert.deepEqual(await drillPanel.locator('tr[data-structure-record]').evaluateAll(rows => rows.map(row => row.dataset.structureRecord)), linkedIds);
     const pageCsv = parseCsv(await csvDownload(page, 'page'));
     assert.ok(pageCsv.length > 1);
@@ -434,8 +507,9 @@ async function mainFlow(browser) {
     report('rapid entity and keyboard chart changes during loading settle to the final selection');
 
     await page.emulateMedia({reducedMotion: 'reduce'});
-    for (const width of [1920, 1440, 390, 320]) {
+    for (const width of [1920, 1440, 1024, 788, 390, 320]) {
       await page.setViewportSize({width, height: 1080});
+      assert.equal(await page.locator('#global-search').count(), 0, `No redundant header search at ${width}px`);
       for (const name of ['paths', 'processes']) {
         await entity(page, name);
         const fixture = await productFixture(page, name === 'paths' ? 'BPM_STRUCTURE_PATHS' : 'BPM_STRUCTURE');
@@ -457,7 +531,7 @@ async function mainFlow(browser) {
     assert.equal(await page.locator('#table-view').getAttribute('aria-pressed'), 'true', 'Returning preserves table view');
     assert.equal(await page.locator('.view-switch').isVisible(), true, 'Cards/table switch returns on leaving structure');
     assert.deepEqual(errors, [], 'No uncaught browser exceptions');
-    report('1920/1440/390/320px expanded layouts, reduced motion, and return to regular table');
+    report('1920/1440/1024/788/390/320px responsive controls and expanded layouts, no header search, reduced motion, and return to regular table');
   } finally { await context.close(); }
 }
 
@@ -496,6 +570,7 @@ async function edgeCases(browser) {
     await page.goto(url);
     await page.locator('#structure-toggle').click();
     await ready(page);
+    await initialChartType(page);
     for (const name of ['processes', 'paths']) {
       await entity(page, name);
       await chartType(page, 2);

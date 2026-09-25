@@ -6,11 +6,11 @@
   const image = (name, cls = '') => `<img src="assets/${esc(name)}.svg" alt=""${cls ? ` class="${cls}"` : ''}>`;
   const favoriteIcon = (cls='',name='liked',label='В избранном') => `<span class="favorite-heart ${cls}" ${label?`role="img" aria-label="${esc(label)}"`:'aria-hidden="true"'}>${image(name)}</span>`;
   const data = window.BPM_DATA || [];
-  const allRecords = [...data,...(window.BPM_STRUCTURE?.records || []),...(window.BPM_STRUCTURE_PATHS?.records || [])];
+  const allRecords = [...data,...(window.BPM_STRUCTURE?.records || []),...(window.BPM_STRUCTURE_PATHS?.records || []),...(window.BPM_CABINET_DATA?.entities || [])];
   const defaults = {from:'2001-08-21',to:'2026-09-13'};
   const state = {entity:'paths',view:'cards',query:'',filters:{status:[],block:[],division:[],process:[],owner:[]},sort:'id-asc',sorts:{cards:'id-asc',table:'id-asc'},from:defaults.from,to:defaults.to,page:1,size:20,favoritesOnly:false,top:false,favorites:new Set(['paths-1232','paths-1233'])};
   try { const saved = JSON.parse(localStorage.getItem('bpm-registry-favorites')); if (Array.isArray(saved)) state.favorites = new Set(saved.filter(id => allRecords.some(row => row.id === id))); } catch (_) { /* Storage may be unavailable for local files. */ }
-  let structureMode=false, structure, tasksMode=false, tasks, resumeStructure=false;
+  let structureMode=false, structure, tasksMode=false, tasks, cabinetMode=false, cabinet, resumeStructure=false;
   const selects = {};
   let activeSelect = null, datePopup = null, actionMenu = null, tooltip = null, toastTimer;
   const LOADING_DURATION = 2000;
@@ -149,7 +149,7 @@
   }
   function renderTable(rows, loading = false) {
     const process=state.entity==='processes';
-    return `<div class="table-scroll" tabindex="0" role="region" aria-label="Таблица реестра; прокручивайте по горизонтали для остальных столбцов"><table class="registry-table${process?' processes-table':''}"><caption class="sr-only">${process?'Процессы':'Клиентские пути'}</caption><colgroup><col><col style="width:240px"><col style="width:200px">${process?'<col style="width:168px">':''}<col style="width:188px"></colgroup><thead class="table-header"><tr>${tableHeader(process?'Процесс':'Клиентский путь','id')}${tableHeader('Владелец','owner')}${tableHeader('Статус','status')}${process?tableHeader('Теги','tags'):''}${tableHeader('Эффективность','eff')}</tr></thead><tbody>${loading?window.BpmLoading.tableRows(rows.length||6,process):rows.map(row=>`<tr data-record="${esc(row.id)}"><td class="description-cell"><div class="metadata">${state.favorites.has(row.id)?favoriteIcon('inline-bookmark'):''}${metadata(row)}${process?`<span class="tag">${esc(row.type)}</span>`:''}</div><button class="card-title table-title" data-detail="${esc(row.id)}">${esc(row.title)}</button><p class="card-description">Блок «${esc(row.block)}» / Дивизион «${esc(row.division)}»</p></td><td>${owner(row)}</td><td><div class="table-status"><div class="status">${status(row)}</div><time datetime="${row.date}">${dateLabel(row.date)}</time></div></td>${process?`<td><div class="table-tags">${row.tags.map(tag=>`<span class="tag">${esc(tag)}</span>`).join('')}</div></td>`:''}<td><div class="efficiency-stack">${efficiency(row,true)}${row.delta?`<span class="table-delta">${row.delta>0?'+':''}${row.delta} п. п. ${row.delta>0?'↑':'↓'}</span>`:''}</div></td></tr>`).join('')}</tbody></table></div>`;
+    return `<div class="table-scroll" tabindex="0" role="region" aria-label="Таблица реестра; прокручивайте по горизонтали для остальных столбцов"><table class="registry-table${process?' processes-table':''}"><caption class="sr-only">${process?'Процессы':'Клиентские пути'}</caption><colgroup><col><col style="width:240px"><col style="width:188px"></colgroup><thead class="table-header"><tr>${tableHeader(process?'Процесс':'Клиентский путь','id')}${tableHeader('Владелец','owner')}${tableHeader('Эффективность','eff')}</tr></thead><tbody>${loading?window.BpmLoading.tableRows(rows.length||6):rows.map(row=>`<tr data-record="${esc(row.id)}"><td class="description-cell"><div class="metadata">${state.favorites.has(row.id)?favoriteIcon('inline-bookmark'):''}${metadata(row)}${process?`<span class="tag">${esc(row.type)}</span>`:''}</div><button class="card-title table-title" data-detail="${esc(row.id)}">${esc(row.title)}</button><p class="card-description">Блок «${esc(row.block)}» / Дивизион «${esc(row.division)}»</p></td><td>${owner(row)}</td><td><div class="efficiency-stack">${efficiency(row,true)}${row.delta?`<span class="table-delta">${row.delta>0?'+':''}${row.delta} п. п. ${row.delta>0?'↑':'↓'}</span>`:''}</div></td></tr>`).join('')}</tbody></table></div>`;
   }
   function hasFilters() {return state.query.trim() || Object.values(state.filters).some(v=>v.length) || state.from!==defaults.from || state.to!==defaults.to || state.favoritesOnly || state.top;}
   function renderSelectedFilters() {
@@ -183,7 +183,7 @@
     $('result-announcement').textContent=isLoading?'Загрузка реестра…':`${state.entity==='paths'?'Клиентские пути':'Процессы'}: найдено ${count}. Страница ${state.page} из ${pages}.`;
   }
   function loadResults() {
-    if(tasksMode)return;
+    if(tasksMode||cabinetMode)return;
     if(structureMode){structure.reload();return;}
     clearTimeout(loadingTimer);
     closeAction();
@@ -196,7 +196,7 @@
     },LOADING_DURATION);
   }
   function render() {
-    if(tasksMode)return;
+    if(tasksMode||cabinetMode)return;
     if(structureMode){structure.refresh();return;}
     document.body.classList.toggle('table-view',state.view==='table');
     $('sort-select').hidden=state.view==='table';
@@ -227,10 +227,14 @@
   function favorite(row) {
     const add=!state.favorites.has(row.id);if(add)state.favorites.add(row.id);else state.favorites.delete(row.id);
     try{localStorage.setItem('bpm-registry-favorites',JSON.stringify([...state.favorites]));}catch(_){}
-    render();toast(add?'Добавлено в избранное':'Удалено из избранного');
+    render();if(cabinetMode)cabinet.refresh();toast(add?'Добавлено в избранное':'Удалено из избранного');
   }
   async function copyId(row) {
     const value=row.numberSimulated?row.code:`${row.entity==='paths'?'КП':'П'} ${row.number}`;
+    return copyText(value);
+  }
+  async function copyText(value) {
+    value=String(value??'');
     try {await navigator.clipboard.writeText(value);toast(`Скопировано: ${value}`);} catch (_) {
       const area=document.createElement('textarea');area.value=value;area.style.position='fixed';area.style.opacity='0';document.body.append(area);area.select();const ok=document.execCommand('copy');area.remove();toast(ok?`Скопировано: ${value}`:`ID: ${value}`);
     }
@@ -272,7 +276,6 @@
   function changeEntity(entity) {
     if(structureMode)setStructure(false);
     activeSelect?.close();state.entity=entity;state.top=false;
-    if(entity==='paths'&&state.sorts.table.startsWith('tags-')){state.sorts.table='id-asc';if(state.view==='table')state.sort='id-asc';}
     ['paths','processes'].forEach(value=>{$(`${value}-tab`).classList.toggle('active',value===entity);$(`${value}-tab`).setAttribute('aria-pressed',String(value===entity));});
     Object.keys(state.filters).forEach(key=>{const options=optionsFor(key);state.filters[key]=state.filters[key].filter(value=>options.some(o=>o.value===value));selects[key].setOptions(options);selects[key].set(state.filters[key]);});selects.owner.host.querySelector('label').textContent=entity==='paths'?'Владельцы КП':'Владельцы П';changed();
   }
@@ -366,12 +369,15 @@
   $('sidebar').addEventListener('focusin',e=>{if(keyboardMode&&!menuPeekDismissed)setMenuPeek(true);});
   $('sidebar').addEventListener('focusout',e=>{if(!$('sidebar').contains(e.relatedTarget)){menuPeekDismissed=false;setMenuPeek(false);}});
   [['paths-nav','paths-submenu'],['gemba-nav','gemba-submenu']].forEach(([buttonId,menuId])=>{$(buttonId).addEventListener('click',()=>{if(innerWidth>=768&&document.body.classList.contains('menu-collapsed')&&!document.body.classList.contains('menu-peek')){menuPeekDismissed=false;setMenuPeek(true);return;}const open=$(buttonId).getAttribute('aria-expanded')!=='true';$(buttonId).setAttribute('aria-expanded',String(open));$(menuId).hidden=!open;$(buttonId).querySelector('.nav-chevron').src=`assets/chevron-${open?'up':'down'}.svg`;});});
-  $('top-paths').addEventListener('click',()=>{setService(false);history.replaceState(null,'','#main');reset();changeEntity('paths');state.top=true;setSort('eff-desc');changed();closeMobile();window.scrollTo({top:0,behavior:'instant'});});
-  $('registry-nav').addEventListener('click',e=>{e.preventDefault();setService(false);history.pushState(null,'','#main');if(structureMode)setStructure(false);reset();closeMobile();});
-  $('tasks-nav').addEventListener('click',e=>{e.preventDefault();setService(true);if(location.hash!=='#tasks')history.pushState(null,'','#tasks');closeMobile();window.scrollTo({top:0,behavior:'instant'});});
+  $('top-paths').addEventListener('click',()=>{navigateRegistry('paths');state.top=true;setSort('eff-desc');changed();});
+  $('registry-nav').addEventListener('click',e=>{e.preventDefault();navigateRegistry(state.entity);});
+  $('tasks-nav').addEventListener('click',e=>{e.preventDefault();navigateService('tasks');});
+  $('cabinet-nav').addEventListener('click',()=>navigateService('cabinet'));
+  // Capture also supersedes the portable document's legacy brand-reload handler.
+  document.querySelector('.brand').addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();navigateService('cabinet');},true);
+  document.querySelector('.skip-link').addEventListener('click',e=>{e.preventDefault();$('main').focus({preventScroll:true});$('main').scrollIntoView({block:'start'});});
   document.querySelectorAll('.nav-item').forEach(button=>button.setAttribute('aria-label',button.dataset.tooltip || button.textContent.trim()));
   document.querySelectorAll('[data-service]').forEach(button=>button.addEventListener('click',()=>toast(`«${button.dataset.service}» — раздел вне демонстрационного реестра.`)));
-  $('global-search').addEventListener('click',()=>{if(tasksMode){tasks.focusSearch();return;}const input=$(structureMode?'structure-search':'registry-search');input.scrollIntoView({block:'center'});input.focus({preventScroll:true});});
   $('notifications').addEventListener('click',()=>toast('Счётчик взят из макета. Сервис уведомлений не подключён.'));
   $('profile').addEventListener('click',()=>toast('Демонстрационный профиль. Авторизация не подключена.'));
   document.addEventListener('pointerdown',e=>{keyboardMode=false;if(!$('sidebar').contains(e.target))setMenuPeek(false);if(activeSelect&&!activeSelect.host.contains(e.target)&&!activeSelect.popup?.contains(e.target))activeSelect.close();if(actionMenu&&!actionMenu.contains(e.target)&&!e.target.closest('[data-menu]'))closeAction();});
@@ -390,8 +396,9 @@
   document.addEventListener('scroll',e=>{hideTooltip();if(activeSelect&&e.target!==activeSelect.popup)positionPopup(activeSelect.popup,activeSelect.control,activeSelect.config.minPopupWidth??(activeSelect.config.multiple?300:260));},true);
   window.addEventListener('resize',()=>{syncMenu();activeSelect?.close();closeAction();hideTooltip();});
   function openSharedDetail(){
+    if(!location.hash||location.hash==='#cabinet'){setService('cabinet');return;}
     if(location.hash==='#tasks'){setService(true);return;}
-    if((!location.hash||location.hash==='#main')&&tasksMode){setService(false);return;}
+    if(location.hash==='#main'){setService(false);return;}
     const match=location.hash.match(/^#(process|journey|path)=(.+)$/);if(!match)return;
     let id;try{id=decodeURIComponent(match[2]);}catch(_){return;}
     const entity=match[1]==='process'?'processes':'paths';
@@ -405,7 +412,7 @@
       }
     }
     if(!row)return;
-    if(tasksMode)setService(false);
+    if(tasksMode||cabinetMode)setService(false);
     if(row.source==='xlsx'){
       if(!structureMode)setStructure(true);
       if(structure.getEntity()!==entity)document.querySelector(`[data-structure-entity="${entity}"]`)?.click();
@@ -437,22 +444,65 @@
     closePopups:()=>{activeSelect?.close();closeDate();closeAction();hideTooltip();},
     openProcess:(id,trigger)=>{const row=allRecords.find(record=>record.entity==='processes'&&record.id===id);if(row)openDetail(row,trigger);else toast('Деталка связанного процесса пока не представлена в данных.');}
   });
-  function setService(showTasks){
-    if(showTasks===tasksMode)return;
-    activeSelect?.close();closeDate();closeAction();hideTooltip();closeMobile();
-    if(showTasks){
-      resumeStructure=structureMode;if(structureMode)setStructure(false);
-      clearTimeout(loadingTimer);isLoading=false;window.BpmCardVisuals.cancelCounters($('results'));
-      tasksMode=true;document.body.classList.remove('table-view');$('registry-panel').hidden=true;tasks.enter();
-    }else{
-      tasks.leave();tasksMode=false;$('registry-panel').hidden=false;
-      if(resumeStructure){resumeStructure=false;setStructure(true);}else loadResults();
+  cabinet=window.BpmCabinet.create({
+    toast,closePopups,openDetail,copyText,
+    isFavorite:row=>state.favorites.has(row.id),toggleFavorite:favorite,
+    openTasks:()=>navigateService('tasks'),navigateRegistry,createTask
+  });
+  function closePopups(){activeSelect?.close();closeDate();closeAction();hideTooltip();}
+  function closeServiceDialogs(){
+    window.BpmProcessDrawer.close();window.BpmTaskDrawer.close();
+    document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());
+  }
+  function createTask(trigger){
+    closePopups();
+    const previousNotice=$('task-drawer')?.querySelector('.task-choice-notice');
+    if(previousNotice){clearTimeout(previousNotice._hideTimer);previousNotice.hidden=true;}
+    window.BpmTaskDrawer.open({trigger,closePopups,onChoose:({label})=>{
+      const dialog=$('task-drawer');let note=dialog.querySelector('.task-choice-notice');
+      if(!note){note=document.createElement('div');note.className='toast task-choice-notice';note.setAttribute('role','status');dialog.append(note);}
+      note.textContent=`Выбран тип «${label}». Форма создания будет добавлена после получения макета.`;note.hidden=false;
+      clearTimeout(note._hideTimer);note._hideTimer=setTimeout(()=>{note.hidden=true;},4500);
+    }});
+  }
+  function focusMain(){window.scrollTo({top:0,behavior:'instant'});$('main').focus({preventScroll:true});}
+  function navigateService(service){
+    const hash=service==='registry'?'#main':`#${service}`;
+    if(location.hash!==hash)history.pushState(null,'',hash);
+    setService(service);focusMain();
+  }
+  function navigateRegistry(entity='paths'){
+    setService(false);if(structureMode)setStructure(false);reset();
+    changeEntity(entity==='processes'?'processes':'paths');
+    navigateService('registry');
+  }
+  function setService(value){
+    // Keep the existing boolean callers compatible with the third section.
+    const service=value===true?'tasks':value===false?'registry':value;
+    const previous=tasksMode?'tasks':cabinetMode?'cabinet':'registry';
+    closePopups();closeMobile();closeServiceDialogs();
+    if(service!==previous){
+      if(previous==='registry'){
+        resumeStructure=structureMode;if(structureMode)setStructure(false);
+        clearTimeout(loadingTimer);isLoading=false;window.BpmCardVisuals.cancelCounters($('results'));
+      }else if(previous==='tasks')tasks.leave();
+      else cabinet.leave();
+      tasksMode=service==='tasks';cabinetMode=service==='cabinet';
+      $('registry-panel').hidden=service!=='registry';
+      $('tasks-panel').hidden=!tasksMode;$('cabinet-panel').hidden=!cabinetMode;
+      document.body.classList.remove('table-view');
+      if(tasksMode)tasks.enter();
+      else if(cabinetMode)cabinet.enter();
+      else if(resumeStructure){resumeStructure=false;setStructure(true);}
+      else loadResults();
     }
-    document.body.classList.toggle('tasks-mode',showTasks);
-    document.title=showTasks?'Задачи — Sber BPM':'Реестр КП и П — Sber BPM';
-    [['tasks-nav',showTasks],['registry-nav',!showTasks]].forEach(([id,current])=>{$(id).classList.toggle('current',current);if(current)$(id).setAttribute('aria-current','page');else $(id).removeAttribute('aria-current');});
+    document.body.classList.toggle('tasks-mode',tasksMode);
+    document.body.classList.toggle('cabinet-mode',cabinetMode);
+    document.title=cabinetMode?'Мой кабинет — Sber BPM':tasksMode?'Задачи — Sber BPM':'Реестр КП и П — Sber BPM';
+    $('main').setAttribute('aria-labelledby',cabinetMode?'cabinet-title':tasksMode?'tasks-title':'page-title');
+    [['cabinet-nav',cabinetMode],['tasks-nav',tasksMode],['registry-nav',!tasksMode&&!cabinetMode]].forEach(([id,current])=>{$(id).classList.toggle('current',current);if(current)$(id).setAttribute('aria-current','page');else $(id).removeAttribute('aria-current');});
   }
   $('structure-toggle').addEventListener('click',()=>setStructure(!structureMode));
-  window.addEventListener('hashchange',openSharedDetail);
+  window.addEventListener('hashchange',()=>{openSharedDetail();if(!document.querySelector('dialog[open]'))focusMain();});
   syncMenu();loadResults();openSharedDetail();
 })();

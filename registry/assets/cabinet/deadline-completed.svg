@@ -1,0 +1,11 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Deadline indicator &#194;&#183; PDF source" clip-path="url(#clip0_0_212)">
+<path id="Ring" fill-rule="evenodd" clip-rule="evenodd" d="M0 16C0 7.17146 7.17146 0 16 0C24.8285 0 32 7.17146 32 16C32 24.8285 24.8285 32 16 32C7.17146 32 0 24.8285 0 16Z" fill="#34C759"/>
+<path id="Hands" d="M14.7673 22.7422C14.477 22.7422 14.2049 22.6334 14.0053 22.4338L9.25185 17.5352C8.79827 17.1179 8.78016 16.4103 9.21553 15.9568C9.63278 15.5032 10.3404 15.4851 10.7939 15.9204L14.2774 18.406C14.477 18.5875 14.7854 18.5512 14.9486 18.3335L22.0929 9.70452C22.4557 9.21462 23.1633 9.1058 23.6532 9.48684C24.1431 9.84967 24.2519 10.5572 23.8709 11.0471L15.6562 22.2887C15.4566 22.5427 15.1663 22.706 14.8579 22.7242C14.8217 22.7423 14.8035 22.7422 14.7673 22.7422Z" fill="white"/>
+</g>
+<defs>
+<clipPath id="clip0_0_212">
+<rect width="32" height="32" fill="white"/>
+</clipPath>
+</defs>
+</svg>

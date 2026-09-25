@@ -19,8 +19,9 @@
 .pd-data-filter{position:relative;flex:0 0 24px;align-self:center}
 .pd-data-filter>summary{display:flex;align-items:center;justify-content:center;width:24px;height:24px;cursor:pointer;list-style:none;border:0;background:none}
 .pd-data-filter>summary::-webkit-details-marker{display:none}
+.pd-data-filter>summary:is(:hover,:focus-visible) img{filter:brightness(0) invert(10.1961%)}
 .pd-data-filter>summary:focus-visible{outline:2px solid var(--blue);outline-offset:5px;border-radius:4px}
-.pd-data-filter-popup{position:absolute;z-index:5;right:0;top:36px;width:268px;padding:8px;background:var(--white);box-shadow:0 4px 6px #1a1a1a1f,0 8px 24px #1a1a1a12;border-radius:12px;display:flex;flex-direction:column;gap:4px}
+.pd-data-filter-popup{position:absolute;z-index:5;right:0;top:36px;width:268px;padding:8px;background:var(--white);box-shadow:0 4px 6px #1a1a1a1f,0 8px 24px #1a1a1a12;border-radius:16px;display:flex;flex-direction:column;gap:4px}
 .pd-data-filter-popup p{font-size:13px;color:var(--secondary);padding:4px 8px}
 .pd-data-filter-popup button{text-align:left;padding:10px 8px;border-radius:8px;font-size:13px;line-height:18px}
 .pd-data-filter-popup button:hover,.pd-data-filter-popup button[aria-pressed=true]{background:var(--hover)}

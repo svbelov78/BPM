@@ -78,8 +78,10 @@ async function headingMetrics(heading) {
       return {x: box.x, y: box.y, width: box.width, height: box.height, centerY: box.y + box.height / 2};
     };
     const name = element.querySelector('.structure-name');
+    const style = getComputedStyle(name);
     return {
       name: name.textContent,
+      font: {size: style.fontSize, lineHeight: style.lineHeight, weight: style.fontWeight, tracking: style.letterSpacing},
       title: rect('.structure-title'),
       owner: rect('.structure-owner'),
       avatar: element.querySelector('.structure-owner > .avatar') ? rect('.structure-owner > .avatar') : null,
@@ -91,6 +93,52 @@ async function headingMetrics(heading) {
       nameFirstLineCenterY: name.getBoundingClientRect().top + parseFloat(getComputedStyle(name).lineHeight) / 2
     };
   });
+}
+
+async function incomingOwnerAppearance(table, width, direction) {
+  const owners = await table.locator('.structure-incoming-owner').evaluateAll(elements => elements.map(owner => {
+    const style = getComputedStyle(owner.querySelector('.structure-incoming-owner-name'));
+    const avatar = owner.querySelector('.avatar'), circle = avatar.getBoundingClientRect();
+    return {font: [style.fontSize, style.lineHeight, style.fontWeight, style.letterSpacing], width: circle.width, height: circle.height, blank: avatar.childNodes.length === 0, hidden: avatar.getAttribute('aria-hidden')};
+  }));
+  check(width, `${direction} incoming owners`, () => {
+    assert.ok(owners.length > 0, 'Related list has owners');
+    owners.forEach(owner => {
+      assert.deepEqual(owner.font, ['13px', '18px', '400', '-0.039px'], 'Incoming owner uses Additional/R');
+      assert.deepEqual([owner.width, owner.height, owner.blank, owner.hidden], [32, 32, true, 'true'], 'Incoming avatar is a blank decorative 32px circle');
+    });
+  });
+}
+
+async function uniformHeadingTypography(page, width, state) {
+  const headings = await page.locator('.structure-heading').evaluateAll(elements => elements.filter(element => element.getClientRects().length).map(element => {
+    const name = element.querySelector('.structure-name'), icon = element.querySelector('.structure-title > img');
+    const style = getComputedStyle(name), nameBox = name.getBoundingClientRect(), iconBox = icon.getBoundingClientRect();
+    const title = element.querySelector('.structure-title').getBoundingClientRect(), heading = element.getBoundingClientRect();
+    const siblings = [...element.children].filter(child => !child.matches('.structure-title')).map(child => child.getBoundingClientRect());
+    return {
+      name: name.textContent, kind: element.closest('.structure-node').dataset.kind,
+      font: {size: style.fontSize, lineHeight: style.lineHeight, weight: style.fontWeight, tracking: style.letterSpacing},
+      icon: {width: iconBox.width, height: iconBox.height, loaded: icon.complete && icon.naturalWidth > 0, centerY: iconBox.y + iconBox.height / 2},
+      firstLineCenterY: nameBox.y + parseFloat(style.lineHeight) / 2,
+      titleHeight: nameBox.height,
+      titleContained: title.left >= heading.left && title.right <= heading.right + 1 && title.top >= heading.top && title.bottom <= heading.bottom + 1,
+      overlaps: siblings.some(box => Math.min(title.right, box.right) - Math.max(title.left, box.left) > 1 && Math.min(title.bottom, box.bottom) - Math.max(title.top, box.top) > 1)
+    };
+  }));
+  check(width, `${state} headings exist`, () => assert.ok(headings.length > 0));
+  for (const heading of headings) {
+    check(width, `${state} ${heading.name} Headline 2 SB`, () => {
+      assert.deepEqual(heading.font, {size: '22px', lineHeight: '26px', weight: '590', tracking: '-0.066px'});
+      assert.equal(heading.icon.loaded, true, 'Native hierarchy icon has loaded');
+      assert.equal(heading.icon.width, 24);
+      assert.equal(heading.icon.height, 24);
+      close(heading.icon.centerY, heading.firstLineCenterY, 'Icon stays centered on the first title line');
+      assert.equal(heading.titleContained, true, 'Wrapped title remains inside its accordion heading');
+      assert.equal(heading.overlaps, false, 'Wrapped title does not overlap owner, chart or chevron');
+    });
+  }
+  if (width <= 390) check(width, `${state} mobile long-title wrap`, () => assert.ok(headings.some(heading => heading.titleHeight > 26), 'Long titles wrap instead of shrinking the type style'));
 }
 
 async function hoverBackground(page, heading) {
@@ -177,6 +225,7 @@ async function inspectWidth(browser, width) {
     check(width, 'collapsed entry', () => { assert.equal(expandedOnEntry, 0); assert.equal(rootsOnEntry, 9); });
     check(width, 'removed auxiliary controls', () => assert.equal(removed, 0));
     await finalVisibleCounters(page, width, 'initial structure');
+    await uniformHeadingTypography(page, width, 'processes collapsed');
 
     const root = page.locator('#structure-list > .structure-node').filter({has: page.locator(':scope > .structure-heading .structure-name', {hasText: 'Развитие клиентского опыта B2C'})});
     const rootHeading = root.locator(':scope > .structure-heading');
@@ -193,6 +242,11 @@ async function inspectWidth(browser, width) {
     await noPageOverflow(page, width, 'expanded structure');
 
     const metrics = await Promise.all([rootHeading, divisionHeading, productHeading].map(headingMetrics));
+    const panelWidth = await page.locator('.registry-panel').evaluate(element => element.clientWidth - parseFloat(getComputedStyle(element).paddingLeft) - parseFloat(getComputedStyle(element).paddingRight));
+    metrics.forEach(row => check(width, `${row.name} Figma typography`, () => {
+      assert.deepEqual(row.font, {size:'22px',lineHeight:'26px',weight:'590',tracking:'-0.066px'});
+    }));
+    await uniformHeadingTypography(page, width, 'processes expanded');
     for (const row of metrics) {
       check(width, `${row.name} owner`, () => {
         assert.ok(row.avatar, 'Owner avatar exists');
@@ -216,7 +270,63 @@ async function inspectWidth(browser, width) {
     check(width, 'closed hover retained', () => assert.notEqual(closedBackground.before, closedBackground.after, JSON.stringify(closedBackground)));
 
     const labels = await tableLabelMetrics(product);
-    check(width, 'table label wrappers', () => assert.equal(labels.length, 5, 'Five dedicated column label wrappers'));
+    const tableDesign = await product.locator('.structure-table').evaluate(table => {
+      const row=table.tBodies[0].rows[0], pill=row.querySelector('.table-efficiency');
+      return {
+        headerHeight:table.tHead.getBoundingClientRect().height,
+        columns:[...table.tHead.rows[0].cells].slice(1).map(cell=>cell.getBoundingClientRect().width),
+        titleFont:getComputedStyle(row.querySelector('.structure-row-title')).fontSize,
+        placeholderImages:row.querySelectorAll('.structure-owner>.avatar>img').length,
+        glyphFirst:!pill||pill.querySelector('.bpm-efficiency-glyph').getBoundingClientRect().left<pill.querySelector('.efficiency-value').getBoundingClientRect().left
+      };
+    });
+    check(width, 'updated Figma table geometry', () => {
+      close(tableDesign.headerHeight,56,'Structure header height');
+      assert.equal(tableDesign.columns.length,2,'Owner and efficiency are the only columns after the title');
+      tableDesign.columns.forEach((value,index)=>close(value,[700,184][index],'Fixed table column width'));
+      assert.equal(tableDesign.titleFont,'17px');
+      assert.equal(tableDesign.placeholderImages,0,'Outer table uses the blank avatar from the source');
+      assert.equal(tableDesign.glyphFirst,true,'Structure efficiency glyph precedes the percentage');
+    });
+    const relatedToggle = product.locator('.structure-table > tbody > tr[data-structure-record] .structure-row-count[aria-expanded]').first();
+    await relatedToggle.click();
+    const relatedDesign = await relatedToggle.evaluate(toggle => {
+      const outerRow = toggle.closest('tr'), outerTable = outerRow.closest('table');
+      const incomingTable = outerRow.nextElementSibling.querySelector('.structure-incoming-table');
+      const incomingRow = incomingTable.tBodies[0].rows[0];
+      const box = element => { const rect=element.getBoundingClientRect(); return {x:rect.x,width:rect.width}; };
+      const owner = outerRow.querySelector('.structure-owner');
+      const incomingOwner = incomingRow.querySelector('.structure-incoming-owner > .avatar');
+      const title = getComputedStyle(incomingRow.querySelector('.structure-incoming-title'));
+      const efficiency = incomingRow.querySelector('.structure-incoming-efficiency');
+      const outerEfficiencyCell = outerRow.cells[2];
+      const productHeading = outerTable.closest('.structure-node').querySelector(':scope > .structure-heading');
+      return {
+        owner:box(owner), incomingOwner:box(incomingOwner),
+        headingOwner:box(productHeading.querySelector('.structure-owner')),
+        outerTable:box(outerTable), outerViewport:box(outerTable.parentElement),
+        firstCell:box(incomingRow.cells[0]), parentFirstCell:box(outerRow.cells[0]),
+        incomingOwnerCell:box(incomingRow.cells[1]), incomingEfficiencyCell:box(incomingRow.cells[2]),
+        incomingEfficiency:box(efficiency.firstElementChild), outerEfficiencyCell:box(outerEfficiencyCell),
+        efficiencyPadding:getComputedStyle(efficiency).paddingLeft,
+        title:{size:title.fontSize,lineHeight:title.lineHeight,weight:title.fontWeight,tracking:title.letterSpacing}
+      };
+    });
+    check(width, 'parent and incoming column baselines', () => {
+      close(relatedDesign.incomingOwner.x,relatedDesign.owner.x,'Parent and incoming avatars share one vertical');
+      close(relatedDesign.firstCell.width,relatedDesign.parentFirstCell.width-16,'Incoming title column follows the parent minus its inset');
+      close(relatedDesign.incomingOwnerCell.width,684,'Incoming owner track retains the shared avatar baseline');
+      close(relatedDesign.incomingEfficiencyCell.width,184,'Incoming efficiency track');
+      close(relatedDesign.incomingEfficiency.x,relatedDesign.outerEfficiencyCell.x+24,'Incoming indicator uses the source 40px inset after its 16px table gutter');
+      assert.equal(relatedDesign.efficiencyPadding,'40px');
+      assert.deepEqual(relatedDesign.title,{size:'17px',lineHeight:'24px',weight:'590',tracking:'-0.51px'});
+      if(panelWidth>1100 && relatedDesign.outerTable.width<=relatedDesign.outerViewport.width+1) {
+        close(relatedDesign.owner.x,relatedDesign.headingOwner.x,'Accordion and table avatars share one vertical');
+      }
+    });
+    await incomingOwnerAppearance(product.locator('.structure-incoming-table'), width, 'Process → KP');
+    await noPageOverflow(page, width, 'expanded reciprocal list');
+    check(width, 'table label wrappers', () => assert.equal(labels.length, 3, 'Only title, owner and efficiency column labels remain'));
     for (const label of labels) {
       check(width, `${label.text} table label`, () => {
         assert.equal(label.wordBreak, 'normal');
@@ -235,7 +345,24 @@ async function inspectWidth(browser, width) {
     await page.waitForTimeout(1300);
     await finalVisibleCounters(page, width, 'expanded structure');
     await page.screenshot({path: `/tmp/bpm-alignment-${width}-structure.png`, fullPage: false});
-    if (width === 1920) await product.locator('.structure-table thead').screenshot({path: '/tmp/bpm-alignment-1920-table-header.png'});
+    if (width === 1920) await product.locator('.structure-table > thead').screenshot({path: '/tmp/bpm-alignment-1920-table-header.png'});
+    await page.locator('#structure-paths-tab').click();
+    await page.waitForTimeout(2200);
+    await uniformHeadingTypography(page, width, 'paths collapsed');
+    const pathRoot = page.locator('#structure-list > .structure-node').filter({has: page.locator(':scope > .structure-heading .structure-name', {hasText: 'Развитие клиентского опыта B2C'})});
+    await pathRoot.locator(':scope > .structure-heading').click();
+    const pathDivision = pathRoot.locator('.structure-node[data-kind=division]').filter({has: page.locator(':scope > .structure-heading .structure-name', {hasText: /^(Дивизион ")?Прайм("|)$/})});
+    await pathDivision.locator(':scope > .structure-heading').click();
+    const pathProduct = pathDivision.locator('.structure-node[data-kind=product]').filter({has: page.locator(':scope > .structure-heading .structure-name', {hasText: /^СберПрайм$/})});
+    await pathProduct.locator(':scope > .structure-heading').click();
+    await uniformHeadingTypography(page, width, 'paths expanded');
+    await pathProduct.locator('.structure-table > tbody > tr[data-structure-record] .structure-row-count[aria-expanded]').first().click();
+    await incomingOwnerAppearance(pathProduct.locator('.structure-incoming-table'), width, 'KP → process');
+    await noPageOverflow(page, width, 'expanded client-path structure');
+    await pathProduct.locator(':scope > .structure-heading').scrollIntoViewIfNeeded();
+    await page.screenshot({path: `/tmp/bpm-alignment-${width}-structure-paths.png`, fullPage: false});
+    await page.locator('#structure-processes-tab').click();
+    await page.waitForTimeout(2200);
     await page.locator('#structure-toggle').click();
     await page.waitForTimeout(2200);
     await alignedToolbar(page, width, 'return from structure', 'registry-search');
@@ -288,7 +415,7 @@ async function inspectWidth(browser, width) {
       console.error(`FAIL — ${failures.length} alignment regressions:\n${failures.join('\n')}`);
       process.exitCode = 1;
     } else {
-      console.log('PASS — cards/table for both entity tabs, responsive toolbar, mobile filter open/close, structure enter/leave, collapsed entry, shared hierarchy columns, first-line icons, hover, populated owners, counters and table labels at 1920/1440/1024/390/320px.');
+      console.log('PASS — cards/table for both entity tabs, responsive toolbar, mobile filter open/close, structure enter/leave, collapsed entry, shared hierarchy/parent/incoming columns, uniform Headline 2 SB for collapsed/expanded process and client-path hierarchies, loaded 24px first-line icons, long-title wrapping without overlap, hover, populated owners, counters and table labels at 1920/1440/1024/390/320px.');
     }
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

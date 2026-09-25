@@ -249,7 +249,8 @@ async function processAndNavigation(page) {
   await page.keyboard.press('Escape');await page.waitForFunction(() => !document.getElementById('process-drawer').open && !document.body.classList.contains('pd-drawer-open'));
   assert.ok(await trigger.evaluate(element => element === document.activeElement));
   assert.equal(await page.locator('#tasks-panel').isVisible(),true);
-  await page.locator('#global-search').click();assert.ok(await page.locator('#tasks-search').evaluate(element => element === document.activeElement));
+  assert.equal(await page.locator('#global-search').count(),0,'The redundant gray header search is removed in Tasks too');
+  await page.locator('#tasks-search').focus();assert.ok(await page.locator('#tasks-search').evaluate(element => element === document.activeElement));
   await page.locator('#registry-nav').click();
   await page.locator('.entity-card:not(.skeleton-card)').first().waitFor();
   assert.equal(await page.locator('#tasks-panel').isVisible(),false);
@@ -265,7 +266,7 @@ async function processAndNavigation(page) {
   await page.locator('#registry-nav').click();
   await page.locator('.entity-card:not(.skeleton-card)').first().waitFor();
   assert.equal(await page.locator('body').evaluate(element => element.classList.contains('structure-mode')),false,'Registry menu explicitly returns to normal view');
-  report('local process details, returned focus, global search and registry/structure browser history');
+  report('local process details, returned focus, retained task search without the header shortcut, and registry/structure browser history');
 }
 
 async function responsive(page) {

@@ -1,0 +1,116 @@
+/* Products BPM 29:4418. Shared Nordic components; only cabinet layout is scoped here. */
+.cabinet-mode{--header:98px}
+.cabinet-panel{container: cabinet / inline-size;min-width:0}
+/* The feed column grows with its cards: 420 px plus the two 8 px inner gutters.
+   Once capped, only the right column receives the remaining space. */
+.cabinet-layout{--cabinet-feed-max:436px;display:grid;grid-template-columns:clamp(400px,calc(27.272727% - 17.454545px),var(--cabinet-feed-max)) minmax(0,1fr);gap:24px;align-items:start}
+.cabinet-left,.cabinet-right{display:flex;flex-direction:column;gap:16px;min-width:0}
+.cabinet-left{container:cabinet-feed-column / inline-size}
+.cabinet-widget{background:var(--panel);border-radius:24px;min-width:0;position:relative;overflow:hidden}
+.cabinet-widget-header{height:88px;display:flex;align-items:center;gap:8px;padding:0 24px;flex-shrink:0}
+.cabinet-widget-header h2{font-size:26px;line-height:31px;letter-spacing:-.078px;font-weight:700;min-width:0}
+.cabinet-heading-link{display:flex;align-items:center;gap:8px;text-align:left;min-width:0}
+.cabinet-heading-link>span:first-child{white-space:nowrap}
+.cabinet-heading-link:hover{color:var(--blue)}
+.cabinet-count{color:var(--secondary);font-weight:700}
+.cabinet-actions{display:flex;gap:16px;margin-left:auto;flex-shrink:0}
+.cabinet-icon-button{display:inline-flex;width:24px;height:24px;align-items:center;justify-content:center;flex-shrink:0;border-radius:4px}
+.cabinet-icon-button:hover{background:var(--hover)}
+.cabinet-icon-button:active{background:var(--positive);box-shadow:var(--click-shadow)}
+.cabinet-icon-button[aria-expanded=true],.cabinet-icon-button.has-filter{box-shadow:0 0 0 2px var(--blue)}
+/* Filter is an unframed icon in every pointer/selection state; keep keyboard focus visible. */
+.cabinet-icon-button[data-cabinet-filter]{background:none;border:0;box-shadow:none;border-radius:0}
+.cabinet-icon-button[data-cabinet-filter] img{filter:none}
+.cabinet-icon-button[data-cabinet-filter]:is(:hover,:focus-visible):not(:disabled) img{filter:brightness(0) invert(10.1961%)}
+.cabinet-link-icon{position:relative;display:inline-flex;width:24px;height:24px;overflow:hidden;flex-shrink:0}
+.cabinet-link-icon>img{position:absolute;inset:0;width:32px;height:32px}
+/* The design mask is the full 24px rectangle. Overflow clipping is equivalent
+   and also works under file://, where external SVG CSS masks are CORS-blocked. */
+.cabinet-link-layer{position:absolute;inset:-1px 0 1px;overflow:hidden}
+.cabinet-feed-widget{height:auto;display:flex;flex-direction:column}
+.cabinet-feed-widget:not(.is-expanded){max-width:var(--cabinet-feed-max)}
+.cabinet-feed{display:flex;flex-direction:column;gap:8px;padding:0 8px 24px;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--secondary) transparent}
+.cabinet-feed>*{flex-shrink:0}
+.cabinet-feed-widget:after{content:'';position:absolute;height:24px;bottom:0;left:0;right:0;pointer-events:none;background:linear-gradient(transparent,var(--panel));border-radius:0 0 24px 24px}
+.cabinet-task-widget .cabinet-widget-header{height:80px}
+.cabinet-task-tabs{padding:0 8px 16px;flex-shrink:0}
+.cabinet-task-tabs .entity-tabs{display:flex;width:100%;min-width:0;height:50px;background:#1a1a1a33;border-radius:12px;gap:4px;padding:4px}
+.cabinet-task-tabs .entity-tabs button{flex:1;min-width:0;height:42px;padding:0 8px;white-space:nowrap;font-size:17px;line-height:24px;border-radius:8px;background:var(--panel)}
+.cabinet-task-tabs .entity-tabs button.active{background:var(--white)}
+.cabinet-task-tabs .entity-tabs button:hover:not(.active){background:var(--hover)}
+.cabinet-entity-widget{padding-bottom:24px}
+.cabinet-entity-widget[data-cabinet-section=paths] .cabinet-widget-header{height:92px}
+.cabinet-entity-grid{--card-min-width:340px;--card-max-width:420px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));justify-content:start;gap:8px;padding:0 8px;max-height:624px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.cabinet-soon .cabinet-empty{min-height:212px}
+.cabinet-soon[data-cabinet-section=gemba] .cabinet-empty{min-height:206px}
+.cabinet-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px;text-align:center;min-height:212px;width:100%;grid-column:1/-1;color:var(--text)}
+.cabinet-empty>img{width:40px;height:40px}
+.cabinet-empty-title{font-size:17px;line-height:24px;letter-spacing:-.119px}
+.cabinet-empty-description{font-size:13px;line-height:18px;letter-spacing:-.039px}
+.cabinet-empty .text-button{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;font-size:17px;line-height:24px}
+.cabinet-empty .text-button img{width:24px;height:24px}
+.cabinet-menu.select-popup{width:329px;padding:8px 0;border-radius:16px;gap:4px;box-shadow:0 4px 12px #1a1a1a1f;z-index:310}
+.cabinet-menu-group{font-size:9px;line-height:12px;font-weight:510;min-height:28px;padding:8px 16px;text-transform:uppercase;color:var(--secondary)}
+.cabinet-menu .select-option{border-radius:8px;flex-shrink:0}
+.cabinet-menu .selected-tick{width:24px;height:24px}
+.cabinet-menu .cabinet-menu-reset{color:var(--blue);font-size:13px;font-weight:400;min-height:34px;padding-top:5px;padding-bottom:5px}
+.cabinet-context{width:300px!important}
+.cabinet-efficiency-tip{position:fixed;z-index:320;width:265px;max-width:calc(100vw - 24px);padding:16px;background:var(--text);color:white;border-radius:16px;font-size:13px;line-height:18px;box-shadow:0 4px 12px #1a1a1a1f}
+.cabinet-efficiency-tip:after{content:'';position:absolute;width:12px;height:12px;right:-5px;top:calc(50% - 6px);background:inherit;border-radius:4px;transform:rotate(45deg)}
+.cabinet-efficiency-tip.is-below:after{top:-5px;left:calc(50% - 6px);right:auto}
+.cabinet-efficiency-tip h3{font-size:17px;line-height:18px;font-weight:400;margin:0 0 18px;letter-spacing:-.051px}
+.cabinet-efficiency-tip button{font-size:13px;line-height:18px;color:white;margin-top:18px;text-decoration:underline;text-underline-offset:3px}
+.cabinet-layout[data-expanded] .cabinet-left{display:contents}
+.cabinet-layout[data-expanded] .cabinet-widget.is-expanded{grid-column:1/-1;grid-row:1}
+.cabinet-layout[data-expanded] .cabinet-widget.is-expanded .cabinet-feed{--card-min-width:360px;--card-max-width:420px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));align-content:start;justify-content:start}
+.cabinet-layout[data-expanded] .cabinet-widget.is-expanded .cabinet-feed .cabinet-empty{grid-column:1/-1}
+.cabinet-layout[data-expanded] .cabinet-right{grid-column:2;grid-row:2}
+.cabinet-layout[data-expanded] .cabinet-feed-widget:not(.is-expanded){grid-column:1;grid-row:2}
+/* With both feeds expanded there is no reserved left column below them. */
+.cabinet-layout[data-expanded-count="2"] .cabinet-widget.is-expanded[data-cabinet-section=tasks]{grid-row:2}
+.cabinet-layout[data-expanded-count="2"] .cabinet-right{grid-column:1/-1;grid-row:3;max-width:none}
+.cabinet-header-search,.cabinet-whats-new{display:none}
+.cabinet-mode .cabinet-header-search{display:flex;min-width:0;flex:1}
+.cabinet-header-search input{font-size:17px}
+.cabinet-header-search .small-icon img{width:24px;height:24px}
+.cabinet-mode .cabinet-whats-new{display:inline-flex;min-width:164px;height:50px;padding:0 16px;background:linear-gradient(90deg,#ffeefd,#f1ffea 55%,#fff);font-weight:590;letter-spacing:-.51px}
+.cabinet-mode .header .brand{width:331px;flex:none}
+.cabinet-mode .header{gap:0}
+.cabinet-mode .header-actions{margin-left:0;padding-left:32px;gap:24px}
+.cabinet-mode .header .profile-button{width:32px;height:32px}
+.cabinet-mode .header .profile-button img{width:18px;height:18px}
+.cabinet-mode #cabinet-nav .menu-label{font-weight:590}
+.cabinet-history{max-height:300px}
+@container cabinet (max-width:1100px){
+ .cabinet-layout{grid-template-columns:clamp(380px,calc(44.444444% - 10.666667px),var(--cabinet-feed-max)) minmax(0,1fr)}
+ .cabinet-widget-header{padding:0 16px;gap:6px}
+ .cabinet-actions{gap:12px}
+ .cabinet-heading-link{gap:6px}
+}
+@container cabinet-feed-column (max-width:385px){.cabinet-widget-header{padding:0 16px}.cabinet-actions{gap:12px}}
+@container cabinet (max-width:760px){
+ .cabinet-layout{display:flex;flex-direction:column;gap:16px}
+ .cabinet-left,.cabinet-right{width:100%}
+ .cabinet-left{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+ .cabinet-layout[data-expanded] .cabinet-left{display:grid}
+ .cabinet-layout[data-expanded] .cabinet-widget.is-expanded{grid-column:1/-1}
+ .cabinet-layout[data-expanded] .cabinet-feed-widget:not(.is-expanded){grid-column:1/-1;grid-row:auto}
+}
+@container cabinet (max-width:700px){
+ .cabinet-left{display:flex}
+ .cabinet-layout:not([data-expanded]) .cabinet-left{max-width:var(--cabinet-feed-max)}
+ .cabinet-right{max-width:var(--cabinet-feed-max)}
+ .cabinet-feed-widget{width:100%}
+ .cabinet-layout[data-expanded] .cabinet-left{display:flex}
+ .cabinet-heading-link{gap:8px}
+ .cabinet-widget-header{padding:0 24px}
+ .cabinet-actions{gap:16px}
+}
+@media(max-width:1279px){.cabinet-mode .cabinet-header-search,.cabinet-mode .cabinet-whats-new{display:none}.cabinet-mode .header .brand{flex:1;width:auto}.cabinet-mode .header-actions{padding-left:0}}
+@media(max-width:767px){.cabinet-mode{--header:72px}.cabinet-mode .header{gap:12px}.cabinet-mode .header-actions{gap:12px}.cabinet-mode .header .profile-button{display:none}.cabinet-mode .brand img{width:160px}.cabinet-widget-header{padding:0 16px;gap:6px}.cabinet-widget-header h2{font-size:24px;line-height:30px}.cabinet-actions{gap:10px}.cabinet-heading-link{gap:6px}.cabinet-soon .cabinet-empty{min-height:230px}.cabinet-entity-grid{max-height:936px}}
+@media(max-width:359px){.cabinet-widget-header{padding:0 12px}.cabinet-widget-header h2{font-size:21px;line-height:28px}.cabinet-actions{gap:8px}.cabinet-heading-link{gap:4px}.cabinet-task-tabs .entity-tabs button{font-size:15px}.cabinet-empty{padding:20px 16px}}
+/* Only long lists own their scroll. Short lists size to their content and let
+   wheel/touch gestures scroll the page. Recomputed by card-grid.js after reflow. */
+.cabinet-feed[data-cabinet-scroll=true],.cabinet-entity-grid[data-cabinet-scroll=true]{max-height:var(--cabinet-two-row-height);overflow-y:auto;overscroll-behavior-y:contain}
+.cabinet-feed[data-cabinet-scroll=false],.cabinet-entity-grid[data-cabinet-scroll=false]{max-height:none;overflow:visible;overscroll-behavior:auto}
+.cabinet-feed-widget:has(>.cabinet-feed[data-cabinet-scroll=false]):after{display:none}

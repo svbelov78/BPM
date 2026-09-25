@@ -37,87 +37,70 @@ body.structure-mode .view-switch{display:none}
 .structure-chart-control:hover .structure-switch-track{box-shadow:inset 0 2px 4px #1a1a1a29}
 .structure-chart-control input:focus-visible+.structure-switch-track{outline:2px solid var(--blue);outline-offset:3px;box-shadow:0 4px 12px #1a1a1a1f}
 body.structure-mode #structure-mode>.applied-filters{margin-bottom:16px}
-.structure-list{display:flex;flex-direction:column;gap:16px;min-width:0}
-.structure-node{--level:0;--nest-step:25px;--header-pad:24px;--deep-pad:24px;--title-line-height:31px;--metric-offset:calc((2 - var(--level)) * var(--nest-step) + var(--deep-pad) - var(--header-pad));min-width:0;border:1px solid var(--border);border-radius:24px;background:var(--white)}
+.structure-list{--structure-owner-width:clamp(152px,calc(100cqw - 1024px),376px);display:flex;flex-direction:column;gap:16px;min-width:0}
+.structure-node{--level:0;--nest-step:24px;--header-pad:24px;--deep-pad:24px;--title-line-height:26px;--metric-offset:calc((2 - var(--level)) * var(--nest-step) + var(--deep-pad) - var(--header-pad));min-width:0;border:0;box-shadow:inset 0 0 0 1px var(--border);border-radius:24px;background:var(--white)}
 /* Only the title is indented. The shrinking trailing track keeps metrics on shared verticals. */
-.structure-heading{display:grid;grid-template-columns:minmax(0,1fr) 220px 422px calc(24px + var(--metric-offset));align-items:center;gap:16px;width:100%;min-width:0;min-height:94px;padding:24px var(--header-pad);text-align:left;border-radius:inherit}
+.structure-heading{display:grid;grid-template-columns:minmax(0,1fr) var(--structure-owner-width,376px) 404px calc(40px + var(--metric-offset));align-items:center;gap:24px;width:100%;min-width:0;min-height:94px;padding:24px var(--header-pad);text-align:left;border-radius:inherit}
 .structure-heading[aria-expanded=false]:hover{background:var(--hover)}
 .structure-heading[aria-expanded=false]:active{background:var(--positive);box-shadow:var(--click-shadow)}
 .structure-heading:focus-visible{outline:2px solid var(--blue);outline-offset:-3px}
 .structure-title{display:flex;align-items:flex-start;gap:8px;min-width:0}
-.structure-title>img{width:24px;height:24px;flex-shrink:0;margin-top:calc(14px + (var(--title-line-height) - 24px)/2)}
-.structure-title-copy{display:flex;flex-direction:column;gap:2px;min-width:0}
-.structure-kind{display:block;color:var(--secondary);font-size:9px;line-height:12px;font-weight:510;text-transform:uppercase;letter-spacing:.1px}
-.structure-name{display:block;font-size:26px;line-height:var(--title-line-height);font-weight:700;letter-spacing:-.3px;overflow-wrap:anywhere}
+.structure-title>img{width:24px;height:24px;flex-shrink:0;margin-top:calc(12px + (var(--title-line-height) - 24px)/2)}
+.structure-title-copy{display:flex;flex-direction:column;gap:0;min-width:0}
+.structure-kind{display:block;color:var(--secondary);font-size:9px;line-height:12px;font-weight:510;text-transform:uppercase;letter-spacing:0}
+/* Figma Headline/2 SB: SF Pro 22/26, Semibold 590, tracking -0.3%.
+   All three accordion levels use this style, including narrow layouts. */
+.structure-name{display:block;font-size:22px;line-height:var(--title-line-height);font-weight:590;letter-spacing:-.003em;overflow-wrap:anywhere}
 .structure-owner{display:flex;align-items:center;gap:8px;min-width:0;font-size:13px;line-height:18px;font-weight:400;letter-spacing:-.039px}
 .structure-owner>.avatar{width:32px;height:32px;background:var(--border)}
 .structure-owner>span:not(.avatar){min-width:0;overflow-wrap:anywhere}
 .structure-heading>.structure-owner:not(:has(.avatar)){color:var(--secondary)}
 .structure-owner .owner-name{color:var(--text);font-size:13px;line-height:18px;-webkit-line-clamp:3}
-.structure-chart-scroll{min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
-.structure-chart{display:flex;align-items:flex-end;gap:8px;width:422px;min-width:422px;max-width:none;padding-block:2px;font-variant-numeric:tabular-nums}
-.structure-total{display:block;flex:0 0 50px;width:50px;padding-bottom:0;text-align:right;font-size:17px;line-height:20px;font-weight:590;letter-spacing:-.1px;white-space:nowrap;transform:translateY(2px)}
-.structure-bars{display:flex;align-items:flex-end;gap:8px;flex:0 0 363px;width:363px;min-width:363px}
-.structure-segment{display:flex;flex-direction:column;gap:2px;flex-grow:0;flex-shrink:0;min-width:0}
-.structure-segment-count{display:block;height:18px;color:var(--text);font-size:13px;line-height:18px;font-weight:400;letter-spacing:-.039px;white-space:nowrap}
-.structure-track{display:block;position:relative;height:16px;min-height:16px;border-radius:2px;isolation:isolate;overflow:hidden}
-.structure-track::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background:var(--segment-color,var(--border));opacity:.25}
-.structure-segment[data-bucket="1"] .structure-track::before{opacity:.15}
-.structure-segment[data-bucket="4"] .structure-track::before{content:none;background:none}
-.structure-fill{display:block;width:100%;height:100%;border-radius:inherit;background:var(--segment-color,var(--border));transform-origin:left center}
-/* Keep the unrated outline at 1 px while its fill retains the shared scaleX animation. */
-.structure-segment[data-bucket="4"] .structure-track::after{content:"";position:absolute;inset:0 auto 0 0;width:calc(100% * var(--structure-fill-ratio,0));border-radius:inherit;box-shadow:inset 0 0 0 1px var(--efficiency-unrated-border);pointer-events:none}
-.structure-chart[data-chart-type="2"]{width:422px;min-width:422px}
-.structure-chart[data-chart-type="2"] .structure-bars{flex-basis:364px;width:364px;min-width:364px;gap:4px}
-.structure-chart[data-chart-type="2"] .structure-track{height:22px;min-height:22px}
-.structure-chart[data-chart-type="2"] .structure-track::before{content:none;background:none}
-.structure-chart[data-chart-type="2"] .structure-total{line-height:24px;transform:translateY(1px)}
-.structure-segment-count.is-narrow{visibility:hidden}
 .structure-chevron{display:block;width:24px;height:24px;justify-self:end;transition:transform .15s ease}
 .structure-heading[aria-expanded=true]>.structure-chevron{transform:rotate(180deg)}
 .structure-children{display:flex;flex-direction:column;gap:16px;min-width:0;padding:0 24px 24px}
 .structure-children[hidden]{display:none!important}
-.structure-node[data-kind=division]{--level:1;--title-line-height:26px;border-radius:16px;background:var(--color-bg-nordic)}
-.structure-node[data-kind=product]{--level:2;--title-line-height:26px;border-radius:16px;background:var(--white)}
-.structure-node[data-kind=division]>.structure-heading{min-height:80px;padding-block:16px}
+.structure-node[data-kind=division]{--level:1;border-radius:16px;background:var(--color-bg-nordic)}
+.structure-node[data-kind=product]{--level:2;border-radius:16px;background:var(--white)}
+.structure-node[data-kind=division]>.structure-heading{min-height:72px;padding-block:16px}
 .structure-node[data-kind=product]>.structure-heading{min-height:72px;padding-block:16px}
-.structure-node[data-kind=division]>.structure-heading .structure-name,.structure-node[data-kind=product]>.structure-heading .structure-name{font-size:22px;font-weight:590;letter-spacing:-.15px}
-.structure-table-scroll{min-width:0;max-width:100%;overflow:auto;border-radius:16px;background:var(--white);overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.structure-node[data-kind=division]>.structure-heading[aria-expanded=true],.structure-node[data-kind=product]>.structure-heading[aria-expanded=true]{min-height:80px}
+.structure-node[data-kind=division]>.structure-children{padding-bottom:32px}
+.structure-table-scroll{min-width:0;max-width:100%;overflow:auto;border:1px solid var(--border);border-radius:16px;background:var(--white);overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
 .structure-table-scroll:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
-.structure-table{width:100%;min-width:1100px;border-collapse:collapse;table-layout:fixed;text-align:left}
+.structure-table{width:100%;min-width:1250px;border-collapse:collapse;table-layout:fixed;text-align:left}
 .structure-table th,.structure-table td{padding:16px}
-.structure-table th{height:68px;background:var(--color-bg-nordic);color:var(--secondary);font-size:17px;line-height:24px;font-weight:400;vertical-align:bottom}
-.structure-table th:nth-child(2),.structure-table td:nth-child(2){width:240px}
-.structure-table th:nth-child(3),.structure-table td:nth-child(3){width:180px}
-.structure-table th:nth-child(4),.structure-table td:nth-child(4){width:140px}
-.structure-table th:nth-child(5),.structure-table td:nth-child(5){width:160px}
-.structure-table th button{display:flex;align-items:center;gap:8px;min-height:34px;text-align:left;max-width:100%;overflow-wrap:normal;word-break:normal}
+.structure-table th{height:56px;background:var(--color-bg-nordic);color:var(--secondary);font-size:17px;line-height:24px;font-weight:400;vertical-align:middle}
+/* Absorb the removed status/marks tracks into owner space to retain the shared
+   avatar and efficiency verticals across accordion headings and nested rows. */
+.structure-table th:nth-child(2),.structure-table td:nth-child(2){width:700px}
+.structure-table th:nth-child(3),.structure-table td:nth-child(3){width:184px}
+.structure-table th button{display:flex;align-items:center;gap:8px;min-height:24px;text-align:left;max-width:100%;overflow-wrap:normal;word-break:normal}
 .structure-column-label,.registry-table .table-sort-button>span{min-width:0;hyphens:manual;word-break:normal;overflow-wrap:normal}
-.structure-table th:last-child{padding-left:8px;padding-right:8px}
-.structure-table th:last-child button{gap:4px}
+.structure-table th:last-child button{gap:8px}
 .structure-table th button img,.registry-table th button img{width:16px;height:16px;flex-shrink:0}
-.structure-table td{height:130px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:13px;line-height:18px}
-.structure-table td:first-child{position:relative}
+.structure-table td{height:115px;padding-block:0 8px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:13px;line-height:18px}
+.structure-table>tbody>tr[data-structure-record]>td:first-child{position:relative;padding-top:16px;padding-bottom:8px;vertical-align:top}
 .structure-table tbody tr:last-child td{border-bottom:0}
-.structure-table>tbody>tr[data-structure-record]:hover>td{background:var(--hover)}
+.structure-table>tbody>tr[data-structure-record]:not([data-expanded=true]):hover>td{background:var(--hover)}
+.structure-table>tbody>tr[data-expanded=true]>td{height:128px;background:var(--color-bg-nordic);border-bottom:0}
+.structure-table>tbody>tr[data-expanded=true]>td:first-child{padding-bottom:0}
 .structure-row-meta{display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-width:0;margin-bottom:8px;font-size:13px;line-height:18px}
 .structure-row-meta .tag,.structure-row-meta .id-badge,.structure-row-meta .count-badge{flex-shrink:0;font-size:13px;line-height:18px}
+.structure-row-meta .tag,.structure-row-meta .id-badge,.structure-row-meta .count-badge{height:24px;padding-block:0}
+.structure-row-meta .tag{border-radius:6px}
 .structure-row-meta .inline-bookmark{width:20px;height:20px}
-.structure-row-title{display:block;max-width:100%;text-align:left;font-size:17px;line-height:24px;font-weight:590;letter-spacing:-.12px;overflow-wrap:anywhere}
+.structure-row-title{display:block;max-width:100%;text-align:left;font-size:17px;line-height:24px;font-weight:590;letter-spacing:-.51px;overflow-wrap:anywhere}
 .structure-row-title:hover{color:var(--blue)}
-.structure-row-count{display:inline-flex;align-items:center;gap:8px;min-height:26px;margin-top:8px;color:var(--blue);font-size:17px;line-height:24px;text-align:left}
+.structure-row-count{display:inline-flex;align-items:center;gap:8px;min-height:26px;margin-top:8px;color:var(--blue);font-size:17px;line-height:24px;font-weight:590;letter-spacing:-.51px;text-align:left}
+.structure-row-count[aria-expanded=true]{min-height:48px;padding:16px 16px 8px;border-radius:16px 16px 0 0;background:var(--white)}
 .structure-row-count:hover{text-decoration:underline}
 .structure-row-count img{width:16px;height:16px}
 .structure-table .owner{gap:8px}
 .structure-table .owner-name{color:var(--text);font-size:13px;line-height:18px;letter-spacing:-.039px;-webkit-line-clamp:3}
 .structure-table .owner .avatar{background:var(--border)}
-.structure-table .status{gap:6px;font-size:17px;line-height:24px}
-.structure-table .status-dot{width:12px;height:12px}
-.structure-table .table-status{gap:4px}
-.structure-table .table-status time{padding-left:18px;font-size:17px;line-height:24px}
-.structure-table .table-tags{gap:4px}
 .structure-table .tag{font-size:13px;line-height:18px}
-.structure-table .table-efficiency{min-height:40px;min-width:110px}
+.structure-table .table-efficiency{min-height:40px;min-width:110px;flex-direction:row}
 .structure-row-actions{position:absolute;top:8px;right:8px;display:flex;align-items:center;justify-content:center;width:28px;height:24px;border-radius:12px;background:var(--panel);opacity:0}
 .structure-table>tbody>tr[data-structure-record]:hover>td .structure-row-actions,.structure-table>tbody>tr[data-structure-record]:focus-within>td .structure-row-actions{opacity:1}
 .structure-row-actions:hover{background:var(--white)}
@@ -139,7 +122,7 @@ body.structure-mode #structure-mode>.applied-filters{margin-bottom:16px}
 .structure-empty>img{width:40px;height:40px;margin:0 auto 16px}
 .structure-empty h2{font-size:22px;line-height:28px;margin-bottom:8px}
 .structure-empty p{max-width:520px;margin:0 auto 16px;color:var(--secondary);font-size:17px;line-height:24px}
-.structure-skeleton{display:grid;grid-template-columns:minmax(0,1fr) 220px 425px 24px;align-items:center;gap:16px;min-width:0;min-height:94px;padding:24px;border:1px solid var(--border);border-radius:24px;background:var(--white);pointer-events:none}
+.structure-skeleton{display:grid;grid-template-columns:minmax(0,1fr) var(--structure-owner-width,376px) 404px 88px;align-items:center;gap:24px;min-width:0;min-height:94px;padding:24px;border:1px solid var(--border);border-radius:24px;background:var(--white);pointer-events:none}
 .structure-skeleton>.skeleton-shape{max-width:100%}
 .structure-skeleton .skeleton-title{height:26px;width:75%}
 .structure-skeleton .skeleton-owner{min-width:0}
@@ -147,7 +130,6 @@ body.structure-mode #structure-mode>.applied-filters{margin-bottom:16px}
 .structure-note{margin-top:16px;color:var(--secondary);font-size:11px;line-height:16px}
 .structure-note a{color:var(--blue);text-decoration:underline}
 .structure-table td:last-child{position:relative;padding-right:24px}
-.structure-table td>time{display:block;padding-left:18px;margin-top:4px;font-size:17px;line-height:24px}
 .structure-row-more.icon-button{position:absolute;right:4px;top:8px;width:24px;height:24px;background:none;opacity:0}
 .structure-row-more img{width:16px;height:16px}
 .structure-table>tbody>tr[data-structure-record]:hover>td>.structure-row-more,.structure-table>tbody>tr[data-structure-record]:focus-within>td>.structure-row-more{opacity:1}
@@ -158,11 +140,9 @@ body.structure-mode #structure-mode>.applied-filters{margin-bottom:16px}
 .structure-bucket-3 .bpm-efficiency-glyph{--efficiency-color:#ff383c}
 .structure-table td>.structure-no-efficiency{display:block;margin-top:4px}
 .structure-row-count[aria-expanded=true]>img{transform:rotate(180deg)}
-.structure-linked-row>td{height:auto;padding:16px;background:var(--color-bg-nordic)}
+.structure-table>tbody>.structure-linked-row>td{height:auto;padding:0;border:0;background:var(--color-bg-nordic)}
 .structure-linked-row:hover>td{background:var(--color-bg-nordic)}
 .structure-linked-processes{min-width:0}
-.structure-linked-processes>.structure-table-scroll{border:1px solid var(--border)}
-.structure-linked-title{margin-bottom:12px;color:var(--secondary);font-size:13px;line-height:18px}
 .structure-source-issues{margin-top:8px;font-size:11px;line-height:16px;color:var(--secondary)}
 .structure-source-issues summary{cursor:pointer;color:var(--blue)}
 .structure-source-issues p{margin-top:8px}
@@ -171,7 +151,7 @@ body.structure-mode #structure-mode>.applied-filters{margin-bottom:16px}
 @container registry (max-width:1300px){
   .structure-filters{flex-wrap:wrap}
   .structure-filters>.select-host:not(#structure-sort){flex-basis:calc((100% - 32px)/3)}
-  .structure-filters>#structure-sort{margin-left:auto}
+  .structure-filters>.structure-chart-control,.structure-filters>#structure-sort{flex:1 1 calc((100% - 16px)/2);width:auto;min-width:0;margin-left:0}
 }
 @container registry (max-width:1100px){
   .structure-toolbar.filter-primary{grid-template-columns:150px minmax(0,1fr);grid-template-areas:"toggle search" "tabs status"}
@@ -179,7 +159,7 @@ body.structure-mode #structure-mode>.applied-filters{margin-bottom:16px}
   .structure-heading{grid-template-columns:calc(160px + var(--metric-offset)) minmax(0,1fr) 24px;grid-template-areas:"title title chevron" "owner chart chart";gap:16px}
   .structure-title{grid-area:title}
   .structure-heading>.structure-owner{grid-area:owner;align-self:center;width:160px;justify-self:end}
-  .structure-chart-scroll{grid-area:chart;justify-self:start;width:422px}
+  .structure-chart-scroll{grid-area:chart;justify-self:start;width:404px}
   .structure-chevron{grid-area:chevron;align-self:center}
   .structure-skeleton{grid-template-columns:160px minmax(0,1fr);gap:16px}
   .structure-skeleton>.skeleton-title{grid-column:1/-1}
@@ -191,16 +171,14 @@ body.structure-mode #structure-mode>.applied-filters{margin-bottom:16px}
   .structure-filters>.select-host:not(#structure-sort){flex-basis:calc((100% - 24px)/3)}
   .structure-tabs.entity-tabs{flex-basis:0;max-width:none}
   .structure-tabs.entity-tabs button{padding-inline:8px;font-size:15px}
-  .structure-filters>#structure-sort{flex-basis:148px}
-  .structure-node{--nest-step:17px;--deep-pad:16px;--header-pad:20px;--title-line-height:29px}
+  .structure-filters>.structure-chart-control,.structure-filters>#structure-sort{flex-basis:calc((100% - 12px)/2)}
+  .structure-node{--nest-step:16px;--deep-pad:16px;--header-pad:20px}
   .structure-node[data-kind=division],.structure-node[data-kind=product]{--header-pad:16px}
   .structure-heading{grid-template-columns:minmax(0,1fr) 24px;grid-template-areas:"title chevron" "owner owner" "chart chart";gap:12px;padding:20px var(--header-pad)}
   .structure-heading>.structure-owner,.structure-heading>.structure-chart-scroll{width:calc(100% - 2 * var(--metric-offset));margin-inline:var(--metric-offset);justify-self:start}
   .structure-chart-scroll{padding-bottom:3px}
   .structure-chevron{align-self:start;margin-top:12px}
   .structure-children{padding:0 16px 16px;gap:12px}
-  .structure-name{font-size:24px}
-  .structure-node[data-kind=division]>.structure-heading .structure-name,.structure-node[data-kind=product]>.structure-heading .structure-name{font-size:20px}
   .structure-skeleton{grid-template-columns:minmax(0,1fr);gap:16px;padding:20px}
   .structure-skeleton>.skeleton-title{grid-column:auto}
   .structure-skeleton>.skeleton-shape:last-child{display:block}
@@ -213,15 +191,12 @@ body.structure-mode #structure-mode>.applied-filters{margin-bottom:16px}
   .structure-filters>.select-host:not(#structure-sort){flex-basis:100%}
   .structure-tabs.entity-tabs{flex:1 1 100%;max-width:100%}
   .structure-tabs.entity-tabs button{white-space:normal;line-height:18px;min-height:42px;font-size:14px}
-  .structure-filters>#structure-sort{flex:1 1 100%}
+  .structure-filters>.structure-chart-control,.structure-filters>#structure-sort{flex:1 1 100%;width:100%}
   .structure-list{gap:12px}
-  .structure-node,.structure-node[data-kind=division],.structure-node[data-kind=product]{--nest-step:9px;--deep-pad:12px;--header-pad:12px}
-  .structure-node{--title-line-height:28px;border-radius:20px}
-  .structure-node[data-kind=division],.structure-node[data-kind=product]{--title-line-height:24px}
+  .structure-node,.structure-node[data-kind=division],.structure-node[data-kind=product]{--nest-step:8px;--deep-pad:12px;--header-pad:12px}
+  .structure-node{border-radius:20px}
   .structure-heading,.structure-node[data-kind=division]>.structure-heading,.structure-node[data-kind=product]>.structure-heading{padding:12px;gap:12px}
   .structure-title{gap:8px}
-  .structure-name{font-size:22px}
-  .structure-node[data-kind=division]>.structure-heading .structure-name,.structure-node[data-kind=product]>.structure-heading .structure-name{font-size:18px}
   .structure-children{padding:0 8px 8px;gap:8px}
   .structure-node[data-kind=division],.structure-node[data-kind=product]{border-radius:12px}
   .structure-owner{font-size:12px;line-height:17px}
