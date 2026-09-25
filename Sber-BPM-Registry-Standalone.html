@@ -31,9 +31,10 @@ body.menu-collapsed{--sidebar:87px}.menu-collapsed .sidebar{padding-left:16px;pa
 .mobile-filters-toggle{display:none}
 .favorite-filter img{width:24px;height:24px}.favorite-filter[aria-pressed=true]{box-shadow:0 0 0 2px var(--blue)}
 .applied-filters{display:flex;align-items:flex-start;background:var(--hover);border-radius:12px;margin:0 0 24px;min-height:50px;min-width:0}.applied-filter-groups{display:flex;flex:1;min-width:0;flex-wrap:wrap;gap:16px 24px;padding:13px 16px;align-items:center}.applied-filter-group{display:flex;align-items:center;flex-wrap:wrap;gap:8px;max-width:100%;min-width:0}.applied-filter-label{font-size:9px;line-height:12px;font-weight:510;text-transform:uppercase;color:var(--secondary);white-space:nowrap}.applied-filter-chip{flex:0 1 auto;max-width:min(220px,100%)}.clear-all-filters{display:flex;align-items:center;justify-content:center;width:56px;height:50px;flex-shrink:0;border-radius:12px}.clear-all-filters:hover{background:#dcecff}.clear-all-filters:active{background:var(--positive);box-shadow:var(--click-shadow)}.applied-filters+.result-tools{margin-top:-12px}.chip:active{background:var(--positive);box-shadow:var(--click-shadow)}
-/* Shared card-grid.js keeps complete and incomplete rows on the same 340–420 px tracks. */
-.entity-card{width:100%;max-width:420px}
-.cards-grid{--card-min-width:340px;--card-max-width:420px;grid-template-columns:repeat(auto-fill,minmax(min(100%,var(--card-min-width)),1fr));justify-content:start}
+/* One shared cap for cards and feeds; incomplete rows keep the same track widths. */
+:root{--card-max-width:600px}
+.entity-card{width:100%;max-width:var(--card-max-width)}
+.cards-grid{--card-min-width:340px;grid-template-columns:repeat(auto-fill,minmax(min(100%,var(--card-min-width)),1fr));justify-content:start}
 .cards-grid>.entity-card{width:100%;max-width:var(--card-max-width)}
 /* Pinned 299 px menu can reduce content width independently of the viewport. */
 .registry-panel{container-type:inline-size;container-name:registry}
@@ -1297,10 +1298,10 @@ body.structure-mode #structure-mode>.applied-filters{margin-bottom:16px}
 </style>
   <style data-bpm-source="task-visuals.css">
 /* Figma Tasks 1105:21363 / 1105:20723. Shared task components use the registry tokens. */
-.task-card{position:relative;display:flex;flex-direction:column;gap:16px;width:100%;max-width:420px;min-width:0;height:304px;padding:24px;border-radius:24px;background:var(--white);overflow:hidden;cursor:pointer}
+.task-card{position:relative;display:flex;flex-direction:column;gap:16px;width:100%;max-width:var(--card-max-width);min-width:0;height:304px;padding:24px;border-radius:24px;background:var(--white);overflow:hidden;cursor:pointer}
 .task-card:hover{box-shadow:0 4px 6px #1a1a1a1f}
 .task-card:active{background:var(--positive);box-shadow:var(--click-shadow)}
-.tasks-cards-grid{--card-min-width:360px;--card-max-width:420px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(360px,100%),1fr));gap:24px;align-items:start;justify-content:start}
+.tasks-cards-grid{--card-min-width:360px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(360px,100%),1fr));gap:24px;align-items:start;justify-content:start}
 .task-card-header{display:flex;flex-direction:column;gap:8px;min-width:0;flex:none}
 .task-card-tags,.task-table-tags{display:flex;align-items:center;gap:4px;min-width:0}
 .task-card-tags{flex-wrap:wrap}
@@ -1477,7 +1478,7 @@ body.structure-mode #structure-mode>.applied-filters{margin-bottom:16px}
 .tasks-fields{display:grid;grid-template-columns:repeat(6,minmax(80px,1fr)) 264px;gap:16px}
 .tasks-fields>*{min-width:0}
 .tasks-panel .applied-filters{margin-bottom:24px}
-.tasks-grid{--card-min-width:360px;--card-max-width:420px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:24px;justify-content:start}
+.tasks-grid{--card-min-width:360px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:24px;justify-content:start}
 .tasks-panel .pagination{margin:24px 0 0}
 .tasks-empty{background:var(--white);padding:32px 64px;min-height:208px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;border-radius:16px}
 .tasks-empty>img{width:40px;height:40px}
@@ -1509,8 +1510,8 @@ body.structure-mode #structure-mode>.applied-filters{margin-bottom:16px}
 
 </style>
   <style data-bpm-source="cabinet-cards.css">
-/* Cabinet Cards: responsive width capped at 420 px; original heights 304/311 px. */
-.cabinet-card.entity-card,.cabinet-card.task-card{container:cabinet-card/inline-size;position:relative;display:flex;flex-direction:column;gap:16px;width:100%;max-width:420px;min-width:0;height:304px;padding:24px;border:0;border-radius:24px;background:var(--white,#fff);overflow:hidden;cursor:pointer}
+/* Cabinet Cards: shared 600 px width cap; original heights 304/311 px. */
+.cabinet-card.entity-card,.cabinet-card.task-card{container:cabinet-card/inline-size;position:relative;display:flex;flex-direction:column;gap:16px;width:100%;max-width:var(--card-max-width);min-width:0;height:304px;padding:24px;border:0;border-radius:24px;background:var(--white,#fff);overflow:hidden;cursor:pointer}
 .cabinet-card.entity-card.cabinet-insight-card{height:311px}
 .cabinet-card.entity-card.cabinet-card-positive,.cabinet-card.task-card.cabinet-card-positive{background:var(--cabinet-positive-gradient,linear-gradient(90deg,#ffeefd 0%,#f1ffea 55%,#fff 100%))}
 .cabinet-card.entity-card.cabinet-card-problem,.cabinet-card.task-card.cabinet-card-problem{background:var(--cabinet-problem-gradient,linear-gradient(90deg,#ffeefd 0%,#fff2e7 55%,#fff 100%))}
@@ -1576,9 +1577,9 @@ body.structure-mode #structure-mode>.applied-filters{margin-bottom:16px}
 /* Products BPM 29:4418. Shared Nordic components; only cabinet layout is scoped here. */
 .cabinet-mode{--header:98px}
 .cabinet-panel{container: cabinet / inline-size;min-width:0}
-/* The feed column grows with its cards: 420 px plus the two 8 px inner gutters.
+/* The feed column grows with its cards: shared 600 px cap plus two 8 px inner gutters.
    Once capped, only the right column receives the remaining space. */
-.cabinet-layout{--cabinet-feed-max:436px;display:grid;grid-template-columns:clamp(400px,calc(27.272727% - 17.454545px),var(--cabinet-feed-max)) minmax(0,1fr);gap:24px;align-items:start}
+.cabinet-layout{--cabinet-feed-max:calc(var(--card-max-width) + 16px);display:grid;grid-template-columns:clamp(400px,calc(27.272727% - 17.454545px),var(--cabinet-feed-max)) minmax(0,1fr);gap:24px;align-items:start}
 .cabinet-left,.cabinet-right{display:flex;flex-direction:column;gap:16px;min-width:0}
 .cabinet-left{container:cabinet-feed-column / inline-size}
 .cabinet-widget{background:var(--panel);border-radius:24px;min-width:0;position:relative;overflow:hidden}
@@ -1615,7 +1616,7 @@ body.structure-mode #structure-mode>.applied-filters{margin-bottom:16px}
 .cabinet-task-tabs .entity-tabs button:hover:not(.active){background:var(--hover)}
 .cabinet-entity-widget{padding-bottom:24px}
 .cabinet-entity-widget[data-cabinet-section=paths] .cabinet-widget-header{height:92px}
-.cabinet-entity-grid{--card-min-width:340px;--card-max-width:420px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));justify-content:start;gap:8px;padding:0 8px;max-height:624px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.cabinet-entity-grid{--card-min-width:340px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));justify-content:start;gap:8px;padding:0 8px;max-height:624px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 .cabinet-soon .cabinet-empty{min-height:212px}
 .cabinet-soon[data-cabinet-section=gemba] .cabinet-empty{min-height:206px}
 .cabinet-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px;text-align:center;min-height:212px;width:100%;grid-column:1/-1;color:var(--text)}
@@ -1637,7 +1638,7 @@ body.structure-mode #structure-mode>.applied-filters{margin-bottom:16px}
 .cabinet-efficiency-tip button{font-size:13px;line-height:18px;color:white;margin-top:18px;text-decoration:underline;text-underline-offset:3px}
 .cabinet-layout[data-expanded] .cabinet-left{display:contents}
 .cabinet-layout[data-expanded] .cabinet-widget.is-expanded{grid-column:1/-1;grid-row:1}
-.cabinet-layout[data-expanded] .cabinet-widget.is-expanded .cabinet-feed{--card-min-width:360px;--card-max-width:420px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));align-content:start;justify-content:start}
+.cabinet-layout[data-expanded] .cabinet-widget.is-expanded .cabinet-feed{--card-min-width:360px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));align-content:start;justify-content:start}
 .cabinet-layout[data-expanded] .cabinet-widget.is-expanded .cabinet-feed .cabinet-empty{grid-column:1/-1}
 .cabinet-layout[data-expanded] .cabinet-right{grid-column:2;grid-row:2}
 .cabinet-layout[data-expanded] .cabinet-feed-widget:not(.is-expanded){grid-column:1;grid-row:2}
@@ -2899,7 +2900,7 @@ window.BPM_STRUCTURE_SOURCE = {"file":"15092026_структура для под
       let columns = 1;
       if (hasColumns) {
         const minimum = positiveNumber(style.getPropertyValue('--card-min-width'), 340);
-        const maximum = positiveNumber(style.getPropertyValue('--card-max-width'), 420);
+        const maximum = positiveNumber(style.getPropertyValue('--card-max-width'), 600);
         const limit = Math.floor(positiveNumber(style.getPropertyValue('--card-columns-limit'), 0));
         const gap = positiveNumber(style.columnGap, 0);
         columns = Math.max(1, Math.floor((state.width + gap) / (minimum + gap)));

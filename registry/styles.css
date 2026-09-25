@@ -22,9 +22,10 @@ body.menu-collapsed{--sidebar:87px}.menu-collapsed .sidebar{padding-left:16px;pa
 .mobile-filters-toggle{display:none}
 .favorite-filter img{width:24px;height:24px}.favorite-filter[aria-pressed=true]{box-shadow:0 0 0 2px var(--blue)}
 .applied-filters{display:flex;align-items:flex-start;background:var(--hover);border-radius:12px;margin:0 0 24px;min-height:50px;min-width:0}.applied-filter-groups{display:flex;flex:1;min-width:0;flex-wrap:wrap;gap:16px 24px;padding:13px 16px;align-items:center}.applied-filter-group{display:flex;align-items:center;flex-wrap:wrap;gap:8px;max-width:100%;min-width:0}.applied-filter-label{font-size:9px;line-height:12px;font-weight:510;text-transform:uppercase;color:var(--secondary);white-space:nowrap}.applied-filter-chip{flex:0 1 auto;max-width:min(220px,100%)}.clear-all-filters{display:flex;align-items:center;justify-content:center;width:56px;height:50px;flex-shrink:0;border-radius:12px}.clear-all-filters:hover{background:#dcecff}.clear-all-filters:active{background:var(--positive);box-shadow:var(--click-shadow)}.applied-filters+.result-tools{margin-top:-12px}.chip:active{background:var(--positive);box-shadow:var(--click-shadow)}
-/* Shared card-grid.js keeps complete and incomplete rows on the same 340–420 px tracks. */
-.entity-card{width:100%;max-width:420px}
-.cards-grid{--card-min-width:340px;--card-max-width:420px;grid-template-columns:repeat(auto-fill,minmax(min(100%,var(--card-min-width)),1fr));justify-content:start}
+/* One shared cap for cards and feeds; incomplete rows keep the same track widths. */
+:root{--card-max-width:600px}
+.entity-card{width:100%;max-width:var(--card-max-width)}
+.cards-grid{--card-min-width:340px;grid-template-columns:repeat(auto-fill,minmax(min(100%,var(--card-min-width)),1fr));justify-content:start}
 .cards-grid>.entity-card{width:100%;max-width:var(--card-max-width)}
 /* Pinned 299 px menu can reduce content width independently of the viewport. */
 .registry-panel{container-type:inline-size;container-name:registry}

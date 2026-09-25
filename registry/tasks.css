@@ -21,7 +21,7 @@
 .tasks-fields{display:grid;grid-template-columns:repeat(6,minmax(80px,1fr)) 264px;gap:16px}
 .tasks-fields>*{min-width:0}
 .tasks-panel .applied-filters{margin-bottom:24px}
-.tasks-grid{--card-min-width:360px;--card-max-width:420px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:24px;justify-content:start}
+.tasks-grid{--card-min-width:360px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:24px;justify-content:start}
 .tasks-panel .pagination{margin:24px 0 0}
 .tasks-empty{background:var(--white);padding:32px 64px;min-height:208px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;border-radius:16px}
 .tasks-empty>img{width:40px;height:40px}

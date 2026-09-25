@@ -113,7 +113,7 @@
       let columns = 1;
       if (hasColumns) {
         const minimum = positiveNumber(style.getPropertyValue('--card-min-width'), 340);
-        const maximum = positiveNumber(style.getPropertyValue('--card-max-width'), 420);
+        const maximum = positiveNumber(style.getPropertyValue('--card-max-width'), 600);
         const limit = Math.floor(positiveNumber(style.getPropertyValue('--card-columns-limit'), 0));
         const gap = positiveNumber(style.columnGap, 0);
         columns = Math.max(1, Math.floor((state.width + gap) / (minimum + gap)));

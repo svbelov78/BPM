@@ -1,5 +1,5 @@
-/* Cabinet Cards: responsive width capped at 420 px; original heights 304/311 px. */
-.cabinet-card.entity-card,.cabinet-card.task-card{container:cabinet-card/inline-size;position:relative;display:flex;flex-direction:column;gap:16px;width:100%;max-width:420px;min-width:0;height:304px;padding:24px;border:0;border-radius:24px;background:var(--white,#fff);overflow:hidden;cursor:pointer}
+/* Cabinet Cards: shared 600 px width cap; original heights 304/311 px. */
+.cabinet-card.entity-card,.cabinet-card.task-card{container:cabinet-card/inline-size;position:relative;display:flex;flex-direction:column;gap:16px;width:100%;max-width:var(--card-max-width);min-width:0;height:304px;padding:24px;border:0;border-radius:24px;background:var(--white,#fff);overflow:hidden;cursor:pointer}
 .cabinet-card.entity-card.cabinet-insight-card{height:311px}
 .cabinet-card.entity-card.cabinet-card-positive,.cabinet-card.task-card.cabinet-card-positive{background:var(--cabinet-positive-gradient,linear-gradient(90deg,#ffeefd 0%,#f1ffea 55%,#fff 100%))}
 .cabinet-card.entity-card.cabinet-card-problem,.cabinet-card.task-card.cabinet-card-problem{background:var(--cabinet-problem-gradient,linear-gradient(90deg,#ffeefd 0%,#fff2e7 55%,#fff 100%))}

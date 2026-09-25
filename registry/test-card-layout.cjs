@@ -1,7 +1,7 @@
 /* Cross-page card sizing and Home filter visual regressions.
  * node test-card-layout.cjs
  * BPM_CABINET_STANDALONE=1 node test-card-layout.cjs
- * Optional BPM_CARD_LAYOUT_URL and test groups: home, leftColumn, mobileColumns, dualExpansion, conditionalScroll, registry, tasks, filters, sharedMenus.
+ * Optional BPM_CARD_LAYOUT_URL and test groups: home, cardGrowth, leftColumn, mobileColumns, dualExpansion, conditionalScroll, registry, tasks, filters, sharedMenus.
  */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -12,7 +12,8 @@ const {chromium} = require(process.env.BPM_PLAYWRIGHT || '/Users/admin/.cache/co
 const standalone = process.env.BPM_CABINET_STANDALONE === '1';
 const embedded = standalone || process.env.BPM_CABINET_EMBEDDED === '1';
 const base = process.env.BPM_CARD_LAYOUT_URL || process.env.BPM_CABINET_URL || pathToFileURL(path.join(__dirname,standalone ? '../Sber-BPM-Registry-Standalone.html' : 'index.html')).href;
-const widths = [2560,1920,1440,1280,1024,768,390,320];
+const widths = [2560,1920,1476,1440,1280,1024,768,390,320];
+const cardMaximum = 600,feedMaximum = cardMaximum+16;
 const output = fs.mkdtempSync(path.join(os.tmpdir(),'bpm-card-layout-'));
 const failures = [],measurements = [];
 let loadSequence=0;
@@ -39,7 +40,7 @@ async function geometry(page,label,selector) {
   const result=await page.locator(selector).evaluateAll(elements => {
     const grid=elements[0]?.parentElement,s=grid&&getComputedStyle(grid),number=value=>Number.parseFloat(value)||0;
     return {viewport:innerWidth,pageWidth:document.documentElement.scrollWidth,bodyWidth:document.body.scrollWidth,
-      grid:s?.display==='grid'?{gap:number(s.columnGap),minimum:number(s.getPropertyValue('--card-min-width'))||340,limit:number(s.getPropertyValue('--card-columns-limit')),columns:s.gridTemplateColumns.trim().split(/\s+/).length,available:grid.getBoundingClientRect().width-number(s.paddingLeft)-number(s.paddingRight)-number(s.borderLeftWidth)-number(s.borderRightWidth)}:null,
+      grid:s?.display==='grid'?{gap:number(s.columnGap),minimum:number(s.getPropertyValue('--card-min-width'))||340,expectedMinimum:grid.matches('.tasks-grid,.tasks-cards-grid,.cabinet-feed')?360:340,maximum:number(s.getPropertyValue('--card-max-width')),limit:number(s.getPropertyValue('--card-columns-limit')),columns:s.gridTemplateColumns.trim().split(/\s+/).length,available:grid.getBoundingClientRect().width-number(s.paddingLeft)-number(s.paddingRight)-number(s.borderLeftWidth)-number(s.borderRightWidth)}:null,
       boxes:elements.map(element=>{const r=element.getBoundingClientRect();return {width:r.width,left:r.left,right:r.right,top:r.top};})};
   });
   const tag=`${label} at ${result.viewport}px`,sizes=result.boxes.map(box=>box.width);
@@ -49,12 +50,14 @@ async function geometry(page,label,selector) {
   for(const box of result.boxes){let row=rows.find(row=>Math.abs(row.top-box.top)<1);if(!row){row={top:box.top,count:0,boxes:[]};rows.push(row);}row.count++;row.boxes.push(box);}
   const columns=Math.max(...rows.map(row=>row.count));
   measurements.push({label,viewport:result.viewport,cards:sizes.length,minWidth:minimum,maxWidth:maximum,columns,lastRowCount:rows.at(-1).count});
-  check(maximum<=420.1,`${tag}: every card is at most 420px (maximum ${maximum.toFixed(2)})`);
+  check(maximum<=cardMaximum+.1,`${tag}: every card is at most ${cardMaximum}px (maximum ${maximum.toFixed(2)})`);
   check(maximum-minimum<=1,`${tag}: all rows have equal card widths (${minimum.toFixed(2)}–${maximum.toFixed(2)})`);
   check(result.pageWidth<=result.viewport+1&&result.bodyWidth<=result.viewport+1,`${tag}: page remains within viewport (${result.pageWidth}/${result.bodyWidth})`);
   check(result.boxes.every(box=>box.width>0&&box.left>=-1&&box.right<=result.viewport+1),`${tag}: cards stay within viewport`);
   if(result.grid){
     const grid=result.grid;
+    check(grid.minimum===grid.expectedMinimum,`${tag}: original ${grid.expectedMinimum}px column minimum is retained (${grid.minimum}px)`);
+    check(grid.maximum===cardMaximum,`${tag}: grid uses the ${cardMaximum}px maximum (${grid.maximum}px)`);
     let expected=Math.max(1,Math.floor((grid.available+grid.gap+.01)/(grid.minimum+grid.gap)));
     if(grid.limit>0)expected=Math.min(expected,grid.limit);
     check(grid.columns===expected,`${tag}: column count fills available width at minimum ${grid.minimum}px (${grid.columns}, expected ${expected})`);
@@ -62,8 +65,9 @@ async function geometry(page,label,selector) {
       const gap=row.boxes[i].left-row.boxes[i-1].right;
       check(Math.abs(gap-grid.gap)<=1,`${tag}: actual card gap matches ${grid.gap}px (${gap.toFixed(2)})`);
     }}
-    check(Math.abs(maximum-Math.min(420,(grid.available-grid.gap*(expected-1))/expected))<=1,`${tag}: card width matches its capped grid track`);
+    check(Math.abs(maximum-Math.min(cardMaximum,(grid.available-grid.gap*(expected-1))/expected))<=1,`${tag}: card width matches its capped grid track`);
   }
+  return result;
 }
 async function home(page) {
   await load(page,'cabinet','cabinet-feed-insights');
@@ -78,7 +82,45 @@ async function home(page) {
       await page.locator(`#cabinet-expand-${key}`).click();await paint(page);
     }
   }
-  console.log('CHECKED — default and expanded Home grids at all eight widths');
+  console.log(`CHECKED — default and expanded Home grids at all ${widths.length} widths`);
+}
+async function cardGrowth(page) {
+  await load(page,'cabinet','cabinet-feed-insights');
+  const samples=[];
+  async function inspect(label,expectedColumns){
+    for(const key of ['paths','processes']){
+      const result=await geometry(page,`${label}/${key}`,`#cabinet-panel [data-cabinet-kind="${key}"]`);
+      const grid=result.grid,cardWidth=result.boxes[0].width;
+      samples.push({label,key,viewport:result.viewport,available:grid.available,columns:grid.columns,cardWidth});
+      if(expectedColumns)check(grid.columns===expectedColumns,`${label}/${key}: retains ${expectedColumns} columns (${grid.columns})`);
+      if(grid.columns===1){
+        check(cardWidth>420,`${label}/${key}: single-column cards grow beyond the former 420px cap (${cardWidth.toFixed(2)})`);
+        if(grid.available<=cardMaximum)check(Math.abs(cardWidth-grid.available)<=1,`${label}/${key}: single-column card fills the available width without dead space`);
+        else check(Math.abs(cardWidth-cardMaximum)<=1,`${label}/${key}: single-column card reaches the ${cardMaximum}px cap`);
+      }
+    }
+  }
+  // The reported 2952px Retina screenshot corresponds to a 1476px CSS viewport.
+  // At 1515px the second 340px column fits with the existing 8px gap.
+  for(const [width,columns] of [[1476,1],[1500,1],[1514,1],[1515,2],[1920,3],[1476,1]]){
+    await viewport(page,width);
+    check(!await page.locator('body').evaluate(element=>element.classList.contains('menu-collapsed')),`${width}px: full menu is active`);
+    await inspect(`${width}px/full menu`,columns);
+  }
+  const original=samples.filter(sample=>sample.viewport===1476&&sample.label==='1476px/full menu').slice(0,2);
+  await page.locator('#collapse-menu').click();await paint(page);await inspect('1476px/collapsed menu',2);
+  await page.mouse.move(1475,1);await page.locator('#sidebar').hover({position:{x:20,y:20}});await page.locator('#pin-menu').click();await paint(page);await inspect('1476px/full menu restored',1);
+  for(const key of ['insights','tasks']){await page.locator(`#cabinet-expand-${key}`).click();await paint(page);}
+  await inspect('1476px/both expanded',3);
+  for(const key of ['insights','tasks']){await page.locator(`#cabinet-expand-${key}`).click();await paint(page);}
+  await inspect('1476px/both collapsed',1);
+  const restored=samples.slice(-2);
+  check(restored.every((sample,index)=>Math.abs(sample.cardWidth-original[index].cardWidth)<=1),'1476px: menu and expansion transitions restore the full single-column card widths');
+  check(samples.some(sample=>sample.cardWidth>420&&sample.cardWidth<cardMaximum-1),'Regression exercises uncapped card growth between 420px and 600px');
+  check(samples.some(sample=>Math.abs(sample.cardWidth-cardMaximum)<=1),'Regression exercises the actual 600px card cap');
+  await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:path.join(output,'card-growth-1476.png'),fullPage:true});
+  fs.writeFileSync(path.join(output,'card-growth-measurements.json'),JSON.stringify(samples,null,2));
+  console.log('CHECKED — 1476px full-menu dead-space regression, actual 600px cap, 1514→1515px minimum-width column boundary, 1920px and menu/expansion restoration');
 }
 async function leftColumn(page) {
   await load(page,'cabinet','cabinet-feed-insights');
@@ -91,11 +133,11 @@ async function leftColumn(page) {
       return {key,widgetWidth:rect.width,widgetHeight:rect.height,chromeHeight:[...widget.children].filter(child=>child!==feed).reduce((sum,child)=>sum+child.getBoundingClientRect().height,0),display:style.display,direction:style.flexDirection,gap:style.gap,paddingLeft:style.paddingLeft,paddingRight:style.paddingRight,verticalPadding:parseFloat(style.paddingTop)+parseFloat(style.paddingBottom),scrollbar:feed.offsetWidth-feed.clientWidth,cards:[...feed.querySelectorAll('.cabinet-card')].map(card=>({width:width(card),height:card.getBoundingClientRect().height,left:card.getBoundingClientRect().left}))};
     })};
   });
-  for(const width of [1920,2200,2560,3200,1440,1280,1024,768,600,390,320]){
+  for(const width of [1920,2200,2560,3000,3200,1440,1280,1024,768,600,390,320]){
     await viewport(page,width);const before=await inspect();samples.push(before);
-    check(before.leftWidth<=436.1,`${width}px: collapsed left column is at most 436px (${before.leftWidth})`);
+    check(before.leftWidth<=feedMaximum+.1,`${width}px: collapsed left column is at most ${feedMaximum}px (${before.leftWidth})`);
     for(const feed of before.feeds){
-      check(feed.widgetWidth<=436.1,`${width}px/${feed.key}: widget is at most 436px (${feed.widgetWidth})`);
+      check(feed.widgetWidth<=feedMaximum+.1,`${width}px/${feed.key}: widget is at most ${feedMaximum}px (${feed.widgetWidth})`);
       check(Math.abs(feed.widgetWidth-before.leftWidth)<=1,`${width}px/${feed.key}: widget fills its column`);
       check(feed.cards.every(card=>Math.abs(card.width-(feed.widgetWidth-16-feed.scrollbar))<=1),`${width}px/${feed.key}: cards fill widget minus 16px padding and scrollbar`);
       check(feed.display==='flex'&&feed.direction==='column'&&feed.gap==='8px'&&feed.paddingLeft==='8px'&&feed.paddingRight==='8px',`${width}px/${feed.key}: original vertical feed spacing is retained`);
@@ -104,7 +146,14 @@ async function leftColumn(page) {
       check(Math.abs(feed.widgetHeight-feed.chromeHeight-contentHeight)<=1,`${width}px/${feed.key}: widget naturally fits at most two card rows`);
       check(feed.cards.every(card=>Math.abs(card.left-feed.cards[0].left)<=1),`${width}px/${feed.key}: feed stays a single aligned column`);
     }
-    if(width>=2200)check(Math.abs(before.leftWidth-436)<=1,`${width}px: wide left column stops at 436px`);
+    if(width>=1920){
+      const expected=Math.max(400,Math.min(feedMaximum,before.layoutWidth*3/11-192/11));
+      check(Math.abs(before.leftWidth-expected)<=1,`${width}px: left column keeps its original proportional sizing (${before.leftWidth}, expected ${expected})`);
+    }
+    if(width>=3000){
+      check(Math.abs(before.leftWidth-feedMaximum)<=1,`${width}px: wide left column stops at ${feedMaximum}px`);
+      check(before.feeds.every(feed=>feed.cards.every(card=>Math.abs(card.width-(cardMaximum-feed.scrollbar))<=1)),`${width}px: collapsed feed cards reach the ${cardMaximum}px cap minus any scrollbar`);
+    }
     for(const key of ['insights','tasks']){
       await page.locator(`#cabinet-expand-${key}`).click();await paint(page);
       const expanded=await page.locator(`[data-cabinet-section="${key}"]`).boundingBox();
@@ -115,13 +164,13 @@ async function leftColumn(page) {
     }
     if([1920,2560,600,390].includes(width)){await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:path.join(output,`left-column-${width}.png`),fullPage:true});}
   }
-  const wide=samples.filter(sample=>sample.viewport>=2200).sort((a,b)=>a.viewport-b.viewport);
+  const wide=samples.filter(sample=>sample.viewport>=3000).sort((a,b)=>a.viewport-b.viewport);
   for(let i=1;i<wide.length;i++){
     const viewportGrowth=wide[i].viewport-wide[i-1].viewport,rightGrowth=wide[i].rightWidth-wide[i-1].rightWidth;
     check(Math.abs(rightGrowth-viewportGrowth)<=1,`${wide[i-1].viewport}→${wide[i].viewport}px: all additional width goes to the right column (${rightGrowth}/${viewportGrowth})`);
   }
   fs.writeFileSync(path.join(output,'left-column-measurements.json'),JSON.stringify(samples,null,2));
-  console.log('CHECKED — 436px left-column cap, flush 420px cards, original feed styles, right-column growth and expansion restoration at 11 widths');
+  console.log('CHECKED — 616px left-column cap, flush 600px cards, proportional growth, original feed styles, right-column growth and expansion restoration at 12 widths');
 }
 async function mobileColumns(page) {
   await load(page,'cabinet','cabinet-feed-insights');
@@ -137,7 +186,7 @@ async function mobileColumns(page) {
     check(result.widgets.length===6,`${width}px: all six Home widgets exist`);
     const reference=result.widgets.find(widget=>widget.key==='insights');
     for(const widget of result.widgets){
-      check(widget.width<=436.1,`${width}px/${widget.key}: normal widget is at most 436px (${widget.width})`);
+      check(widget.width<=feedMaximum+.1,`${width}px/${widget.key}: normal widget is at most ${feedMaximum}px (${widget.width})`);
       check(Math.abs(widget.width-reference.width)<=1&&Math.abs(widget.left-reference.left)<=1&&Math.abs(widget.right-reference.right)<=1,`${width}px/${widget.key}: widget edges match Insights`);
       check(widget.cards.every(cardWidth=>Math.abs(cardWidth-(widget.width-16-widget.scrollbar))<=1),`${width}px/${widget.key}: entity cards fill the widget minus padding and scrollbar`);
     }
@@ -146,7 +195,7 @@ async function mobileColumns(page) {
   for(const width of [1920,2560]){
     await viewport(page,width);
     const right=await page.locator('.cabinet-right').boundingBox();
-    check(right.width>436,`${width}px: desktop right column remains fluid (${right.width}px)`);
+    check(right.width>feedMaximum,`${width}px: desktop right column remains fluid (${right.width}px)`);
   }
   fs.writeFileSync(path.join(output,'mobile-column-measurements.json'),JSON.stringify(samples,null,2));
   console.log('CHECKED — aligned six-widget mobile columns at 320/390/436/480/600/700px; desktop right column remains fluid');
@@ -277,13 +326,13 @@ async function registry(page) {
     if(await page.locator(`#${entity}-tab`).getAttribute('aria-pressed')!=='true'){await page.locator(`#${entity}-tab`).click();await ready(page,'results');}
     for(const width of widths){await viewport(page,width);await geometry(page,`Registry ${entity}`,'#results .entity-card[data-record]');}
   }
-  console.log('CHECKED — path and process registry grids at all eight widths');
+  console.log(`CHECKED — path and process registry grids at all ${widths.length} widths`);
 }
 async function tasks(page) {
   await load(page,'tasks','tasks-results');
   await page.locator('#tasks-cards').click();await ready(page,'tasks-results');
   for(const width of widths){await viewport(page,width);await geometry(page,'Tasks cards','#tasks-results .task-card[data-task-id]');}
-  console.log('CHECKED — task cards at all eight widths');
+  console.log(`CHECKED — task cards at all ${widths.length} widths`);
 }
 async function buttonStyle(button) {
   return button.evaluate(element=>{const s=getComputedStyle(element),icon=getComputedStyle(element.querySelector('img'));return {background:s.backgroundColor,image:s.backgroundImage,shadow:s.boxShadow,outline:s.outlineStyle,outlineWidth:s.outlineWidth,border:s.borderWidth,filter:icon.filter};});
@@ -313,13 +362,16 @@ async function filters(page) {
     await page.locator('.cabinet-menu').getByRole('menuitemradio',{name:value,exact:true}).click();
     check(await button.evaluate(element=>element.classList.contains('has-filter')),`${key}: chosen filter is retained`);
     neutral(await buttonStyle(button),`${key} has-filter`);
+    await page.keyboard.press('Escape');await button.scrollIntoViewIfNeeded();await button.click();
     await page.locator('.cabinet-menu [data-clear]').click();await page.keyboard.press('Escape');
+    check(!await button.evaluate(element=>element.classList.contains('has-filter')),`${key}: filter reset clears the selected state`);
     await page.locator('#cabinet-heading-insights').click({position:{x:1,y:1}});
   }
   console.log('CHECKED — filter default/hover/pressed/expanded/selected visuals, functional opening and 16px menus');
 }
 async function sharedMenus(page) {
   await load(page,'main','results');
+  await page.locator('#processes-tab').click();await ready(page,'results');
   await page.locator('#block-select-input').click();await page.locator('#block-select-list').waitFor();
   await radius(page,'#block-select-list','Registry select');await page.keyboard.press('Escape');
   const card=page.locator('#results .entity-card[data-record]').first();await card.hover();await card.locator('[data-menu]').click();
@@ -341,7 +393,7 @@ async function sharedMenus(page) {
     page.on('pageerror',error=>errors.push(error.message));
     page.on('requestfailed',request=>resourceFailures.push(`${request.url().slice(0,150)}: ${request.failure()?.errorText}`));
     page.on('response',response=>{if(response.status()>=400)resourceFailures.push(`${response.status()} ${response.url()}`);});
-    const groups=[home,leftColumn,mobileColumns,dualExpansion,conditionalScroll,registry,tasks,filters,sharedMenus],requested=process.argv.slice(2);
+    const groups=[home,cardGrowth,leftColumn,mobileColumns,dualExpansion,conditionalScroll,registry,tasks,filters,sharedMenus],requested=process.argv.slice(2);
     assert.ok(requested.every(name=>groups.some(group=>group.name===name)),'Every requested group exists');
     for(const group of groups.filter(group=>!requested.length||requested.includes(group.name))){
       try{await group(page);}catch(error){failures.push(`${group.name}: ${error.stack||error}`);console.error(`FAIL — ${group.name}: ${error.message}`);await page.screenshot({path:path.join(output,`${group.name}-failure.png`)}).catch(()=>{});}

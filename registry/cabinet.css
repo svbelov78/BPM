@@ -1,9 +1,9 @@
 /* Products BPM 29:4418. Shared Nordic components; only cabinet layout is scoped here. */
 .cabinet-mode{--header:98px}
 .cabinet-panel{container: cabinet / inline-size;min-width:0}
-/* The feed column grows with its cards: 420 px plus the two 8 px inner gutters.
+/* The feed column grows with its cards: shared 600 px cap plus two 8 px inner gutters.
    Once capped, only the right column receives the remaining space. */
-.cabinet-layout{--cabinet-feed-max:436px;display:grid;grid-template-columns:clamp(400px,calc(27.272727% - 17.454545px),var(--cabinet-feed-max)) minmax(0,1fr);gap:24px;align-items:start}
+.cabinet-layout{--cabinet-feed-max:calc(var(--card-max-width) + 16px);display:grid;grid-template-columns:clamp(400px,calc(27.272727% - 17.454545px),var(--cabinet-feed-max)) minmax(0,1fr);gap:24px;align-items:start}
 .cabinet-left,.cabinet-right{display:flex;flex-direction:column;gap:16px;min-width:0}
 .cabinet-left{container:cabinet-feed-column / inline-size}
 .cabinet-widget{background:var(--panel);border-radius:24px;min-width:0;position:relative;overflow:hidden}
@@ -40,7 +40,7 @@
 .cabinet-task-tabs .entity-tabs button:hover:not(.active){background:var(--hover)}
 .cabinet-entity-widget{padding-bottom:24px}
 .cabinet-entity-widget[data-cabinet-section=paths] .cabinet-widget-header{height:92px}
-.cabinet-entity-grid{--card-min-width:340px;--card-max-width:420px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));justify-content:start;gap:8px;padding:0 8px;max-height:624px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.cabinet-entity-grid{--card-min-width:340px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));justify-content:start;gap:8px;padding:0 8px;max-height:624px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 .cabinet-soon .cabinet-empty{min-height:212px}
 .cabinet-soon[data-cabinet-section=gemba] .cabinet-empty{min-height:206px}
 .cabinet-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px;text-align:center;min-height:212px;width:100%;grid-column:1/-1;color:var(--text)}
@@ -62,7 +62,7 @@
 .cabinet-efficiency-tip button{font-size:13px;line-height:18px;color:white;margin-top:18px;text-decoration:underline;text-underline-offset:3px}
 .cabinet-layout[data-expanded] .cabinet-left{display:contents}
 .cabinet-layout[data-expanded] .cabinet-widget.is-expanded{grid-column:1/-1;grid-row:1}
-.cabinet-layout[data-expanded] .cabinet-widget.is-expanded .cabinet-feed{--card-min-width:360px;--card-max-width:420px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));align-content:start;justify-content:start}
+.cabinet-layout[data-expanded] .cabinet-widget.is-expanded .cabinet-feed{--card-min-width:360px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));align-content:start;justify-content:start}
 .cabinet-layout[data-expanded] .cabinet-widget.is-expanded .cabinet-feed .cabinet-empty{grid-column:1/-1}
 .cabinet-layout[data-expanded] .cabinet-right{grid-column:2;grid-row:2}
 .cabinet-layout[data-expanded] .cabinet-feed-widget:not(.is-expanded){grid-column:1;grid-row:2}
