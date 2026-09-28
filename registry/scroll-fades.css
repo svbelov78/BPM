@@ -1,0 +1,22 @@
+/* Fade only inner content, never its panel, pinned heading, footer or controls.
+   Transparent scroll surfaces reveal their existing parent's Nordic background. */
+[data-scroll-fade] {
+  --scroll-fade-size: 24px;
+  --scroll-fade-top: 0px;
+  --scroll-fade-bottom: 0px;
+}
+[data-scroll-fade="top"],
+[data-scroll-fade="both"] { --scroll-fade-top: var(--scroll-fade-size); }
+[data-scroll-fade="bottom"],
+[data-scroll-fade="both"] { --scroll-fade-bottom: var(--scroll-fade-size); }
+[data-scroll-fade]:not([data-scroll-fade="none"]) {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 var(--scroll-fade-top), #000 calc(100% - var(--scroll-fade-bottom)), transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 var(--scroll-fade-top), #000 calc(100% - var(--scroll-fade-bottom)), transparent);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+@media print, (forced-colors: active) {
+  [data-scroll-fade] { -webkit-mask-image: none !important; mask-image: none !important; }
+}

@@ -184,12 +184,13 @@ async function main() {
     await page.locator('#task-drawer[open]').waitFor();
     assert.equal(await page.locator('[data-task-type]').count(), 8);
     await page.locator('[data-task-type="standard"]').click();
-    assert.equal(await page.locator('[data-task-type="standard"]').getAttribute('aria-pressed'), 'true');
-    await assets(page, 'Task type Drawer');
+    await page.locator('#task-flow[open][data-mode="create"]').waitFor();
+    assert.equal(await page.locator('#task-flow #tf-form').count(), 1);
+    await assets(page, 'Standard task form');
     await page.keyboard.press('Escape');
-    await page.locator('#task-drawer[open]').waitFor({state: 'hidden'});
+    await page.locator('#task-flow[open]').waitFor({state: 'hidden'});
     await responsive(page, 'tasks');
-    report('Tasks table/cards, tabs, search, calendar range, type choice Drawer and responsive layout');
+    report('Tasks table/cards, tabs, search, calendar range, standard creation form and responsive layout');
 
     await page.locator('#registry-nav').click(); await ready(page);
     for (const id of ['paths-nav', 'gemba-nav']) {

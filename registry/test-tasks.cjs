@@ -218,11 +218,11 @@ async function typeChooser(page) {
   assert.deepEqual(await page.locator('[data-task-type]').evaluateAll(elements => elements.map(element => element.dataset.taskType)),typeIds);
   assert.equal(await page.locator('#task-drawer').getAttribute('aria-labelledby'),'task-drawer-title');
   assert.ok(await page.locator('.task-drawer-close').evaluate(element => element === document.activeElement));
-  for (const type of typeIds) {
+  for (const type of typeIds.filter(type => type !== 'standard')) {
     await page.locator(`[data-task-type="${type}"]`).click();
     assert.equal(await page.locator('[data-task-type][aria-pressed="true"]').count(),1);
     assert.equal(await page.locator(`[data-task-type="${type}"]`).getAttribute('aria-pressed'),'true');
-    assert.equal(await page.locator('#task-drawer input,#task-drawer textarea,#task-drawer select,#task-drawer form').count(),0,'Type choice does not add a creation form');
+    assert.equal(await page.locator('#task-drawer input,#task-drawer textarea,#task-drawer select,#task-drawer form').count(),0,'Unsupported type keeps the chooser');
     assert.ok(await page.locator('#task-drawer').evaluate(element => element.open));
     assert.equal(await page.evaluate(() => window.BPM_TASK_DATA.length),14,'Type choice does not create a task');
   }
@@ -232,10 +232,13 @@ async function typeChooser(page) {
   assert.equal(await page.locator('[data-task-type][aria-pressed="true"]').count(),0,'Reopening clears the choice');
   assert.equal(await page.locator('.task-choice-notice').isVisible(),false,'Reopening clears the previous confirmation');
   await page.locator('[data-task-type="standard"]').focus();await page.keyboard.press('Enter');
-  assert.equal(await page.locator('[data-task-type="standard"]').getAttribute('aria-pressed'),'true');
-  await closeDrawer(page,'#tasks-create','button');
+  await page.locator('#task-flow[open][data-mode="create"]').waitFor();
+  assert.equal(await page.locator('#task-flow #tf-form').count(),1,'Standard type opens its creation form');
+  await page.locator('#task-flow [data-tf-action="close"]').click();
+  await page.waitForFunction(() => !document.getElementById('task-flow').open && !document.body.classList.contains('task-drawer-open'));
+  assert.ok(await page.locator('#tasks-create').evaluate(element => element === document.activeElement));
   await page.locator('#tasks-create').click();await drawerReady(page);await closeDrawer(page,'#tasks-create','backdrop');
-  report('eight task types, exclusive selection, keyboard operation, no forms/data writes and close focus');
+  report('eight task types, unsupported choices, standard form keyboard entry and close focus');
 }
 
 async function processAndNavigation(page) {
@@ -301,7 +304,7 @@ async function responsive(page) {
     assert.ok(geometry.scroll <= geometry.client + 1,`${width}: drawer does not scroll horizontally`);
     await stablePaint(page);
     await page.screenshot({path:`/tmp/bpm-tasks-${width}-drawer.png`,fullPage:false});
-    await page.locator('[data-task-type="standard"]').click();
+    await page.locator('[data-task-type="extended-access"]').click();
     const notice = await page.locator('.task-choice-notice').evaluate(element => {const r=element.getBoundingClientRect(),drawer=element.closest('dialog').getBoundingClientRect();return {left:r.left,right:r.right,drawerLeft:drawer.left,drawerRight:drawer.right};});
     assert.ok(notice.left >= notice.drawerLeft - 1 && notice.right <= notice.drawerRight + 1,`${width}: choice notice stays inside drawer`);
     await closeDrawer(page);

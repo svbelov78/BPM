@@ -13,10 +13,16 @@
     'согласовано':'status-green','согласована':'status-green',
     'выполняется':'status-neutral','на доработке':'status-neutral','на согласовании':'status-neutral'
   });
-  const date = value => {
+  const day = value => {
     const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
-    return match ? `${match[3]}.${match[2]}.${match[1]}` : String(value || '—');
+    if(!match)return '';
+    if(String(value).includes('T')){
+      const parsed=new Date(value);
+      if(!Number.isNaN(parsed.getTime()))return `${parsed.getFullYear()}-${String(parsed.getMonth()+1).padStart(2,'0')}-${String(parsed.getDate()).padStart(2,'0')}`;
+    }
+    return match[0];
   };
+  const date = value => day(value) ? day(value).split('-').reverse().join('.') : String(value || '—');
   const initials = name => String(name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toLocaleUpperCase('ru');
   const nameOf = person => typeof person === 'object' && person !== null ? person.name || person.label || '' : String(person || '');
   function typeTag(type = 'Тип задачи') {
@@ -31,11 +37,17 @@
   function status(task, withDate = false) {
     const label = task.status || 'Создана';
     const dot = statusAssets[String(label).trim().toLocaleLowerCase('ru')] || 'status-neutral';
-    return `<span class="task-status">${icon(dot)}<span>${escape(label)}${withDate ? ` <span class="task-status-date">| ${escape(date(task.created))}</span>` : ''}</span></span>`;
+    const statusDate = task.completedAt || task.rejectedAt || task.withdrawnAt || task.created;
+    return `<span class="task-status">${icon(dot)}<span>${escape(label)}${withDate ? ` <span class="task-status-date">| ${escape(date(statusDate))}</span>` : ''}</span></span>`;
   }
   function deadline(task) {
+    if (task.status === 'Завершено' && task.completedAt) {
+      const late = Boolean(task.deadline && task.deadline < day(task.completedAt));
+      const source = late ? 'assets/task-flow/overdue.svg' : 'assets/task-flow/completed.svg';
+      return `<span class="task-deadline${late ? ' is-overdue' : ''}" title="${late ? 'Превышен срок' : 'Закрыта в срок'}"><img src="${source}" alt="" aria-hidden="true"><span>${escape(date(task.completedAt))}</span></span>`;
+    }
     const late = Boolean(task.overdue);
-    return `<span class="task-deadline${late ? ' is-overdue' : ''}"${late ? ' title="Срок задачи истёк"' : ''}>${icon(late ? 'deadline-overdue' : 'deadline-ontime')}<span>${task.deadline ? `${late ? '' : 'до '}${escape(date(task.deadline))}` : 'Без срока'}</span></span>`;
+    return `<span class="task-deadline${late ? ' is-overdue' : ''}"${late ? ' title="Срок задачи истёк"' : ''}>${icon(late ? 'deadline-overdue' : 'deadline-ontime')}<span>${task.deadline ? `${late ? '' : '<span class="task-deadline-prefix">до </span>'}${escape(date(task.deadline))}` : 'Без срока'}</span></span>`;
   }
   function avatar(person, {personIcon = false} = {}) {
     const name = nameOf(person);
@@ -96,5 +108,5 @@
     const content = loading ? Array.from({length:5}, skeletonRow).join('') : rows.map(tableRow).join('');
     return `<div class="tasks-table-scroll table-scroll" tabindex="0" role="region" aria-label="Список задач, таблица"${loading ? ' aria-busy="true"' : ''}><table class="tasks-table"><colgroup>${columns.map(column => `<col class="task-col-${column.key}" style="--task-column-width:${column.width / 1485 * 100}%">`).join('')}</colgroup>${header(sortKey, sortDir)}<tbody>${content || '<tr><td colspan="7" class="task-table-empty">Задачи не найдены</td></tr>'}</tbody></table></div>`;
   }
-  window.BpmTaskVisuals = Object.freeze({card, table, skeletonCard, typeTag, idBadge, status, deadline, initials, date, escape});
+  window.BpmTaskVisuals = Object.freeze({card, table, skeletonCard, typeTag, idBadge, status, deadline, initials, date, day, escape});
 })();

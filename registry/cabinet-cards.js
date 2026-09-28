@@ -62,7 +62,7 @@
     const people = Array.isArray(row.assignees) ? row.assignees : [];
     const names = people.map(personName);
     const extra = people.length > 3 ? `<span class="task-avatar task-avatar-overflow" title="${escape(names.slice(3).join(', '))}">+${people.length - 3}</span>` : '';
-    const group = people.length ? `<span class="task-avatar-group" aria-label="Исполнители: ${escape(names.join(', '))}">${people.slice(0, 3).map(person => avatar(person, true)).join('')}${extra}</span>` : '<span class="task-unassigned">Не назначены</span>';
+    const group = people.length ? `<span class="task-avatar-group${people.length > 1 ? ' cabinet-assignees-full' : ''}" aria-label="Исполнители: ${escape(names.join(', '))}">${people.slice(0, 3).map(person => avatar(person, true)).join('')}${extra}</span>${people.length > 1 ? `<span class="task-avatar task-avatar-overflow cabinet-assignees-compact" title="${escape(names.join(', '))}" aria-label="Исполнители: ${escape(names.join(', '))}">+${people.length}</span>` : ''}` : '<span class="task-unassigned">Не назначены</span>';
     return `<span class="task-participant-route">${avatar(row.initiator, true)}${image('direction-flow', 'task-direction')}${group}</span>`;
   }
   function isComplete(row) {

@@ -9,6 +9,7 @@
   const date = value => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return null;
     const [year,month,day] = value.split('-').map(Number);
+    if(year<1800||year>2200)return null;
     const result = new Date(year,month-1,day,12);
     return iso(result) === value ? result : null;
   };
@@ -17,15 +18,17 @@
   const img = name => `<img src="assets/${name}.svg" alt="">`;
   let current = null, sequence = 0;
 
-  function open({anchor,from='',to='',onApply=()=>{},onClose=()=>{}} = {}) {
+  function open({anchor,from='',to='',mode='range',onApply=()=>{},onClose=()=>{}} = {}) {
     if (!anchor || !anchor.getBoundingClientRect) throw new TypeError('Calendar requires an anchor element.');
     current?.close(false);
     const id = `bpm-calendar-${++sequence}`;
+    const single = mode === 'single';
+    const popupRoot = anchor.closest('dialog[open]') || document.body;
     const today = new Date(); today.setHours(12,0,0,0);
     let start = date(from) ? from : '', end = date(to) ? to : '';
     if (start && end && start > end) [start,end] = [end,start];
     const initialStart = date(start), initialEnd = date(end);
-    const rangeSpansMonths = initialStart && initialEnd && start.slice(0,7) !== end.slice(0,7);
+    const rangeSpansMonths = !single && initialStart && initialEnd && start.slice(0,7) !== end.slice(0,7);
     let twoMonths = Boolean(rangeSpansMonths && innerWidth >= 704);
     let month = addMonths(initialEnd || initialStart || today, twoMonths ? -1 : 0);
     let selectingEnd = false, hover = '', activeDate = iso(initialEnd || initialStart || today);
@@ -35,10 +38,10 @@
     element.className = 'bpm-calendar';
     element.id = id;
     element.setAttribute('role','dialog');
-    element.setAttribute('aria-label','Выбор диапазона дат');
+    element.setAttribute('aria-label',single ? 'Выбор даты' : 'Выбор диапазона дат');
     element.setAttribute('aria-describedby',`${id}-instructions`);
     element.tabIndex = -1;
-    document.body.append(element);
+    popupRoot.append(element);
     anchor.setAttribute('aria-expanded','true');
     anchor.setAttribute('aria-controls',id);
     const controller = {element,close,reposition};
@@ -68,6 +71,7 @@
     }
     function chooseDay(value) {
       closePicker(false);
+      if (single) { apply(value,value); return; }
       if (!selectingEnd) {
         start = value; end = ''; hover = ''; selectingEnd = true; activeDate = value;
         render(value);
@@ -76,8 +80,20 @@
       } else apply(start,value);
     }
     function render(focusDate) {
+      const earliest=new Date(1800,0,1,12),latest=new Date(2200,twoMonths?10:11,1,12);
+      if(month<earliest)month=earliest;if(month>latest)month=latest;
       element.classList.toggle('is-two-months',twoMonths);
       element.innerHTML = `<p class="bpm-calendar-sr" id="${id}-instructions">Выберите начало, затем конец периода. Стрелки перемещают по дням. Page Up и Page Down меняют месяц, с Shift — год. Escape отменяет незавершённый выбор.</p><span class="bpm-calendar-sr" role="status" aria-live="polite"></span><div class="bpm-calendar-quick" aria-label="Быстрые периоды"><button type="button" data-days="1">Сегодня</button><button type="button" data-days="7">7 дней</button><button type="button" data-days="14">14 дней</button><button type="button" data-days="30">30 дней</button><button type="button" class="bpm-calendar-clear" data-clear aria-label="Очистить период" title="Очистить период">${img('calendar-erase')}</button></div><div class="bpm-calendar-months">${monthMarkup(month,0)}${twoMonths ? monthMarkup(addMonths(month,1),1) : ''}</div>`;
+      if (single) {
+        element.querySelector('.bpm-calendar-sr').textContent = 'Выберите дату. Стрелки перемещают по дням. Page Up и Page Down меняют месяц, с Shift — год. Escape закрывает календарь.';
+        element.querySelectorAll('[data-days]:not([data-days="1"])').forEach(button => button.remove());
+        element.querySelector('[data-clear]').setAttribute('aria-label','Очистить дату');
+      }
+      element.querySelectorAll('[data-nav]').forEach(button=>{
+        const next=addMonths(month,Number(button.dataset.nav));
+        button.disabled=next.getFullYear()<1800||addMonths(next,twoMonths?1:0).getFullYear()>2200;
+      });
+      element.querySelectorAll('[data-date]').forEach(button=>{if(!date(button.dataset.date))button.disabled=true;});
       updateSelection();
       reposition();
       if (focusDate) findDay(focusDate)?.focus({preventScroll:true});
@@ -151,12 +167,12 @@
       // The reference month picker runs down columns, starting at the visible month.
       const values=kind==='month'?Array.from({length:12},(_,i)=>(selected+i)%12):Array.from({length:401},(_,i)=>1800+i);
       picker.innerHTML=values.map(value=>`<button type="button" role="option" tabindex="${value===selected?0:-1}" data-picker-value="${value}" aria-selected="${value===selected}">${kind==='month'?MONTHS[value]:value}</button>`).join('');
-      document.body.append(picker);button.setAttribute('aria-expanded','true');
+      popupRoot.append(picker);button.setAttribute('aria-expanded','true');
       positionPicker();
       picker.addEventListener('click',e=>{const item=e.target.closest('[data-picker-value]');if(item)choosePicker(Number(item.dataset.pickerValue));});
       const focused=picker.querySelector('[aria-selected="true"]');
-      if(kind==='year')picker.scrollTop=Math.max(0,focused.offsetTop-108);
-      focused.focus({preventScroll:true});
+      if(kind==='year'&&focused)picker.scrollTop=Math.max(0,focused.offsetTop-108);
+      (focused||picker.querySelector('button'))?.focus({preventScroll:true});
     }
     function choosePicker(value) {
       const currentMonth=addMonths(month,pickerMonth);
@@ -212,7 +228,7 @@
       const day=event.target.closest('[data-date]');if(day){chooseDay(day.dataset.date);return;}
       const quick=event.target.closest('[data-days]');if(quick){apply(iso(addDays(today,1-Number(quick.dataset.days))),iso(today));return;}
       if(event.target.closest('[data-clear]')){apply('','');return;}
-      const nav=event.target.closest('[data-nav]');if(nav){closePicker(false);month=addMonths(month,Number(nav.dataset.nav));activeDate=iso(month);render();element.querySelector(`[data-nav="${nav.dataset.nav}"]`)?.focus({preventScroll:true});return;}
+      const nav=event.target.closest('[data-nav]');if(nav&&!nav.disabled){closePicker(false);month=addMonths(month,Number(nav.dataset.nav));activeDate=iso(month);render();element.querySelector(`[data-nav="${nav.dataset.nav}"]`)?.focus({preventScroll:true});return;}
       const pickerButton=event.target.closest('[data-picker]');if(pickerButton)openPicker(pickerButton.dataset.picker,Number(pickerButton.dataset.monthIndex),pickerButton);
     });
     element.addEventListener('pointerover',event=>{const day=event.target.closest('[data-date]');if(selectingEnd&&day){hover=day.dataset.date;updateSelection();}});

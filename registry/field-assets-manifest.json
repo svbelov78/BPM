@@ -1,0 +1,10 @@
+{
+  "sourceFile": "QdYByHLCCMIKfTI0O0SXiE",
+  "updated": "2026-09-25",
+  "assets": [
+    {"path":"assets/field-chevron-down-16.svg","nodeId":"221:41","name":"Icon/16/Chevron Down","width":16,"height":16},
+    {"path":"assets/field-clear-16.svg","nodeId":"221:17","name":"Icon/16/Exit","width":16,"height":16}
+  ],
+  "fieldReferences": {"Select":"174:2","RangeDateField":"265:10"},
+  "notes": "Original Figma SVG exports. Only field chevrons and clear crosses use16px; semantic calendar/search/sort icons and click targets retain their existing size. Date value line13/18 is vertically centered in its24px slot."
+}

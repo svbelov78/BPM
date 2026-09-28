@@ -8,7 +8,9 @@
     const {esc, icon, efficiency, tag, section} = u;
     const processSection = (id, title, count, content) => section(id, title, count, content, {className:'pd-process-section'});
     const demo = (message, content, className = '') => `<button type="button" class="${className}" data-pd-demo="${esc(message)}">${content}</button>`;
-    const add = (label, iconName) => demo(`${label}: форма пока не подключена в демонстрационном макете.`, `${icon(iconName)}<span>${esc(label)}</span>`, 'button primary-button pd-data-add');
+    const add = (label, iconName, action = '') => action
+      ? `<button type="button" class="button primary-button pd-data-add" data-pd-action="${esc(action)}" aria-haspopup="dialog">${icon(iconName)}<span>${esc(label)}</span></button>`
+      : demo(`${label}: форма пока не подключена в демонстрационном макете.`, `${icon(iconName)}<span>${esc(label)}</span>`, 'button primary-button pd-data-add');
     const copyTag = (value, iconName = 'imgCopy', label = value) => `<button type="button" class="pd-copy-tag" data-pd-action="copy" data-pd-value="${esc(value)}" aria-label="Скопировать ${esc(value)}">${tag(label, 'muted', iconName)}</button>`;
     const avatar = () => `<span class="pd-data-avatar" aria-hidden="true">${icon('imgIcon24Person')}</span>`;
     const person = (name, small = false) => `<span class="pd-data-person${small ? ' pd-data-person-small' : ''}">${avatar()}<span>${esc(name)}</span></span>`;
@@ -55,7 +57,7 @@
         <td class="pd-data-deadline"><span class="pd-data-tracker">${icon(row.trackerCompleted?'imgDeadlineIndicatorPdfSource1':'imgDeadlineIndicatorPdfSource')}<span>${esc(row.deadline)}</span></span></td>
         <td class="pd-data-task-status">${status(row.status,row.statusTone)}</td></tr>`;
     }).join('');
-    const tasks = processSection('tasks',t.title,t.rows.length,`<div class="pd-data-content">${add(t.actionLabel,'imgIcon24PlusAdd2')}${table('tasks',t.title,[262.666,162,250,128,128,186,146],heading('tasks',t.columns.map((title,index)=>index===0?'Тип, ID, задача':index===3?'Ответств...':title)),taskRows)}</div>`);
+    const tasks = processSection('tasks',t.title,t.rows.length,`<div class="pd-data-content">${add(t.actionLabel,'imgIcon24PlusAdd2','create-task')}${table('tasks',t.title,[262.666,162,250,128,128,186,146],heading('tasks',t.columns.map((title,index)=>index===0?'Тип, ID, задача':index===3?'Ответств...':title)),taskRows)}</div>`);
 
     const a=DATA.aris, c=DATA.consultant;
     const arisRows=a.rows.map((row,index)=>`<tr data-pd-key="aris-${index}"><td class="pd-data-title-cell">${copyTag(row.id,'imgIcon16Copy')}</td><td class="pd-data-title-cell">${stack(`<p class="pd-data-title">${esc(row.title)}</p><span class="pd-source-tag">${tag(row.variantsLabel,row.variantsTone==='warning'?'yellow':'green')}</span>`)}</td><td>${esc(row.basis)}</td><td>${esc(row.period).replace(' – ',' –<br>')}</td><td class="pd-data-title-cell">${status(row.status,'green')}</td><td class="pd-data-actions">${external(row.title,'imgIcon16Info')}</td></tr>`).join('');

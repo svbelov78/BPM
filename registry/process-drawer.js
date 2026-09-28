@@ -133,6 +133,10 @@
     if(action){
       switch(action.dataset.pdAction){
         case 'close':close();break;
+        case 'create-task':
+          selects.forEach(select=>select.close());
+          options.createTask?.(action);
+          break;
         case 'copy':copy(action.dataset.pdValue || action.dataset.pdCopy || row.code || `${row.entity==='paths'?'КП':'П'} ${row.number}`);break;
         case 'share':copy(`${location.href.split('#')[0]}#${row.entity==='paths'?'journey':'process'}=${encodeURIComponent(row.id)}`);break;
         case 'back':if(options.backRecord)open(options.backRecord,options.backConfiguration || {});break;

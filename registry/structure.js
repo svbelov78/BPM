@@ -6,7 +6,7 @@
   const icon = name => `<img src="assets/${name}.svg" alt="">`;
   const format = n => Number(n).toLocaleString('ru-RU');
   const normalize = value => String(value).toLocaleLowerCase('ru').replace(/ё/g,'е');
-  const labels = {block:'Блоки',division:'Подразделения',owner:'Владельцы процессов',query:'Поиск',favorites:'Список'};
+  const labels = {block:'Блоки',division:'Подразделения',owner:'Владельцы процессов',query:'Поиск',favorites:'Список',product:'Продукты',paths:'Клиентские пути',processes:'Процессы',divisionLeader:'Руководители подразделений',processOwner:'Владельцы процессов',pathOwner:'Владельцы клиентских путей'};
   const kindLabels = {block:'Блок',division:'Подразделение',product:'Продукт'};
   const PAGINATION_THRESHOLD = 50, DEFAULT_PAGE_SIZE = 50, PAGE_SIZES = [25,50,75,100], LOAD_MS = 2000, ANIMATION_MS = 1100;
 
@@ -35,13 +35,21 @@
         return {...row,relationshipType:index%4===3?'Дополнительный':'Основной',relationshipSimulated:true};
       }));
     }
+    const pathProcessDistributions = new Map([...processesByPath].map(([id,rows])=>{
+      const buckets=[0,0,0,0,0];rows.forEach(row=>buckets[row.bucket]++);
+      return [id,{buckets,total:rows.length}];
+    }));
     const filters = {block:[],division:[],owner:[]};
+    const emptyEntityFilters=()=>({product:[],paths:[],processes:[],divisionLeader:[],processOwner:[],pathOwner:[]});
+    const entityFilters = emptyEntityFilters();
+    const searchCatalog = window.BPMStructureSearchModel.create(models);
     const opened = new Set(), pages = new Map(), rowSorts = new Map(), animated = new Set();
     const pageSizes = new Map(), pageSelects = new Map();
     const openedPaths = new Set(), ownerFilters = {paths:[],processes:[]}, detailTables = new Map();
     const selects = {};
     let active=false, busy=false, query='', sort='count-desc', favoritesOnly=false;
-    let timer, searchTimer, frame, tree=[], visibleNodes=new Map();
+    let timer, searchTimer, frame, tree=[], visibleNodes=new Map(), revealSelection=false;
+    let cachedQuery='', queryMatches=emptyEntityFilters();
     const animations = new Map();
     const animationKey = chart => chart.hasAttribute('data-average-chart') ? `average:${chart.dataset.averageChart}` : chart.dataset.chart;
     const motion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -62,9 +70,26 @@
     const aliases=model.sourceIssues.filter(issue=>issue.type==='process-title-aliases');
     $('structure-source-issues').textContent=`${invalid.length} строк без корректного кода процесса не включены в счётчики (строки Excel: ${invalid.map(issue=>issue.row).join(', ')}). Для ${aliases.length} процессов встречаются варианты названий — показывается наиболее частый, все варианты сохранены. Продуктов с идентификатором: ${model.productCount}; служебных групп без установленного продукта: ${model.placeholderCount}. Отсутствующие в Excel статусы и даты не заполнены. Руководители блоков и подразделений в Excel не указаны — для макета используются демонстрационные ФИО. Владельцы продуктов и процессов сохранены из источника. Связи КП ↔ процессы сохранены из Excel; типы участия «Основной / Дополнительный» — демонстрационные, по согласованию с пользователем.`;
     const unique = rows => [...new Map(rows.map(row=>[row.id,row])).values()];
+    const hasEntityFilters = () => Object.values(entityFilters).some(values=>values.length);
+    const searchUI=window.BPMStructureSearch.mount({input:$('structure-search'),anchor:$('structure-search-wrap'),catalog:searchCatalog,
+      isActive:()=>active,isSelected:entry=>entityFilters[entry.kind].includes(entry.id),
+      onCopy:entry=>api.copyText(entry.code),onChoose:entry=>{
+        if(entityFilters[entry.kind].includes(entry.id))return;
+        entityFilters[entry.kind].push(entry.id);
+        clearTimeout(searchTimer);query='';$('structure-search').value='';
+        revealSelection=true;opened.clear();openedPaths.clear();pages.clear();detailTables.clear();reload();
+        $('structure-search-status').textContent=`Добавлен фильтр: ${[entry.code,entry.title].filter(Boolean).join(' ')}`;
+        $('structure-search').focus({preventScroll:true});
+      }});
 
     function buildTree(sourceModel) {
       const needle=normalize(query.trim());
+      if(cachedQuery!==needle){
+        cachedQuery=needle;queryMatches=emptyEntityFilters();
+        searchCatalog.search(query).forEach(entry=>queryMatches[entry.kind].push(entry.id));
+      }
+      const sourceEntity=sourceModel===models.paths?'paths':'processes';
+      const matchingEntity=(node,row)=>Object.entries(queryMatches).some(([kind,ids])=>ids.length&&searchCatalog.matches(node,row,sourceEntity,{[kind]:ids}));
       const owners=sourceModel===model?filters.owner:ownerFilters[sourceModel===models.paths?'paths':'processes'];
       function visit(node,path=[]) {
         if(node.kind==='block' && filters.block.length && !filters.block.includes(node.id))return null;
@@ -72,8 +97,8 @@
         const names=[...path,node.name];
         let children=[], rows=[];
         if(node.kind==='product') {
-          rows=node.records.filter(row=>(!owners.length||(row.owners||[row.owner]).some(name=>owners.includes(name)))&&(!favoritesOnly||api.isFavorite(row))&&(!needle||normalize(`${names.join(' ')} ${row.title} ${row.code||''} ${row.number} ${(row.owners||[row.owner]).join(' ')} ${row.products?.join(' ')||''}`).includes(needle)));
-          const emptyProductMatch=!node.records.length&&!favoritesOnly&&!owners.length&&(!needle||normalize(names.join(' ')).includes(needle));
+          rows=node.records.filter(row=>searchCatalog.matches(node,row,sourceEntity,entityFilters)&&(!owners.length||(row.owners||[row.owner]).some(name=>owners.includes(name)))&&(!favoritesOnly||api.isFavorite(row))&&(!needle||matchingEntity(node,row)||normalize(`${names.join(' ')} ${row.title} ${row.code||''} ${row.number} ${(row.owners||[row.owner]).join(' ')} ${row.products?.join(' ')||''}`).includes(needle)));
+          const emptyProductMatch=!node.records.length&&!favoritesOnly&&!owners.length&&searchCatalog.matches(node,null,sourceEntity,entityFilters)&&(!needle||matchingEntity(node,null)||normalize(names.join(' ')).includes(needle));
           if(!rows.length&&!emptyProductMatch)return null;
         } else {
           children=node.children.map(child=>visit(child,names)).filter(Boolean);
@@ -104,6 +129,7 @@
       tree=buildTree(model);
       visibleNodes=new Map();
       const index=nodes=>nodes.forEach(node=>{visibleNodes.set(node.id,node);index(node.children);});index(tree);
+      if(revealSelection){visibleNodes.forEach(node=>opened.add(node.id));revealSelection=false;}
     }
 
     function chart(node) {
@@ -111,6 +137,17 @@
     }
     function averageChart(node) {
       return window.BPMStructureCharts.renderAverage({id:node.id,records:node.records,done:animated.has(`average:${node.id}`)||motion.matches});
+    }
+    function pathProcessChart(row,node) {
+      // A path can appear in several products. Each visible occurrence needs
+      // its own animation key, but all use the same unique linked processes.
+      const id=`path-processes-${node.id}-${row.id}`;
+      const distribution=pathProcessDistributions.get(row.id)||{buckets:[0,0,0,0,0],total:0};
+      // These are process counts, not path counts. Keep the existing, fixed
+      // process leader scale in Chart 1; a path-specific scale would undermine
+      // quantitative comparisons and the path model's maxima could clip bars.
+      const markup=window.BPMStructureCharts.render({id,...distribution,maxima:models.processes.maxima,type:chartType,colors:models.processes.colors,entity:'processes',done:animated.has(id)||motion.matches});
+      return `<span class="structure-path-process-chart" data-path-process-chart="${row.id}" data-product-chart="${node.id}">${markup}</span>`;
     }
     function owner(name,owners=[],simulated=false) {const title=simulated?`Демонстрационный руководитель: ${name}`:owners.join('; ');return `<span class="structure-owner"${title?` title="${esc(title)}"`:''}>${name==='Руководитель не указан'?'':'<span class="avatar" aria-hidden="true"></span>'}<span>${esc(name)}</span></span>`;}
     function nodeMarkup(node) {
@@ -145,11 +182,14 @@
       const expansion=linked.length
         ? `<button class="structure-row-count" data-structure-related="${row.id}" data-structure-${isPath?'path':'process'}="${row.id}" data-product="${node.id}" aria-expanded="${pathOpen}" aria-controls="panel-${drillId}">${relatedCountLabel(linked.length,relatedEntity)} ${icon('chevron-down')}</button>`
         : `<span class="structure-row-count structure-no-efficiency">Нет связанных ${isPath?'процессов':'клиентских путей'}</span>`;
-      const main=`<tr data-structure-record="${row.id}" data-record-entity="${row.entity}" data-expanded="${pathOpen}"><td><div class="structure-row-meta">${favorite?'<span class="favorite-heart" role="img" aria-label="В избранном">'+icon('liked')+'</span>':''}<button class="id-badge" data-structure-copy="${row.id}" aria-label="Скопировать ${esc(idLabel)}"${row.numberSimulated?' title="Демонстрационный ID: в исходном Excel идентификатор КП отсутствует"':''}>${esc(idLabel)}${icon('copy')}</button>${row.type?`<span class="tag">${esc(row.type)}</span>`:''}${variantCount?`<span class="count-badge">${variantCount} ${variantCount%10===1&&variantCount%100!==11?'вариант':variantCount%10>=2&&variantCount%10<=4&&(variantCount%100<12||variantCount%100>14)?'варианта':'вариантов'}${icon('info')}</span>`:''}</div><button class="structure-row-title" data-structure-detail="${row.id}">${esc(row.title)}</button>${expansion}</td><td>${owner(row.owner,row.owners)}</td><td><span class="structure-efficiency structure-bucket-${row.bucket}">${row.efficiency===null?'<span class="structure-no-efficiency">Нет оценки</span>':window.BpmCardVisuals.efficiency(row,true)}</span><button class="structure-row-more icon-button" data-structure-menu="${row.id}" aria-label="Действия с ${isPath?'клиентским путём':'процессом'} ${row.number}" aria-haspopup="menu">${icon('more')}</button></td></tr>`;
+      const efficiency=`<span class="structure-efficiency structure-bucket-${row.bucket}">${row.efficiency===null?'<span class="structure-no-efficiency">Нет оценки</span>':window.BpmCardVisuals.efficiency(row,true)}</span>`;
+      const more=`<button class="structure-row-more icon-button" data-structure-menu="${row.id}" aria-label="Действия с ${isPath?'клиентским путём':'процессом'} ${row.number}" aria-haspopup="menu">${icon('more')}</button>`;
+      const metrics=isPath?`<td class="structure-path-efficiency-cell">${efficiency}</td><td class="structure-path-chart-cell">${pathProcessChart(row,node)}${more}</td>`:`<td class="structure-process-efficiency-cell">${efficiency}${more}</td>`;
+      const main=`<tr data-structure-record="${row.id}" data-record-entity="${row.entity}" data-expanded="${pathOpen}"><td class="structure-row-title-cell"><div class="structure-row-meta">${favorite?'<span class="favorite-heart" role="img" aria-label="В избранном">'+icon('liked')+'</span>':''}<button class="id-badge" data-structure-copy="${row.id}" aria-label="Скопировать ${esc(idLabel)}"${row.numberSimulated?' title="Демонстрационный ID: в исходном Excel идентификатор КП отсутствует"':''}>${esc(idLabel)}${icon('copy')}</button>${row.type?`<span class="tag">${esc(row.type)}</span>`:''}${variantCount?`<span class="count-badge">${variantCount} ${variantCount%10===1&&variantCount%100!==11?'вариант':variantCount%10>=2&&variantCount%10<=4&&(variantCount%100<12||variantCount%100>14)?'варианта':'вариантов'}${icon('info')}</span>`:''}</div><button class="structure-row-title" data-structure-detail="${row.id}">${esc(row.title)}</button>${expansion}</td><td class="structure-row-owner-cell">${owner(row.owner,row.owners)}</td>${metrics}</tr>`;
       if(!linked.length)return main;
       const linkedNode={id:drillId,parentId:node.id,name:row.title,records:linked,total:linked.length,recordEntity:relatedEntity};
       detailTables.set(drillId,linkedNode);
-      return main+`<tr class="structure-linked-row"${pathOpen?'':' hidden'}><td colspan="3"><div class="structure-linked-processes" id="panel-${drillId}">${pathOpen?linkedContent(linkedNode):''}</div></td></tr>`;
+      return main+`<tr class="structure-linked-row"${pathOpen?'':' hidden'}><td colspan="${isPath?4:3}"><div class="structure-linked-processes" id="panel-${drillId}">${pathOpen?linkedContent(linkedNode):''}</div></td></tr>`;
     }
     function linkedContent(node) {
       const rows=sortedRows(node),paginate=rows.length>PAGINATION_THRESHOLD,size=pageSizes.get(node.id)||DEFAULT_PAGE_SIZE;
@@ -174,7 +214,9 @@
       const entityName=tableEntity==='paths'?'клиентские пути':'процессы';
       const headings=[[tableEntity==='paths'?'ID, КП':'ID, процесс','id'],['Владелец процесса','owner'],['Эффективность','efficiency']];
       const pagination=paginate?paginationMarkup(node,page,size,rows.length,maxPage):'';
-      return `<div class="structure-table-scroll" tabindex="0" role="region" aria-label="${entityName}: ${esc(node.name)}; таблицу можно прокручивать по горизонтали"><table class="structure-table" data-table-entity="${tableEntity}"><caption class="sr-only">${esc(node.name)} — ${entityName}</caption><colgroup><col><col style="width:700px"><col style="width:184px"></colgroup><thead><tr>${headings.map(([label,key])=>{const active=sortValue.startsWith(`${key}-`),desc=active&&sortValue.endsWith('desc');return `<th scope="col"${active?` aria-sort="${desc?'descending':'ascending'}"`:''}><button class="table-sort-button" data-structure-sort="${node.id}" data-column="${key}" data-active="${active}" aria-label="${label}: по ${active&&!desc?'убыванию':'возрастанию'}"><span class="structure-column-label">${label==='Эффективность'?'Эф\u00adфек\u00adтив\u00adность':label}</span><img class="table-sort-arrow${desc?' is-reversed':''}" src="assets/arrow-down.svg" alt=""></button></th>`;}).join('')}</tr></thead><tbody>${selected.map(row=>rowMarkup(row,node)).join('')}</tbody></table></div>${pagination}`;
+      const isPathTable=tableEntity==='paths';
+      const columns=isPathTable?'<col><col><col><col>':'<col><col><col>';
+      return `<div class="structure-table-scroll" tabindex="0" role="region" aria-label="${entityName}: ${esc(node.name)}; таблицу можно прокручивать по горизонтали"><table class="structure-table ${isPathTable?'structure-path-table':'structure-process-table'}" data-table-entity="${tableEntity}"><caption class="sr-only">${esc(node.name)} — ${entityName}</caption><colgroup>${columns}</colgroup><thead><tr>${headings.map(([label,key])=>{const active=sortValue.startsWith(`${key}-`),desc=active&&sortValue.endsWith('desc');return `<th scope="col"${active?` aria-sort="${desc?'descending':'ascending'}"`:''}><button class="table-sort-button" data-structure-sort="${node.id}" data-column="${key}" data-active="${active}" aria-label="${label}: по ${active&&!desc?'убыванию':'возрастанию'}"><span class="structure-column-label">${label==='Эффективность'?'Эф\u00adфек\u00adтив\u00adность':label}</span><img class="table-sort-arrow${desc?' is-reversed':''}" src="assets/arrow-down.svg" alt=""></button></th>`;}).join('')}${isPathTable?'<th scope="col" class="structure-path-chart-heading"><span class="structure-column-label">Процессы</span></th>':''}</tr></thead><tbody>${selected.map(row=>rowMarkup(row,node)).join('')}</tbody></table></div>${pagination}`;
     }
 
     function disposePageSelects(root=list) {
@@ -196,13 +238,15 @@
 
     function renderChips() {
       const groups=Object.entries(filters).filter(([,v])=>v.length).map(([key,values])=>({key,values}));
+      Object.entries(entityFilters).filter(([,v])=>v.length).forEach(([key,values])=>groups.push({key,values}));
       if(query.trim())groups.unshift({key:'query',values:[query]});
       if(favoritesOnly)groups.push({key:'favorites',values:['Избранное']});
       $('structure-selected').hidden=!groups.length;
-      $('structure-chips').innerHTML=groups.map(({key,values})=>`<div class="applied-filter-group"><span class="applied-filter-label">${labels[key]}</span>${values.map(value=>{const label=baseNodes.get(value)?.name||value;return `<span class="chip applied-filter-chip" title="${esc(label)}"><span class="chip-text">${esc(label)}</span><button data-structure-filter="${key}" data-value="${esc(value)}" aria-label="Убрать фильтр ${esc(label)}">${icon('close-16')}</button></span>`;}).join('')}</div>`).join('');
+      $('structure-chips').innerHTML=groups.map(({key,values})=>`<div class="applied-filter-group"><span class="applied-filter-label">${labels[key]}</span>${values.map(value=>{const entry=searchCatalog.get(key,value),label=entry?[entry.code,entry.title].filter(Boolean).join(' · '):baseNodes.get(value)?.name||value;return `<span class="chip applied-filter-chip" title="${esc(label)}"><span class="chip-text">${esc(label)}</span><button data-structure-filter="${key}" data-value="${esc(value)}" aria-label="Убрать фильтр ${esc(label)}">${icon('close-16')}</button></span>`;}).join('')}</div>`).join('');
       $('structure-clear-search').hidden=!query;
     }
     function syncSummary() {
+      list.dataset.entity=entity;
       const total=unique(tree.flatMap(n=>n.records)).length;
       for(const key of Object.keys(models)) {
         const count=key===entity?total:unique(buildTree(models[key]).flatMap(n=>n.records)).length;
@@ -211,7 +255,7 @@
       }
       const entityLabel=entity==='paths'?'клиентских путей':'процессов';
       $('structure-mode').setAttribute('aria-label',`Структура ${entityLabel}`);
-      $('structure-search').setAttribute('aria-label',`Поиск в структуре ${entityLabel}`);
+      $('structure-search').setAttribute('aria-label','Поиск продукта, клиентского пути, процесса или человека');
       $('structure-data-note').textContent=`Структура, клиентские пути и процессы — из файла «15092026_структура для подготовки мока данных.xlsx».${entity==='paths'?' Идентификаторы КП-ДЕМО условные: в Excel ID клиентских путей отсутствуют.':''}`;
       $('structure-chart-note').textContent=chartType==='1'?'Сравнение с лидером · Structure Chart 1 — общий масштаб с подложками.':'Соотношение эффективности · Structure Chart 2 — сегменты заполняют 100% площади каждой диаграммы.';
       api.onChange?.({favoritesOnly,favoritesCount:model.records.filter(api.isFavorite).length});
@@ -219,14 +263,14 @@
     }
     function setEntity(next) {
       if(next===entity||!models[next])return;
-      clearTimeout(searchTimer);Object.values(selects).forEach(select=>select.close());
+      clearTimeout(searchTimer);searchUI.close();Object.values(selects).forEach(select=>select.close());
       ownerFilters[entity]=[...filters.owner];entity=next;model=models[entity];filters.owner=[...ownerFilters[entity]];
       labels.owner=entity==='paths'?'Владельцы клиентских путей':'Владельцы процессов';
       selects.owner.config.label=labels.owner;
       selects.owner.host.querySelector('label').textContent=labels.owner;
       selects.owner.setOptions(options(model.records.flatMap(row=>row.owners||[row.owner])));
       selects.owner.set(filters.owner);
-      opened.clear();openedPaths.clear();pages.clear();pageSizes.clear();rowSorts.clear();detailTables.clear();reload();
+      opened.clear();openedPaths.clear();pages.clear();pageSizes.clear();rowSorts.clear();detailTables.clear();revealSelection=hasEntityFilters();reload();
     }
     function setChartType(next) {
       if(next===chartType)return;
@@ -237,6 +281,12 @@
       observer.disconnect();cancelAnimationFrame(frame);animations.clear();animated.clear();
       if(active&&!busy) {
         list.querySelectorAll('[data-chart]').forEach(element=>{
+          const pathChart=element.closest('[data-path-process-chart]');
+          if(pathChart) {
+            const row=records.get(pathChart.dataset.pathProcessChart),node=visibleNodes.get(pathChart.dataset.productChart);
+            if(row&&node)pathChart.outerHTML=pathProcessChart(row,node);
+            return;
+          }
           const node=visibleNodes.get(element.dataset.chart);
           if(node)element.closest('.structure-chart-scroll').outerHTML=chart(node);
         });
@@ -328,14 +378,16 @@
     }
     motion.addEventListener('change',e=>{if(e.matches){list.querySelectorAll('[data-chart],[data-average-chart]').forEach(chart=>{writeChart(chart,1);animated.add(animationKey(chart));});animations.clear();observer.disconnect();cancelAnimationFrame(frame);}});
     function reset() {
-      clearTimeout(searchTimer);query='';favoritesOnly=false;$('structure-search').value='';
+      clearTimeout(searchTimer);searchUI.close();query='';favoritesOnly=false;$('structure-search').value='';
+      Object.keys(entityFilters).forEach(key=>entityFilters[key]=[]);revealSelection=false;
       Object.keys(filters).forEach(key=>{filters[key]=[];selects[key].set([]);});ownerFilters[entity]=[];opened.clear();openedPaths.clear();pages.clear();detailTables.clear();reload();
     }
     function replaceTable(id,focusSelector) {
       const panel=$(`panel-${id}`),node=visibleNodes.get(id)||detailTables.get(id);if(!panel||!node)return;
+      panel.querySelectorAll('[data-chart],[data-average-chart]').forEach(chart=>{observer.unobserve(chart);animations.delete(chart);});
       window.BpmCardVisuals.cancelCounters(panel);disposePageSelects(panel);panel.innerHTML=node.recordEntity?linkedContent(node):table(node);mountPageSelects(panel);
       if(focusSelector)panel.querySelector(focusSelector)?.focus({preventScroll:true});
-      window.BpmCardVisuals.animateCounters(panel);
+      observeCharts(panel);window.BpmCardVisuals.animateCounters(panel);
     }
     list.addEventListener('click',e=>{
       const expand=e.target.closest('[data-expand]');
@@ -368,8 +420,10 @@
       if(e.target.closest('button,a,input')||window.getSelection()?.toString())return;
       const tr=e.target.closest('[data-structure-record]');if(tr)api.detail(records.get(tr.dataset.structureRecord),tr.querySelector('[data-structure-detail]'));
     });
-    $('structure-search').addEventListener('input',e=>{query=e.target.value;clearTimeout(searchTimer);searchTimer=setTimeout(()=>{pages.clear();reload();},180);});
-    $('structure-clear-search').addEventListener('click',()=>{clearTimeout(searchTimer);query='';$('structure-search').value='';reload();$('structure-search').focus();});
+    const searchChanged=()=>{query=$('structure-search').value;$('structure-clear-search').hidden=!query;clearTimeout(searchTimer);searchTimer=setTimeout(()=>{pages.clear();reload();},180);};
+    $('structure-search').addEventListener('input',e=>{if(!e.isComposing)searchChanged();});
+    $('structure-search').addEventListener('compositionend',searchChanged);
+    $('structure-clear-search').addEventListener('click',()=>{clearTimeout(searchTimer);searchUI.close();query='';$('structure-search').value='';reload();$('structure-search').focus();});
     $('structure-reset').addEventListener('click',reset);
     $('structure-entity-tabs').addEventListener('click',e=>{const tab=e.target.closest('[data-structure-entity]');if(tab)setEntity(tab.dataset.structureEntity);});
     $('structure-chart-toggle').addEventListener('change',e=>setChartType(e.target.checked?'1':'2'));
@@ -379,12 +433,13 @@
       const key=button.dataset.structureFilter,value=button.dataset.value;
       if(key==='query'){query='';$('structure-search').value='';}
       else if(key==='favorites')favoritesOnly=false;
+      else if(Object.hasOwn(entityFilters,key)){entityFilters[key]=entityFilters[key].filter(v=>v!==value);revealSelection=hasEntityFilters();pages.clear();}
       else {filters[key]=filters[key].filter(v=>v!==value);selects[key].set(filters[key]);if(key==='owner')ownerFilters[entity]=[...filters[key]];}
-      reload();$('structure-search').focus({preventScroll:true});
+      clearTimeout(searchTimer);searchUI.close();reload();$('structure-search').focus({preventScroll:true});
     });
     return {
-      enter(){active=true;opened.clear();openedPaths.clear();pages.clear();detailTables.clear();reload();},
-      leave(){active=false;clearTimeout(timer);clearTimeout(searchTimer);stopAnimations();disposePageSelects();Object.values(selects).forEach(select=>select.close());},
+      enter(){active=true;opened.clear();openedPaths.clear();pages.clear();detailTables.clear();revealSelection=hasEntityFilters();reload();},
+      leave(){active=false;searchUI.close();clearTimeout(timer);clearTimeout(searchTimer);stopAnimations();disposePageSelects();Object.values(selects).forEach(select=>select.close());},
       reload,
       refresh(){render();},
       toggleFavorites(){favoritesOnly=!favoritesOnly;reload();},

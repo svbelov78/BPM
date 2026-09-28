@@ -146,6 +146,45 @@ body.structure-mode #structure-mode>.applied-filters{margin-bottom:16px}
 .structure-source-issues{margin-top:8px;font-size:11px;line-height:16px;color:var(--secondary)}
 .structure-source-issues summary{cursor:pointer;color:var(--blue)}
 .structure-source-issues p{margin-top:8px}
+/* Client-path rows: owner → path efficiency → linked-process distribution.
+ * The heading's 80px average slot + 24px gap is extended by 12px borrowed
+ * from the chart's left gutter, keeping the existing 110px pill inside its
+ * cell even when adjacent hover backgrounds paint. Bars retain the heading's
+ * vertical, accounting for the table's 1px inset border and chevron space. */
+/* Only the title has a readability minimum. A fixed 1250px table minimum
+ * shifted every metric right when the surrounding accordion was narrower. */
+.structure-table.structure-path-table{--path-owner-column:calc(var(--structure-owner-width,376px) + 24px);min-width:calc(var(--path-owner-column) + 587px + 240px)}
+.structure-path-table>colgroup>col:nth-child(2),.structure-path-table>thead>tr>th:nth-child(2),.structure-path-table>tbody>tr[data-structure-record]>td:nth-child(2){width:var(--path-owner-column)}
+.structure-path-table>tbody>tr>.structure-row-owner-cell{padding-right:8px}
+.structure-path-table>colgroup>col:nth-child(3),.structure-path-table>thead>tr>th:nth-child(3),.structure-path-table>tbody>tr[data-structure-record]>td:nth-child(3){width:116px}
+.structure-path-table>colgroup>col:nth-child(4),.structure-path-table>thead>tr>th:nth-child(4),.structure-path-table>tbody>tr[data-structure-record]>td:nth-child(4){width:471px;padding-left:4px}
+.structure-path-table>thead>tr>th:nth-child(3){padding-inline:4px}
+.structure-path-table>tbody>tr>.structure-path-efficiency-cell{padding-inline:4px 0}
+.structure-path-efficiency-cell>.structure-efficiency{position:relative;top:10px;display:inline-flex}
+.structure-path-process-chart{display:block;width:404px;max-width:100%}
+.structure-path-chart-cell .structure-chart-scroll{display:block;width:404px;padding-bottom:0}
+/* Nested processes keep their existing three-column view. Absorb the new
+ * summary tracks into their owner cell so avatars stay under the path owner. */
+.structure-path-table .structure-incoming-table{min-width:0}
+.structure-path-table .structure-incoming-process-column{width:calc(100% - var(--path-owner-column) - 571px)}
+.structure-path-table .structure-incoming-table col:nth-child(2){width:calc(var(--path-owner-column) + 387px)}
+/* Process rows share the same owner and sphere axes as accordion headings.
+ * Keep three semantic columns: the final cell absorbs the unused chart track
+ * to the right, rather than pushing efficiency to the table's far edge. */
+.structure-table.structure-process-table{--process-owner-column:calc(var(--structure-owner-width,376px) + 24px);min-width:calc(var(--process-owner-column) + 587px + 240px)}
+.structure-process-table>colgroup>col:nth-child(2),.structure-process-table>thead>tr>th:nth-child(2),.structure-process-table>tbody>tr[data-structure-record]>td:nth-child(2){width:var(--process-owner-column)}
+.structure-process-table>tbody>tr>.structure-row-owner-cell{padding-right:8px}
+.structure-process-table>colgroup>col:nth-child(3),.structure-process-table>thead>tr>th:nth-child(3),.structure-process-table>tbody>tr[data-structure-record]>td:nth-child(3){width:587px}
+.structure-process-table>tbody>tr>.structure-process-efficiency-cell{padding-left:4px}
+.structure-process-efficiency-cell>.structure-efficiency{display:inline-flex}
+.structure-process-efficiency-cell .structure-no-efficiency{margin-left:12px}
+/* Related client paths inherit both axes, compensating their 16px inset. */
+.structure-process-table .structure-incoming-table{min-width:0}
+.structure-process-table .structure-incoming-process-column{width:calc(100% - var(--process-owner-column) - 571px)}
+.structure-process-table .structure-incoming-table col:nth-child(2){width:var(--process-owner-column)}
+.structure-process-table .structure-incoming-efficiency-column{width:571px}
+.structure-process-table .structure-incoming-owner{padding-right:8px}
+.structure-process-table .structure-incoming-efficiency{padding-left:16px}
 @media(hover:none){.structure-row-more.icon-button{opacity:1}}
 
 @container registry (max-width:1300px){

@@ -253,8 +253,8 @@ async function conditionalScroll(page) {
     const rows=await page.locator('.cabinet-feed,.cabinet-entity-grid').evaluateAll(elements=>elements.map(element=>{
       const style=getComputedStyle(element),widget=element.closest('[data-cabinet-section]'),cards=[...element.children].filter(child=>child.matches('.cabinet-card')),cardRows=[];
       for(const card of cards){const r=card.getBoundingClientRect();let row=cardRows.find(row=>Math.abs(row.top-r.top)<1);if(!row){row={top:r.top,height:0};cardRows.push(row);}row.height=Math.max(row.height,r.height);}
-      const fade=element.classList.contains('cabinet-feed')?getComputedStyle(widget,'::after'):null;
-      return {key:widget.dataset.cabinetSection,rows:cardRows.length,reportedRows:Number(element.dataset.cabinetRows),scroll:element.dataset.cabinetScroll,overflow:style.overflowY,maxHeight:style.maxHeight,twoRowHeight:parseFloat(style.getPropertyValue('--cabinet-two-row-height'))||0,expectedHeight:cardRows.slice(0,2).reduce((sum,row)=>sum+row.height,0)+Math.max(0,Math.min(cardRows.length,2)-1)*(parseFloat(style.rowGap)||0)+parseFloat(style.paddingTop)+parseFloat(style.paddingBottom),clientHeight:element.clientHeight,scrollHeight:element.scrollHeight,scrollTop:element.scrollTop,fade:fade?fade.content!=='none'&&fade.display!=='none'&&fade.visibility!=='hidden'&&Number(fade.opacity)>0&&parseFloat(fade.height)>0:null};
+      const fade=(style.maskImage||style.webkitMaskImage)!=='none';
+      return {key:widget.dataset.cabinetSection,rows:cardRows.length,reportedRows:Number(element.dataset.cabinetRows),scroll:element.dataset.cabinetScroll,overflow:style.overflowY,maxHeight:style.maxHeight,twoRowHeight:parseFloat(style.getPropertyValue('--cabinet-two-row-height'))||0,expectedHeight:cardRows.slice(0,2).reduce((sum,row)=>sum+row.height,0)+Math.max(0,Math.min(cardRows.length,2)-1)*(parseFloat(style.rowGap)||0)+parseFloat(style.paddingTop)+parseFloat(style.paddingBottom),clientHeight:element.clientHeight,scrollHeight:element.scrollHeight,scrollTop:element.scrollTop,fade};
     }));
     samples.push({label,rows});
     for(const row of rows){
@@ -265,11 +265,11 @@ async function conditionalScroll(page) {
         check(row.overflow==='auto'&&row.maxHeight!=='none',`${tag}: overflow and maximum height enable scrolling`);
         check(Math.abs(row.twoRowHeight-row.expectedHeight)<=1&&Math.abs(parseFloat(row.maxHeight)-row.expectedHeight)<=1&&Math.abs(row.clientHeight-row.expectedHeight)<=1,`${tag}: viewport shows exactly two rows plus padding`);
         check(row.scrollHeight>row.clientHeight+1,`${tag}: additional rows are actually scrollable`);
-        if(row.fade!==null)check(row.fade,`${tag}: long feed retains its bottom fade`);
+        check(row.fade,`${tag}: long list shows its scroll-edge fade`);
       }else{
         check(row.overflow==='visible'&&row.maxHeight==='none',`${tag}: short content remains naturally sized and visible`);
         check(row.scrollHeight<=row.clientHeight+1&&row.scrollTop===0,`${tag}: short content has no internal scroll range`);
-        if(row.fade!==null)check(!row.fade,`${tag}: short feed has no bottom fade`);
+        check(!row.fade,`${tag}: short list has no scroll-edge fade`);
       }
     }
     return rows;

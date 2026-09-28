@@ -22,13 +22,18 @@
 .cabinet-card .card-title,.cabinet-card .task-card-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;flex:none;max-width:100%;max-height:60px;padding:0;overflow:hidden;text-align:left;font-size:22px;line-height:30px;font-weight:400;letter-spacing:-.154px;overflow-wrap:anywhere}
 .cabinet-card.entity-card .card-description,.cabinet-card.task-card .task-card-description{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;flex-shrink:0;min-width:0;max-height:48px;margin:0;overflow:hidden;color:var(--secondary,#7f7f7f);font-size:17px;font-weight:400;line-height:24px;letter-spacing:-.119px;overflow-wrap:anywhere}
 .cabinet-card .card-footer,.cabinet-card .task-card-footer{display:flex;align-items:flex-end;flex:none;gap:16px;min-width:0;width:100%;margin-top:auto}
-.cabinet-card .task-card-footer{justify-content:space-between;flex-wrap:wrap;gap:8px}
+.cabinet-card .task-card-footer{justify-content:space-between;align-items:center;flex-wrap:nowrap;gap:8px}
 .cabinet-card .owner{display:flex;align-items:center;flex:1;gap:8px;min-width:0}
 .cabinet-card .owner-name{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;flex:1;min-width:0;max-height:48px;overflow:hidden;font-size:17px;line-height:24px;font-weight:400;letter-spacing:-.119px;overflow-wrap:anywhere}
 .cabinet-card .cabinet-avatar{flex:none;width:32px;height:32px;background:var(--secondary,#7f7f7f)}
 .cabinet-card .cabinet-avatar>img{width:18px;height:18px}
 .cabinet-card .task-participant-route{gap:8px;min-width:0;max-width:100%}
 .cabinet-card .task-avatar-group{max-width:100%}
+.cabinet-assignees-compact{display:none}
+/* Use the existing compact +N participant avatar on narrow cards. The full
+   stack stays visible at the screenshot's width once the "до" prefix is hidden. */
+@container task-footer (max-width:320px){.cabinet-card .cabinet-assignees-full{display:none}.cabinet-card .cabinet-assignees-compact{display:inline-flex}}
+@container task-footer (max-width:280px){.cabinet-card .task-participant-route{gap:4px}}
 .cabinet-card .task-deadline{gap:8px;font-size:17px;line-height:24px;letter-spacing:-.119px}
 .cabinet-card .cabinet-deadline-completed{color:var(--text,#1a1a1a)}
 .cabinet-card .cabinet-efficiency{display:inline-flex;align-items:center;flex:none;height:24px;padding:0;border:0;border-radius:4px;background:transparent}
@@ -57,5 +62,5 @@
 @container cabinet-card-body (max-height:115px){.cabinet-card.entity-card .card-description,.cabinet-card.task-card .task-card-description{-webkit-line-clamp:1;max-height:24px}}
 @container cabinet-card-body (max-height:91px){.cabinet-card.entity-card .card-description,.cabinet-card.task-card .task-card-description{display:none}}
 @container cabinet-card (max-width:299px){.cabinet-insight-card .card-footer{flex-wrap:wrap;row-gap:8px}.cabinet-insight-card .owner{flex-basis:100%}.cabinet-insight-card .owner-name{-webkit-line-clamp:1;max-height:24px}.cabinet-insight-card .cabinet-feedback{margin-left:40px}.cabinet-card .task-card-footer .task-deadline{margin-left:auto}}
-@container cabinet-card (max-width:280px){.cabinet-card .task-type-tag{max-width:120px}.cabinet-card .metadata{height:auto;flex-wrap:wrap}.cabinet-card .metadata>.cabinet-status{flex-basis:100%}.cabinet-card .card-footer{gap:8px}.cabinet-card .owner-name{font-size:15px;line-height:22px}.cabinet-card .cabinet-feedback{gap:12px;font-size:15px}.cabinet-card .cabinet-feedback-item{gap:4px}.cabinet-card .task-avatar-group>.task-avatar:nth-child(3):not(:last-child){display:none}}
+@container cabinet-card (max-width:280px){.cabinet-card .task-type-tag{max-width:120px}.cabinet-card .metadata{height:auto;flex-wrap:wrap}.cabinet-card .metadata>.cabinet-status{flex-basis:100%}.cabinet-card .card-footer{gap:8px}.cabinet-card .owner-name{font-size:15px;line-height:22px}.cabinet-card .cabinet-feedback{gap:12px;font-size:15px}.cabinet-card .cabinet-feedback-item{gap:4px}}
 @media(hover:none){.cabinet-card .cabinet-card-more{opacity:1}.cabinet-card .metadata,.cabinet-card .task-card-header>.task-status{padding-right:32px}.cabinet-card.entity-card .card-header>.cabinet-status{margin-right:32px}}

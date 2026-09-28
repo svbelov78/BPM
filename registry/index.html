@@ -23,17 +23,21 @@
   <link rel="stylesheet" href="structure-charts.css">
   <link rel="stylesheet" href="structure-average.css">
   <link rel="stylesheet" href="structure-incoming.css">
+  <link rel="stylesheet" href="structure-search.css">
   <link rel="stylesheet" href="task-visuals.css">
   <link rel="stylesheet" href="task-drawer.css">
+  <link rel="stylesheet" href="task-flow.css">
   <link rel="stylesheet" href="tasks.css">
   <link rel="stylesheet" href="cabinet-cards.css">
   <link rel="stylesheet" href="cabinet.css">
+  <link rel="stylesheet" href="scroll-fades.css">
   <script src="demo-data.js" defer></script>
   <script src="structure-source.js" defer></script>
   <script src="structure-data.js" defer></script>
   <script src="calendar.js" defer></script>
   <script src="card-visuals.js" defer></script>
   <script src="card-grid.js" defer></script>
+  <script src="scroll-fades.js" defer></script>
   <script src="loading.js" defer></script>
   <script src="process-assets.js" defer></script>
   <script src="process-overview.js" defer></script>
@@ -44,10 +48,14 @@
   <script src="process-drawer.js" defer></script>
   <script src="structure-charts.js" defer></script>
   <script src="structure-incoming.js" defer></script>
+  <script src="structure-search-model.js" defer></script>
+  <script src="structure-search.js" defer></script>
   <script src="structure.js" defer></script>
   <script src="task-data.js" defer></script>
+  <script src="task-store.js" defer></script>
   <script src="task-visuals.js" defer></script>
   <script src="task-drawer.js" defer></script>
+  <script src="task-flow.js" defer></script>
   <script src="tasks.js" defer></script>
   <script src="cabinet-data.js" defer></script>
   <script src="cabinet-cards.js" defer></script>
@@ -68,7 +76,7 @@
   <aside class="sidebar" id="sidebar" aria-label="Главное меню">
     <div class="menu-heading"><span class="menu-label">Меню</span><div class="menu-heading-actions"><button class="icon-button" id="collapse-menu" aria-label="Свернуть меню" aria-expanded="true"><img src="assets/collapse-menu.svg" alt=""></button><button class="icon-button" id="pin-menu" aria-label="Развернуть и закрепить меню" title="Развернуть и закрепить меню" hidden><img src="assets/menu-right.svg" alt=""></button></div></div>
     <nav class="navigation">
-      <button class="nav-item" id="cabinet-nav" data-tooltip="Мой кабинет"><span class="nav-tile"><img src="assets/home.svg" alt=""></span><span class="menu-label">Мой кабинет</span><img class="nav-chevron" src="assets/chevron-down.svg" alt=""></button>
+      <button class="nav-item" id="cabinet-nav" data-tooltip="Мой кабинет"><span class="nav-tile"><img src="assets/home.svg" alt=""></span><span class="menu-label">Мой кабинет</span></button>
       <div class="nav-divider"></div>
       <button class="nav-item" id="paths-nav" aria-expanded="true" aria-controls="paths-submenu" data-tooltip="Пути и процессы"><span class="nav-tile"><img src="assets/paths.svg" alt=""></span><span class="menu-label">Пути и процессы</span><img class="nav-chevron" src="assets/chevron-down.svg" alt=""></button>
       <div class="submenu" id="paths-submenu">
@@ -99,8 +107,8 @@
         <button id="structure-toggle" class="button structure-toggle" aria-pressed="false" aria-controls="structure-mode"><img src="assets/sber.svg" alt="">Структура</button>
         <div class="entity-tabs" role="group" aria-label="Тип сущности"><button class="active" id="paths-tab" aria-pressed="true" data-entity="paths">Клиентские пути</button><button id="processes-tab" aria-pressed="false" data-entity="processes">Процессы</button></div>
         <div id="structure-entity-tabs" class="entity-tabs structure-tabs" role="group" aria-label="Тип сущности в структуре" hidden><button id="structure-paths-tab" data-structure-entity="paths" aria-pressed="false">Клиентские пути <span id="structure-path-count">—</span></button><button id="structure-processes-tab" data-structure-entity="processes" class="active" aria-pressed="true">Процессы <span id="structure-process-count">—</span></button></div>
-        <div id="registry-search-wrap" class="search-field field"><img src="assets/search.svg" alt=""><input id="registry-search" type="search" placeholder="Поиск ID, названию…" aria-label="Поиск по ID, названию или владельцу" autocomplete="off"><button id="clear-search" class="small-icon" aria-label="Очистить поиск" hidden><img src="assets/close.svg" alt=""></button></div>
-        <div id="structure-search-wrap" class="search-field field" hidden><img src="assets/search.svg" alt=""><input id="structure-search" type="search" placeholder="Поиск блока, подразделения, продукта…" aria-label="Поиск в структуре процессов" autocomplete="off"><button id="structure-clear-search" class="small-icon" aria-label="Очистить поиск в структуре" hidden><img src="assets/close.svg" alt=""></button></div>
+        <div id="registry-search-wrap" class="search-field field"><img src="assets/search.svg" alt=""><input id="registry-search" type="search" placeholder="Поиск ID, названию…" aria-label="Поиск по ID, названию или владельцу" autocomplete="off"><button id="clear-search" class="small-icon" aria-label="Очистить поиск" hidden><img src="assets/field-clear-16.svg" alt=""></button></div>
+        <div id="structure-search-wrap" class="search-field field" hidden><img src="assets/search-suggest-search.svg" width="24" height="24" alt=""><input id="structure-search" type="search" placeholder="Поиск продукта, КП, процесса, человека…" aria-label="Поиск продукта, клиентского пути, процесса или человека" aria-describedby="structure-search-status" autocomplete="off" spellcheck="false"><button id="structure-clear-search" class="small-icon" aria-label="Очистить поиск в структуре" hidden><img src="assets/field-clear-16.svg" alt=""></button><span class="sr-only" id="structure-search-status" role="status" aria-live="polite">Выберите найденную сущность или человека, чтобы добавить в фильтры.</span></div>
         <button id="mobile-filters-toggle" class="mobile-filters-toggle" aria-expanded="false" aria-controls="status-select filter-grid"><span id="mobile-filters-label">Фильтры</span><img src="assets/chevron-down-filter.svg" alt=""></button>
         <div id="status-select" class="select-host"></div>
       </div>

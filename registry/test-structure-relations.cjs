@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const {pathToFileURL} = require('node:url');
 const {chromium} = require(process.env.BPM_PLAYWRIGHT || '/Users/admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
-const url = pathToFileURL(path.join(__dirname, 'index.html')).href;
+const url = `${pathToFileURL(path.join(__dirname, 'index.html')).href}#main`;
 const report = message => console.log(`PASS — ${message}`);
 
 function instrument({synthetic}) {
@@ -74,10 +74,11 @@ async function expandProduct(page, chain) {
   })));
   assert.ok(tables.length > 0, 'Expanded products expose their entity tables');
   for (const table of tables) {
-    assert.deepEqual(table.headings,[table.entity === 'paths' ? 'ID, КП' : 'ID, процесс','Владелец процесса','Эффективность'],'Only the three requested registry columns remain');
-    assert.equal(table.columns,3,'Colgroup has no hidden status/date or marks columns');
-    assert.ok(table.rowCells.every(count => count === 3),'Every outer entity row has exactly three cells');
-    assert.ok(table.linkedSpans.every(count => count === 3),'Every reciprocal disclosure spans exactly three columns');
+    const isPath = table.entity === 'paths', columns = isPath ? 4 : 3;
+    assert.deepEqual(table.headings,[isPath ? 'ID, КП' : 'ID, процесс','Владелец процесса','Эффективность',...(isPath ? ['Процессы'] : [])],'Only path tables add the linked-process distribution column');
+    assert.equal(table.columns,columns,'Colgroup has no hidden status/date or marks columns');
+    assert.ok(table.rowCells.every(count => count === columns),'Every outer entity row has the expected cells');
+    assert.ok(table.linkedSpans.every(count => count === columns),'Every reciprocal disclosure spans the complete parent table');
     assert.equal(table.removedSorts,0,'Removed columns have no hidden sorting controls');
     assert.equal(table.removedContent,0,'Status/date and marks data cells are removed, not merely hidden');
   }

@@ -17,7 +17,13 @@
   };
   const normalize = value => String(value ?? '').toLocaleLowerCase('ru').replace(/ё/g,'е');
   function create(api) {
-    const root=document.getElementById('cabinet-panel'), data=window.BPM_CABINET_DATA;
+    const root=document.getElementById('cabinet-panel'), seedData=window.BPM_CABINET_DATA,store=window.BpmTaskStore;
+    const data={...seedData,entities:[...seedData.entities],insights:[...seedData.insights],tasks:[...seedData.tasks]};
+    function syncTasks(rows=store.list()){
+      const local=rows.filter(row=>row.local).map(row=>({...row,kind:'tasks',filterType:row.type,filterStatus:row.status==='Создана'?'Новая':row.status,complete:row.status==='Завершено'}));
+      data.tasks=[...local,...seedData.tasks];
+    }
+    syncTasks();
     const cards=window.BpmCabinetCards;
     const state={query:'',taskTab:'incoming',filters:{insights:{},tasks:{date:'сначала новые'},paths:{},processes:{}},expanded:new Set()};
     let active=false,loading=false,timer,searchTimer,popup,anchor,tooltip,tipTimer,tipTrigger,suppressTipFocus=false,history=[],itemFavorites=new Set();
@@ -40,7 +46,7 @@
       }[key];
       return `<div class="cabinet-empty">${img('empty')}<p class="cabinet-empty-title">${filtered?'По выбранным условиям ничего не найдено':copy[0]}</p><p class="cabinet-empty-description">${filtered?'Измените фильтры или поисковый запрос.':copy[1]}</p><button class="text-button" data-cabinet-${filtered?'reset':key==='tasks'||key==='insights'?'create':'nav'}="${key}">${filtered?'Сбросить фильтры':copy[2]}${filtered?'':img('plus')}</button></div>`;
     }
-    function matchesQuery(row){return !state.query || normalize([row.title,row.code,row.id,row.description,row.owner,row.initiator].join(' ')).includes(normalize(state.query));}
+    function matchesQuery(row){return !state.query || normalize([row.title,row.code,row.id,row.description,row.owner,row.initiator,row.processCode,row.processTitle,...(row.assignees||[])].join(' ')).includes(normalize(state.query));}
     function filtered(key){
       const f=state.filters[key];
       let rows=(key==='insights'?data.insights:key==='tasks'?data.tasks.filter(row=>row[state.taskTab]):data.entities.filter(row=>row.entity===key)).filter(matchesQuery);
@@ -104,7 +110,7 @@
     }
     function showFilter(key,trigger){
       if(popup&&anchor===trigger){closePopup();return;}
-      const menu=makePopup(trigger,`Фильтры: ${labels[key]}`),groups=menus[key]||menus.entities;
+      const menu=makePopup(trigger,`Фильтры: ${labels[key]}`),groups=key==='tasks'?menus.tasks.map(group=>({...group,options:group.key==='date'?group.options:[...new Set([...group.options,...data.tasks.map(row=>group.key==='status'?row.filterStatus:row.filterType).filter(Boolean)])]})):menus[key]||menus.entities;
       const draw=()=>{menu.innerHTML=groups.map(group=>`<div role="group" aria-label="${group.label}"><div class="cabinet-menu-group">${group.label}</div>${group.options.map(option=>`<button class="select-option" type="button" role="menuitemradio" aria-checked="${state.filters[key][group.key]===option}" data-group="${group.key}" data-value="${esc(option)}"><span class="option-label">${esc(option)}</span>${state.filters[key][group.key]===option?`<span class="selected-tick">${img('tick')}</span>`:''}</button>`).join('')}</div>`).join('')+`<button type="button" class="select-option cabinet-menu-reset" role="menuitem" data-clear>Сбросить фильтры</button>`;};
       draw();placePopup();menu.querySelector('button')?.focus({preventScroll:true});
       menu.addEventListener('click',event=>{
@@ -158,7 +164,11 @@
       if(!row)return;
       if(d.cabinetMenu){showContext(row,button);return;}
       if(d.cabinetEfficiency){showTip(row,button,true);return;}
-      if(row.kind==='tasks'){api.openTasks();return;}
+      if(row.kind==='tasks'){
+        if(row.local){closePopup();hideTip();api.closePopups();window.BpmTaskFlow.open({mode:'view',taskId:row.id,trigger:button});}
+        else api.openTasks();
+        return;
+      }
       if(row.kind==='insights'){api.toast('Деталка инсайта пока не добавлена в прототип.');return;}
       hideTip();api.openDetail(row,button);
     });
@@ -184,8 +194,12 @@
       menu.addEventListener('click',e=>{const button=e.target.closest('[data-query-index]');if(button){search.value=history[Number(button.dataset.queryIndex)];state.query=search.value;closePopup();render();search.focus();}});placePopup();menu.querySelector('button')?.focus();
     });
     const whatsNew=document.createElement('button');whatsNew.className='button cabinet-whats-new';whatsNew.innerHTML=`${img('tick',true)}Что нового?`;whatsNew.addEventListener('click',()=>api.toast('В прототип добавлен «Мой кабинет»: инсайты, задачи, КП и процессы.'));document.getElementById('profile').before(whatsNew);
+    store.subscribe(rows=>{
+      syncTasks(rows);
+      if(active){clearTimeout(timer);loading=false;closePopup();hideTip();render();}
+    });
     return Object.freeze({
-      enter(){active=true;root.hidden=false;loading=true;render();clearTimeout(timer);timer=setTimeout(()=>{if(!active)return;loading=false;render({animate:true});document.getElementById('result-announcement').textContent='Мой кабинет загружен';},2000);},
+      enter(){syncTasks();active=true;root.hidden=false;loading=true;render();clearTimeout(timer);timer=setTimeout(()=>{if(!active)return;loading=false;render({animate:true});document.getElementById('result-announcement').textContent='Мой кабинет загружен';},2000);},
       leave(){active=false;loading=false;clearTimeout(timer);clearTimeout(searchTimer);closePopup();hideTip();window.BpmCardVisuals.cancelCounters(root);root.hidden=true;},
       refresh(){render();}
     });

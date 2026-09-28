@@ -4,6 +4,7 @@
   const $ = (id) => document.getElementById(id);
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const image = (name, cls = '') => `<img src="assets/${esc(name)}.svg" alt=""${cls ? ` class="${cls}"` : ''}>`;
+  const fieldIcon = (name = 'field-chevron-down-16') => image(name, ['field-chevron-down-16','field-clear-16','chevron-down-pagination'].includes(name) ? 'field-action-icon' : '');
   const favoriteIcon = (cls='',name='liked',label='В избранном') => `<span class="favorite-heart ${cls}" ${label?`role="img" aria-label="${esc(label)}"`:'aria-hidden="true"'}>${image(name)}</span>`;
   const data = window.BPM_DATA || [];
   const allRecords = [...data,...(window.BPM_STRUCTURE?.records || []),...(window.BPM_STRUCTURE_PATHS?.records || []),...(window.BPM_CABINET_DATA?.entities || [])];
@@ -17,21 +18,26 @@
   let isLoading = false, loadingTimer;
   const normalize = value => String(value).toLocaleLowerCase('ru').replace(/ё/g,'е');
   const dateLabel = iso => iso ? iso.split('-').reverse().join('.') : 'Любая';
-  function toast(message) { $('toast').textContent = message; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => {$('toast').hidden = true;}, 3500); }
-  function positionPopup(popup, anchor, minWidth = 260) {
+  function toast(message,{success=false}={}) {
+    const element=$('toast');element.textContent=message;element.classList.toggle('is-success',success);
+    if(success){const icon=document.createElement('img');icon.src='assets/dropdown-tick-green.svg';icon.alt='';icon.width=24;icon.height=24;element.prepend(icon);}
+    element.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{element.hidden=true;},3500);
+  }
+  function positionPopup(popup, anchor, minWidth = 260, placement = 'auto') {
     const r = anchor.getBoundingClientRect(), margin = 12;
     const width = Math.min(Math.max(r.width,minWidth),innerWidth-margin*2);
     popup.style.width = `${width}px`;
     popup.style.left = `${Math.max(margin,Math.min(r.left,innerWidth-width-margin))}px`;
     const below = innerHeight-r.bottom-8-margin, above = r.top-8-margin;
-    const useAbove = below < 180 && above > below;
-    popup.style.maxHeight = `${Math.max(100,Math.min(340,useAbove ? above : below))}px`;
+    const useAbove = placement === 'above' || (below < 180 && above > below);
+    popup.style.maxHeight = `${Math.max(placement==='above'?0:100,Math.min(340,useAbove ? above : below))}px`;
+    popup.dataset.placement=useAbove?'above':'below';
     popup.style.top = `${useAbove ? Math.max(margin,r.top-8-popup.offsetHeight) : r.bottom+8}px`;
   }
   class BpmSelect {
     constructor(id, config) {
       this.host = $(id); this.id = id; this.config = config; this.options = config.options; this.values = config.values || []; this.query = ''; this.active = -1;
-      this.host.innerHTML = `<div class="bpm-select"><div class="field select-control"><div class="select-content"><label class="internal-label" for="${id}-input">${esc(config.label)}</label><input class="select-input" id="${id}-input" type="text" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="${id}-list" autocomplete="off" spellcheck="false"></div><button type="button" class="select-toggle" tabindex="-1" aria-label="Открыть список: ${esc(config.label)}">${image(config.icon || 'chevron-down-filter')}</button></div></div>`;
+      this.host.innerHTML = `<div class="bpm-select"><div class="field select-control"><div class="select-content"><label class="internal-label" for="${id}-input">${esc(config.label)}</label><input class="select-input" id="${id}-input" type="text" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="${id}-list" autocomplete="off" spellcheck="false"></div><button type="button" class="select-toggle" tabindex="-1" aria-label="Открыть список: ${esc(config.label)}">${fieldIcon(config.icon)}</button></div></div>`;
       this.input = $(`${id}-input`); this.control = this.host.querySelector('.select-control'); this.toggle = this.host.querySelector('.select-toggle');
       this.input.addEventListener('focus', () => {if (!this.suppressFocusOpen) this.open();});
       this.input.addEventListener('click', () => this.open());
@@ -59,8 +65,8 @@
       this.toggle.classList.toggle('is-clear',selected);
       this.toggle.tabIndex = selected ? 0 : -1;
       this.toggle.setAttribute('aria-label',`${selected ? 'Очистить' : 'Открыть список'}: ${this.config.label}`);
-      this.toggle.innerHTML = image(selected ? 'close' : this.config.icon || 'chevron-down-filter');
-      if (this.popup) { this.renderOptions(); positionPopup(this.popup,this.control,this.config.minPopupWidth ?? (this.config.multiple ? 300 : 260)); }
+      this.toggle.innerHTML = fieldIcon(selected ? 'field-clear-16' : this.config.icon);
+      if (this.popup) { this.renderOptions(); positionPopup(this.popup,this.control,this.config.minPopupWidth ?? (this.config.multiple ? 300 : 260),this.config.placement); }
     }
     set(values, notify = false) { this.values = values; this.query = ''; this.refresh(); if (notify) this.config.onChange(values); }
     clear() {this.values=[];this.query='';this.input.value='';this.close();this.changed();this.suppressFocusOpen=true;this.input.focus({preventScroll:true});this.suppressFocusOpen=false;}
@@ -74,7 +80,7 @@
       (this.host.closest('dialog[open]') || document.body).append(this.popup); this.input.setAttribute('aria-expanded','true'); this.control.classList.add('is-open'); this.active = -1;
       this.popup.addEventListener('mousedown',e => e.preventDefault());
       this.popup.addEventListener('click',e => { const option=e.target.closest('[data-option]'); if (option) this.choose(option.dataset.option); });
-      this.renderOptions(); positionPopup(this.popup,this.control,this.config.minPopupWidth ?? (this.config.multiple ? 300 : 260));
+      this.renderOptions(); positionPopup(this.popup,this.control,this.config.minPopupWidth ?? (this.config.multiple ? 300 : 260),this.config.placement);
     }
     close() { if (!this.popup) return; this.popup.remove(); this.popup = null; this.query = ''; this.input.setAttribute('aria-expanded','false'); this.input.removeAttribute('aria-activedescendant'); this.control.classList.remove('is-open'); if (activeSelect === this) activeSelect = null; this.refresh(); }
     renderOptions() {
@@ -87,7 +93,7 @@
         return `<div role="option" id="${this.id}-option-${i}" class="select-option${i === this.active ? ' active' : ''}" data-option="${esc(o.value)}" aria-selected="${selected}">${this.config.multiple ? `<span class="option-check" aria-hidden="true">${selected ? image('tick') : ''}</span>` : ''}<span class="option-label">${esc(o.label)}</span>${selected && !this.config.multiple ? image('tick','selected-tick') : ''}</div>`;
       }).join('') : '<div class="popup-empty">Ничего не найдено</div>';
       if (this.active >= 0) this.input.setAttribute('aria-activedescendant',`${this.id}-option-${this.active}`); else this.input.removeAttribute('aria-activedescendant');
-      positionPopup(this.popup,this.control,this.config.minPopupWidth ?? (this.config.multiple ? 300 : 260));
+      positionPopup(this.popup,this.control,this.config.minPopupWidth ?? (this.config.multiple ? 300 : 260),this.config.placement);
     }
     choose(value) {
       if (!value) this.values = [];
@@ -252,7 +258,7 @@
     if(!row)return;
     activeSelect?.close();closeDate();closeAction();hideTooltip();
     if(row.entity==='processes'||row.entity==='paths'){
-      window.BpmProcessDrawer.open(row,{trigger,isFavorite:record=>state.favorites.has(record.id),toggleFavorite:favorite,createSelect:(id,config)=>new BpmSelect(id,config)});
+      window.BpmProcessDrawer.open(row,{trigger,isFavorite:record=>state.favorites.has(record.id),toggleFavorite:favorite,createSelect:(id,config)=>new BpmSelect(id,config),createTask});
       return;
     }
     $('detail-title').textContent=row.title;
@@ -393,7 +399,7 @@
   document.addEventListener('mouseout',e=>{const target=e.target.closest('[data-tooltip]');if(target&&!target.contains(e.relatedTarget))hideTooltip();});
   document.addEventListener('focusin',e=>showTooltip(e.target.closest('[data-tooltip]')));
   document.addEventListener('focusout',hideTooltip);
-  document.addEventListener('scroll',e=>{hideTooltip();if(activeSelect&&e.target!==activeSelect.popup)positionPopup(activeSelect.popup,activeSelect.control,activeSelect.config.minPopupWidth??(activeSelect.config.multiple?300:260));},true);
+  document.addEventListener('scroll',e=>{hideTooltip();if(activeSelect&&e.target!==activeSelect.popup)positionPopup(activeSelect.popup,activeSelect.control,activeSelect.config.minPopupWidth??(activeSelect.config.multiple?300:260),activeSelect.config.placement);},true);
   window.addEventListener('resize',()=>{syncMenu();activeSelect?.close();closeAction();hideTooltip();});
   function openSharedDetail(){
     if(!location.hash||location.hash==='#cabinet'){setService('cabinet');return;}
@@ -436,29 +442,39 @@
   }
   structure=window.BpmStructure.create({
     createSelect:(id,config)=>new BpmSelect(id,config),isFavorite:row=>state.favorites.has(row.id),
-    detail:openDetail,copy:copyId,menu:openAction,
+    detail:openDetail,copy:copyId,copyText,menu:openAction,
     onChange:info=>{if(structureMode){$('favorites').setAttribute('aria-pressed',String(info.favoritesOnly));$('favorite-count').textContent=info.favoritesCount;}}
   });
   tasks=window.BpmTasks.create({
-    createSelect:(id,config)=>new BpmSelect(id,config),toast,
+    createSelect:(id,config)=>new BpmSelect(id,config),toast,createTask,
     closePopups:()=>{activeSelect?.close();closeDate();closeAction();hideTooltip();},
-    openProcess:(id,trigger)=>{const row=allRecords.find(record=>record.entity==='processes'&&record.id===id);if(row)openDetail(row,trigger);else toast('Деталка связанного процесса пока не представлена в данных.');}
+    openProcess:openTaskProcess
   });
+  window.BpmTaskFlow.configure({createSelect:(id,config)=>new BpmSelect(id,config),toast,closePopups,openProcess:openTaskProcess,onBack:createTask,onCreated:task=>{
+    navigateService('tasks');tasks.showCreated(task.id);toast('Задача создана',{success:true});
+  }});
   cabinet=window.BpmCabinet.create({
     toast,closePopups,openDetail,copyText,
     isFavorite:row=>state.favorites.has(row.id),toggleFavorite:favorite,
     openTasks:()=>navigateService('tasks'),navigateRegistry,createTask
   });
   function closePopups(){activeSelect?.close();closeDate();closeAction();hideTooltip();}
+  function openTaskProcess(id,trigger){const row=allRecords.find(record=>record.entity==='processes'&&record.id===id);if(row)openDetail(row,trigger);else toast('Деталка связанного процесса пока не представлена в данных.');}
   function closeServiceDialogs(){
-    window.BpmProcessDrawer.close();window.BpmTaskDrawer.close();
+    window.BpmTaskFlow.close({restoreFocus:false});
+    window.BpmProcessDrawer.close();window.BpmTaskDrawer.close({immediate:true,restoreFocus:false});
     document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());
   }
   function createTask(trigger){
     closePopups();
     const previousNotice=$('task-drawer')?.querySelector('.task-choice-notice');
     if(previousNotice){clearTimeout(previousNotice._hideTimer);previousNotice.hidden=true;}
-    window.BpmTaskDrawer.open({trigger,closePopups,onChoose:({label})=>{
+    window.BpmTaskDrawer.open({trigger,closePopups,onChoose:({id,label})=>{
+      if(id==='standard'){
+        window.BpmTaskDrawer.close({immediate:true,restoreFocus:false});
+        window.BpmTaskFlow.open({mode:'create',trigger});
+        return;
+      }
       const dialog=$('task-drawer');let note=dialog.querySelector('.task-choice-notice');
       if(!note){note=document.createElement('div');note.className='toast task-choice-notice';note.setAttribute('role','status');dialog.append(note);}
       note.textContent=`Выбран тип «${label}». Форма создания будет добавлена после получения макета.`;note.hidden=false;

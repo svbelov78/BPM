@@ -6,6 +6,9 @@
 .nav-item{min-height:56.288528px;padding:8.144264px 12px 8.144264px 8px}
 .nav-item .menu-label{flex:1}
 .nav-tile{background:linear-gradient(90deg,#eed9ff,#ceeaff)}
+.nav-item.current{background:var(--blue);color:var(--white)}
+.nav-item.current .nav-tile{background:transparent}
+.nav-item.current .nav-tile img{filter:brightness(0) invert(1)}
 .nav-item[data-service="Настройки"] .nav-tile{background:rgba(26,26,26,.2)}
 .nav-divider{margin:0 0 0 48px}
 .menu-heading-actions{display:flex;align-items:center;gap:16px;flex-shrink:0}

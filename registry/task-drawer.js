@@ -13,7 +13,7 @@
     {id:'business-description-update',label:'Актуализация Бизнес-описания',description:'Для актуализации бизнес-описаний (БО) процессов'},
     {id:'insight',label:'Задача к инсайту',description:'Нацелена на улучшения по процессному производству'}
   ];
-  let dialog, content, returnFocus, onChoose, closingTimer, closing = false;
+  let dialog, content, returnFocus, onChoose, closingTimer, closing = false, restoreFocus = true;
   const esc = value => String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
 
   function titleWithArrow(label) {
@@ -29,9 +29,9 @@
     closing = false;
     dialog.inert = false;
     dialog.classList.remove('is-closing','has-entered');
-    document.body.classList.remove('task-drawer-open');
+    if (!document.querySelector('.task-drawer[open]')) document.body.classList.remove('task-drawer-open');
     onChoose = null;
-    if (returnFocus?.isConnected) returnFocus.focus({preventScroll:true});
+    if (restoreFocus && returnFocus?.isConnected) returnFocus.focus({preventScroll:true});
     returnFocus = null;
   }
 
@@ -71,6 +71,7 @@
     configuration.closePopups?.();
     clearTimeout(closingTimer);
     closing = false;
+    restoreFocus = true;
     dialog.inert = false;
     dialog.classList.remove('is-closing');
     if (!dialog.open) dialog.classList.remove('has-entered');
@@ -83,8 +84,15 @@
     dialog.querySelector('.task-drawer-close').focus({preventScroll:true});
   }
 
-  function close() {
-    if (!dialog?.open || closing) return;
+  function close(options = {}) {
+    if (!dialog?.open || (closing && !options.immediate)) return;
+    restoreFocus = options.restoreFocus !== false;
+    if (options.immediate) {
+      clearTimeout(closingTimer);
+      dialog.close();
+      cleanup();
+      return;
+    }
     closing = true;
     dialog.inert = true;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) {

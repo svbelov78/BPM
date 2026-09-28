@@ -181,11 +181,11 @@ async function drawers(page) {
   assert.equal(await page.locator('#task-drawer [data-task-type]').count(),8);
   assert.equal(await page.locator('#task-drawer input,#task-drawer textarea,#task-drawer select').count(),0,'Creation has only the type choice');
   await page.locator('#task-drawer [data-task-type="standard"]').click();
-  assert.equal(await page.locator('#task-drawer [data-task-type="standard"]').getAttribute('aria-pressed'),'true');
-  assert.match(await page.locator('.task-choice-notice').innerText(),/Форма создания будет добавлена/);
-  await assets(page,'Task type drawer');
+  await page.locator('#task-flow[open][data-mode="create"]').waitFor();
+  assert.equal(await page.locator('#task-flow #tf-form').count(),1,'Cabinet opens standard creation form');
+  await assets(page,'Standard task form');
   await page.keyboard.press('Escape');
-  await page.waitForFunction(() => !document.querySelector('#task-drawer').open);
+  await page.waitForFunction(() => !document.querySelector('#task-flow').open);
   assert.ok(await page.locator('#cabinet-create-tasks').evaluate(element => element === document.activeElement));
   for (const entity of ['paths','processes']) {
     const trigger = cards(page,entity).first().locator('.card-title');
@@ -201,7 +201,7 @@ async function drawers(page) {
     await page.locator('#process-drawer[open]').waitFor({state:'hidden'});
     assert.ok(await trigger.evaluate(element => element === document.activeElement),`${entity} detail restores card focus`);
   }
-  report('shared task type-only chooser and full path/process drawers, Escape and focus restoration');
+  report('shared task chooser, standard form and full path/process drawers, Escape and focus restoration');
 }
 
 async function widgetsAndResponsive(page) {

@@ -1,0 +1,19 @@
+/* Products BPM / Поиск с саджестами 79:13889. Reuse Input, ID Counter,
+ * Drop Down List / Item and existing Selected Filters, without a new UI theme. */
+.structure-search-popup{border-radius:12px;box-shadow:0 4px 12px #1a1a1a1f;padding:4px;gap:4px}
+.structure-search-group{display:flex;flex-direction:column;gap:4px;flex-shrink:0;min-width:0}
+.structure-search-group-label{padding:8px 12px;color:var(--secondary);font-size:9px;line-height:12px;font-weight:510;text-transform:uppercase}
+.structure-search-popup .structure-search-option{align-items:flex-start;cursor:pointer}
+.structure-search-popup .structure-search-id{flex:0 0 auto;min-width:80px;height:24px;max-width:100%;padding:0 8px;border-radius:8px;background:var(--panel);font-size:13px;line-height:18px;font-weight:400;letter-spacing:-.039px;white-space:nowrap}
+.structure-search-id img{width:16px;height:16px}
+.structure-search-id:hover{box-shadow:inset 0 0 0 1px var(--blue)}
+.structure-search-popup mark{background:#fffa76;color:inherit;border-radius:4px;padding:0;font:inherit;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.structure-search-popup .option-label{overflow-wrap:anywhere}
+.structure-search-popup .structure-search-person{align-items:center;flex-wrap:nowrap}
+.structure-search-person-avatar{width:32px;height:32px;background:var(--border)}
+@media(max-width:520px){
+  .structure-search-popup .structure-search-option{flex-wrap:wrap;padding:13px 12px}
+  .structure-search-popup .option-label{flex:1 0 100%}
+  .structure-search-popup .structure-search-person{flex-wrap:nowrap}
+  .structure-search-popup .structure-search-person .option-label{flex:1 1 0}
+}

@@ -1,0 +1,8 @@
+{
+  "source": "https://www.figma.com/design/tOFCfQUjfFvAB0Pgqxb9xQ/Products-BPM?node-id=79-13889",
+  "assets": {
+    "assets/search-suggest-search.svg": {"node": "I79:13449;129:119", "component": "Icon/24/Search", "width": 24, "height": 24},
+    "assets/search-suggest-copy.svg": {"node": "31:925", "component": "Icon/16/Copy", "width": 16, "height": 16}
+  },
+  "styles": {"menuRadius": 12, "itemMinHeight": 50, "matchFill": "#FFFA76", "text": "Simple text/SB 17/24", "groupLabel": "9/12 Medium", "id": "Additional/R 13/18"}
+}
