@@ -11,7 +11,9 @@
     block:'B2C', division:'Кошелек клиента', process:'Обслуживание клиентов',
     owner:'Иванов Иван Васильевич', status:'Подтверждён', date:'2026-01-21', created:'2026-01-21',
     executionStatus:i === 2 ? 'Приостановлен' : 'Исполняется', monitoring:i !== 2,
-    efficiency:entity === 'paths' && i === 3 ? 25 : 89.3, delta:1,
+    // Keep one assessed process beside two examples with no calculated score.
+    efficiency:entity === 'processes' && i > 0 ? null : entity === 'paths' && i === 3 ? 25 : 89.3,
+    delta:entity === 'processes' && i > 0 ? 0 : 1,
     highlight:entity === 'paths' ? i === 0 ? 'positive' : i === 3 ? 'problem' : '' : '',
     count:entity === 'paths' ? 3 : 0, tags:['AI','ТОП200'], source:'cabinet-demo'
   })));

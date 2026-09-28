@@ -134,7 +134,7 @@
 .pd-process-section .pd-data-table .pd-tag--muted{box-shadow:none}
 .pd-process-section .pd-source-tag,.pd-process-section .pd-task-type{display:inline-flex}
 .pd-process-section .pd-data-table-monitoring th{height:68px}
-.pd-process-section .pd-data-table-monitoring th:nth-child(6){padding-left:12px;padding-right:12px}
+.pd-process-section .pd-data-table-monitoring th:nth-child(5){padding-left:12px;padding-right:12px}
 .pd-process-section .pd-data-header-value{color:var(--text)}
 .pd-process-section .pd-data-table-monitoring tbody tr{height:120px}
 .pd-process-section .pd-data-table-monitoring td{vertical-align:middle;padding-top:16px;padding-bottom:16px}
@@ -143,7 +143,19 @@
 .pd-process-section .pd-data-efficiency-empty{display:inline-flex;justify-content:center;min-width:110px}
 .pd-process-section .pd-data-table-monitoring [data-pd-key="monitoring-4"]{background:linear-gradient(90deg,#ffeefd 0%,#fff2e7 55%,#fff 100%)}
 .pd-process-section .pd-data-confirm{width:157px;height:50px;min-height:50px;padding:12px 24px;font-size:17px;line-height:24px;letter-spacing:-.51px;font-weight:590;border:0;border-radius:12px;box-shadow:inset 0 0 0 1px var(--border)}
-.pd-process-section .pd-monitoring-toolbar>.pd-data-add{width:232px}
+/* Products-BPM / 08 · Monitoring (1:14991): seven columns, native NONE
+   indicator, and centered toolbar controls. Other detail sections are unchanged. */
+#pd-monitoring>.pd-section-heading h2{letter-spacing:-.066px}
+.pd-process-section .pd-monitoring-toolbar>.pd-data-add{width:232px;align-self:center}
+#pd-monitoring :is(.pd-data-alert-icon,.pd-data-efficiency-heading)>.pd-icon{width:16px;height:16px;flex-basis:16px}
+#pd-monitoring .pd-data-alert-confirm .pd-data-alert-icon{padding-top:0}
+.pd-data-table-monitoring .pd-tag{background:var(--white)}
+.pd-data-table-monitoring :is(.pd-data-efficiency,.pd-data-actions){font-size:0;line-height:0}
+.pd-data-table-monitoring .pd-data-efficiency .efficiency-unrated-card{gap:8px;min-width:56px}
+.pd-data-table-monitoring .table-efficiency{width:110px;min-height:40px}
+.pd-data-table-monitoring .pd-sort-arrow{display:block;width:16px;height:16px}
+/* Keep the original 24 px Arrow Down export intact within Figma's 16 px slot. */
+.pd-process-section .pd-data-table-monitoring .pd-sort-arrow .pd-icon{display:block;width:24px;height:24px;max-width:none;transform:scale(.666666667);transform-origin:top left}
 .pd-process-section .pd-insights-toolbar>.pd-data-add{width:211px}
 .pd-process-section#pd-tasks .pd-data-add{width:211px}
 .pd-process-section .pd-data-table-insights th{height:56px}

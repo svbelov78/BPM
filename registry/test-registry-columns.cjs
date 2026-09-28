@@ -35,6 +35,7 @@ async function assertOrder(page, entity, key, direction) {
   const result = await page.evaluate(({entity,key,direction}) => {
     const compare = new Intl.Collator('ru',{numeric:true,sensitivity:'base'});
     const expected = window.BPM_DATA.filter(row => row.entity === entity && row.date >= '2001-08-21' && row.date <= '2026-09-13').sort((a,b) => {
+      if(key === 'eff' && (a.efficiency == null || b.efficiency == null)) return Number(a.efficiency == null)-Number(b.efficiency == null) || a.number-b.number;
       const comparison = key === 'id' ? a.number-b.number : key === 'eff' ? a.efficiency-b.efficiency : compare.compare(a.owner,b.owner);
       return (direction === 'desc' ? -comparison : comparison) || a.number-b.number;
     }).slice(0,25).map(row => row.id);

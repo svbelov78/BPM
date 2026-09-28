@@ -44,6 +44,27 @@ async function openMobile(page) {
     await page.locator('#mobile-menu').click();
   }
 }
+async function mobileMenuIcon(page) {
+  const icon = page.locator('#mobile-menu img');
+  await icon.evaluate(image => image.decode());
+  const state = await icon.evaluate(image => ({src:image.getAttribute('src'), standalone:document.documentElement.dataset.bpmStandalone === 'true', loaded:image.complete && image.naturalWidth > 0,
+    width:image.getBoundingClientRect().width, height:image.getBoundingClientRect().height}));
+  if (state.standalone) {
+    const match = state.src.match(/^data:image\/svg\+xml((?:;[^,]*)?),(.*)$/s);
+    assert.ok(match, 'mobile: inline burger is an SVG');
+    const bytes = match[1].split(';').includes('base64') ? Buffer.from(match[2], 'base64') : Buffer.from(decodeURIComponent(match[2]));
+    assert.deepEqual(bytes, fs.readFileSync(path.join(__dirname, 'assets/burger.svg')), 'mobile: inline burger matches the source asset');
+  } else {
+    assert.equal(state.src, 'assets/burger.svg', 'mobile: uses the dedicated burger asset');
+  }
+  assert.equal(state.loaded, true, 'mobile: burger loads offline');
+  assert.equal(state.width, 24, 'mobile: burger renders 24px wide');
+  assert.equal(state.height, 24, 'mobile: burger renders 24px high');
+}
+async function mobileMenuState(page, open, label) {
+  assert.equal(await page.locator('body').evaluate(body => body.classList.contains('mobile-menu-open')), open, `${label}: mobile menu state`);
+  assert.equal(await page.locator('#mobile-menu').getAttribute('aria-expanded'), String(open), `${label}: mobile menu accessibility`);
+}
 async function navigate(page, id, service, label) {
   await openMobile(page);
   if (await page.locator('body').evaluate(body => innerWidth >= 768 && body.classList.contains('menu-collapsed'))) {
@@ -60,6 +81,7 @@ async function navigate(page, id, service, label) {
   }, service);
   await selected(page, service === 'cabinet', label);
   assert.equal(await page.locator(`#${id}`).getAttribute('aria-current'), 'page', `${label}: new page selected`);
+  if (await page.locator('#mobile-menu').isVisible()) await mobileMenuState(page, false, label);
 }
 
 (async () => {
@@ -92,7 +114,14 @@ async function navigate(page, id, service, label) {
       } else if (mode === 'mobile') {
         await page.setViewportSize({width:390,height:844});
         await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        await mobileMenuIcon(page);
+        await page.screenshot({path:path.join(output, 'mobile-closed.png')});
         await openMobile(page);
+        await mobileMenuState(page, true, 'mobile/open');
+        await page.keyboard.press('Escape');
+        await mobileMenuState(page, false, 'mobile/escape');
+        await openMobile(page);
+        await mobileMenuState(page, true, 'mobile/reopen');
         await selected(page, true, 'mobile');
         await page.screenshot({path:path.join(output, 'mobile.png')});
       }

@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const {pathToFileURL} = require('node:url');
 const {chromium} = require(process.env.BPM_PLAYWRIGHT || '/Users/admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
-const url = pathToFileURL(path.join(__dirname,'index.html')).href;
+const url = `${pathToFileURL(path.join(__dirname,'index.html')).href}#main`;
 const widths = [1920,1440,390,320];
 const sections = ['about','technology','monitoring','insights','tasks','documents'];
 const tableRows = {monitoring:5,insights:2,tasks:5,aris:5,consultant:3};
@@ -129,6 +129,29 @@ async function verifyContent(page) {
   const order = await drawer.locator('#pd-about,#pd-technology,#pd-monitoring,#pd-insights,#pd-tasks,#pd-documents').evaluateAll(elements => elements.map(element => element.id));
   assert.deepEqual(order,sections.map(id => `pd-${id}`),'Process blocks follow the Figma reading order');
   for (const [id,count] of Object.entries(tableRows)) assert.equal(await drawer.locator(`.pd-data-table-${id} tbody tr`).count(),count,`${id}: exact visible Figma rows`);
+  const monitoring = drawer.locator('.pd-data-table-monitoring');
+  const monitoringHead = await monitoring.locator('thead th').evaluateAll(cells => cells.map(cell => ({text:cell.innerText.replace(/\s+/g,' ').trim(),span:cell.colSpan})));
+  assert.deepEqual(monitoringHead,[
+    {text:'Варианты',span:1},{text:'Канал',span:1},{text:'Количество экземпляров',span:1},
+    {text:'Метрики 120',span:1},{text:'обязательные 0 / 35',span:1},{text:'Эффективность',span:2}
+  ],'Monitoring has seven columns without Service and keeps the shared efficiency/actions heading');
+  assert.deepEqual(await monitoring.locator('tbody tr').evaluateAll(rows => rows.map(row => row.cells.length)),[7,7,7,7,7],'Every monitoring row has seven cells');
+  for (const [index,value] of [[3,'120'],[4,'0 / 35']]) {
+    assert.equal(await monitoring.locator(`[data-pd-sort="${index}"] .pd-data-header-value`).innerText(),value,`Monitoring metric heading ${index} retains its displayed total`);
+  }
+  const unrated = monitoring.locator('[data-pd-key="monitoring-0"] .pd-data-efficiency .efficiency');
+  assert.equal(await unrated.count(),1,'Monitoring NONE uses the shared efficiency renderer');
+  assert.equal(await unrated.innerText(),'---','Monitoring NONE has exactly three dashes');
+  assert.match(await unrated.getAttribute('aria-label'),/Эффективность не (?:оценивалась|рассчитана|посчитана)/,'Monitoring NONE has an accessible unrated label');
+  assert.equal(await unrated.getAttribute('data-efficiency-percent'),null,'Monitoring NONE has no fabricated percentage');
+  assert.equal(await unrated.locator('.percent,.trend,[data-counter-number],[data-efficiency],.efficiency-curtain').count(),0,'Monitoring NONE has no numeric counter, percentage, trend, or curtain');
+  const outline = unrated.locator('img.efficiency-glyph');
+  assert.equal(await outline.count(),1,'Monitoring NONE has exactly one outline asset');
+  assert.equal(await outline.getAttribute('src'),'assets/efficiency-unrated.svg','Monitoring NONE uses the existing exported outline');
+  await outline.evaluate(image => image.decode());
+  const outlineBox = await outline.boundingBox();
+  near(outlineBox.width,24,'Monitoring NONE outline width');
+  near(outlineBox.height,24,'Monitoring NONE outline height');
   for (const id of ['technology','monitoring','insights','tasks','documents']) {
     const section = drawer.locator(`#pd-${id}`);
     assert.equal(await section.evaluate(element => element.tagName),'DETAILS',`${id}: preserves disclosure behavior`);
@@ -150,8 +173,44 @@ async function desktopGeometry(page) {
     near((await button.boundingBox()).width,width,`Figma ${action} action width`);
   }
   for (const [id,width] of [['monitoring',232],['insights',211],['tasks',211]]) near((await page.locator(`#pd-${id} .pd-data-add`).boundingBox()).width,width,`Figma ${id} create/add width`);
+  const monitoring = await page.locator('#pd-monitoring').evaluate(section => {
+    const box = element => {const r=element.getBoundingClientRect();return {width:r.width,height:r.height,cx:r.x+r.width/2,cy:r.y+r.height/2};};
+    const one = selector => box(section.querySelector(selector));
+    const all = selector => [...section.querySelectorAll(selector)].map(box);
+    const inCell = selector => [...section.querySelectorAll(selector)].map(element => ({element:box(element),cell:box(element.closest('td'))}));
+    return {section:box(section),heading:one(':scope > .pd-section-heading'),toolbar:one('.pd-monitoring-toolbar'),add:one('.pd-data-add'),
+      positive:one('.pd-data-alert-positive'),confirmation:one('.pd-data-alert-confirm'),
+      smallIcons:all('.pd-data-alert-icon > .pd-icon,.pd-data-efficiency-heading > .pd-icon'),
+      arrowSlots:all('.pd-sort-arrow'),arrows:all('.pd-sort-arrow > .pd-icon'),
+      none:inCell('.efficiency-unrated-card'),pills:inCell('.table-efficiency'),actions:inCell('.pd-data-actions .pd-icon')};
+  });
+  near(monitoring.section.height,1032,'Figma monitoring section height');
+  near(monitoring.heading.height,74,'Figma monitoring section heading height');
+  near(monitoring.toolbar.height,56,'Figma monitoring toolbar height');
+  near(monitoring.add.width,232,'Figma monitoring add width');
+  near(monitoring.add.height,50,'Figma monitoring add height');
+  near(monitoring.add.cy,monitoring.toolbar.cy,'Monitoring add is vertically centered in toolbar');
+  near(monitoring.positive.height,56,'Figma monitoring coverage alert height');
+  near(monitoring.confirmation.height,82,'Figma monitoring confirmation alert height');
+  assert.equal(monitoring.smallIcons.length,3,'Monitoring has three small alert/header icons');
+  assert.equal(monitoring.arrowSlots.length,5,'Monitoring has five sortable header slots');
+  assert.equal(monitoring.arrows.length,5,'Monitoring has five sort arrows');
+  for (const [group,boxes] of [['small icon',monitoring.smallIcons],['sort slot',monitoring.arrowSlots],['sort arrow',monitoring.arrows]]) {
+    boxes.forEach((box,index) => {near(box.width,16,`Monitoring ${group} ${index + 1} width`);near(box.height,16,`Monitoring ${group} ${index + 1} height`);});
+  }
+  assert.equal(monitoring.none.length,1,'Monitoring has one NONE indicator');
+  assert.equal(monitoring.pills.length,4,'Monitoring has four rated efficiency pills');
+  assert.equal(monitoring.actions.length,5,'Monitoring has one action icon per row');
+  for (const [group,items,width,height] of [['NONE',monitoring.none,56,24],['efficiency pill',monitoring.pills,110,40],['action icon',monitoring.actions,24,24]]) {
+    items.forEach(({element,cell},index) => {
+      near(element.width,width,`Monitoring ${group} ${index + 1} width`);
+      near(element.height,height,`Monitoring ${group} ${index + 1} height`);
+      near(element.cx,cell.cx,`Monitoring ${group} ${index + 1} horizontal center`);
+      near(element.cy,cell.cy,`Monitoring ${group} ${index + 1} vertical center`);
+    });
+  }
   const tableGeometry = {
-    monitoring:{height:668,header:68,rows:[120,120,120,120,120],columns:[448.666,112,96,144,112,148,154,48]},
+    monitoring:{height:668,header:68,rows:[120,120,120,120,120],columns:[544.666,112,144,112,148,154,48]},
     insights:{height:473,header:56,rows:[209,208],columns:[490.666,220,136,184,100,132]},
     tasks:{height:834,header:50,rows:[157,157,157,157,156],columns:[262.666,162,250,128,128,186,146]},
     aris:{height:625,header:56,rows:[117,113,113,113,113],columns:[190,510.666,180,176,158,48]},

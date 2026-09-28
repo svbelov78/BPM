@@ -130,7 +130,7 @@
     }
     function hideTip(restoreFocus=false){const previous=tipTrigger,previousTip=tooltip;clearTimeout(tipTimer);tooltip=null;tipTrigger=null;previousTip?.remove();root.querySelectorAll('[aria-describedby="cabinet-efficiency-tip"]').forEach(el=>el.removeAttribute('aria-describedby'));if(restoreFocus&&previous?.isConnected){suppressTipFocus=true;previous.focus({preventScroll:true});suppressTipFocus=false;}}
     function showTip(row,trigger,interactive=false){
-      if(loading||!row)return;hideTip();tipTrigger=trigger;tooltip=document.createElement('div');tooltip.className='cabinet-efficiency-tip';tooltip.id='cabinet-efficiency-tip';tooltip.setAttribute('role',interactive?'dialog':'tooltip');if(interactive)tooltip.setAttribute('aria-label','Эффективность и динамика');
+      if(loading||!row||row.efficiency==null)return;hideTip();tipTrigger=trigger;tooltip=document.createElement('div');tooltip.className='cabinet-efficiency-tip';tooltip.id='cabinet-efficiency-tip';tooltip.setAttribute('role',interactive?'dialog':'tooltip');if(interactive)tooltip.setAttribute('aria-label','Эффективность и динамика');
       tooltip.innerHTML=`<h3>Эффективность и динамика</h3><p>АВГ: ${esc(String(row.efficiency).replace('.',','))}% +1 пп ↑ (текущая)</p><p>ИЮН: 42% −1 пп ↓</p><p>МАЙ: 42% +7 пп ↑</p><p>АПР: 35% −4 пп ↓</p><p>МАР: 39% −1 пп ↓</p><button type="button">Подробнее</button>`;
       document.body.append(tooltip);trigger.setAttribute('aria-describedby',tooltip.id);
       const rect=trigger.getBoundingClientRect(),width=tooltip.offsetWidth,height=tooltip.offsetHeight;

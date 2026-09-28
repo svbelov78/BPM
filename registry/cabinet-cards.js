@@ -46,9 +46,13 @@
   }
   function entity(row) {
     const trend = row.highlight === 'problem' || Number(row.delta) < 0 ? 'negative' : 'positive';
+    const indicator = window.BpmCardVisuals.efficiency(row);
+    const efficiency = row.efficiency == null
+      ? `<span class="cabinet-efficiency">${indicator}</span>`
+      : `<button type="button" class="cabinet-efficiency cabinet-trend-${trend}" data-cabinet-efficiency="${escape(row.id)}" aria-label="Подробнее об эффективности: ${escape(number(row.efficiency))}%">${indicator}</button>`;
     return `<article class="entity-card cabinet-card cabinet-entity-card${highlight(row)}" ${open(row)} data-cabinet-kind="${row.kind === 'paths' ? 'paths' : 'processes'}" aria-label="${escape(row.title)}">
       ${more(row)}<div class="card-header"><div class="metadata">${idBadge(row.code || row.id)}${status(row, 'entity')}</div>${tags(row)}</div>
-      ${body(row)}<div class="card-footer">${owner(row)}<button type="button" class="cabinet-efficiency cabinet-trend-${trend}" data-cabinet-efficiency="${escape(row.id)}" aria-label="Подробнее об эффективности: ${row.efficiency == null ? 'не оценивалась' : `${escape(number(row.efficiency))}%`}">${window.BpmCardVisuals.efficiency(row)}</button></div>
+      ${body(row)}<div class="card-footer">${owner(row)}${efficiency}</div>
     </article>`;
   }
   function insight(row) {

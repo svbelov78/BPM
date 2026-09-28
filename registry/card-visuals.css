@@ -3,6 +3,7 @@
 .entity-card .card-footer{align-items:flex-end;margin-top:auto}
 .entity-card .card-footer .owner{align-items:center}
 .efficiency-value{font-variant-numeric:tabular-nums}
+.efficiency-unrated-card{gap:8px;font-size:17px;line-height:24px;letter-spacing:-.119px}
 .efficiency-number{display:inline-flex;align-items:baseline;justify-content:flex-end;flex-shrink:0}
 .bpm-efficiency-glyph{display:inline-block;position:relative;flex:0 0 24px;width:24px;height:24px;overflow:visible;--efficiency-color:#34c759;--efficiency-glass-end:.031;--efficiency-blur:2px}
 .bpm-efficiency-glyph.efficiency-red{--efficiency-color:var(--red,#ff383c)}

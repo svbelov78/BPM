@@ -99,6 +99,8 @@
       var unitIndex = index % units.length;
       var unit = units[unitIndex];
       var number = 1232 + index;
+      // Two visible process cards demonstrate Efficiency/Small: Card / NONE.
+      var unrated = entity === 'processes' && (index === 1 || index === 2);
       var status = index < 15
         ? (index === 8 || index === 13 ? 'На согласовании' : 'Исполняется')
         : statuses[(index - 15) % statuses.length];
@@ -114,8 +116,8 @@
         owner: owners[index % owners.length],
         status: status,
         date: index < 5 ? '2026-01-21' : dates[index % dates.length],
-        efficiency: index < 3 ? 89.3 : efficiencies[(index - 3) % efficiencies.length],
-        delta: deltas[index % deltas.length],
+        efficiency: unrated ? null : index < 3 ? 89.3 : efficiencies[(index - 3) % efficiencies.length],
+        delta: unrated ? 0 : deltas[index % deltas.length],
         count: counts[index % counts.length],
         type: index % 3 === 0 ? 'Правило' : 'Услуга',
         tags: entity === 'processes'

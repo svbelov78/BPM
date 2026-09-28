@@ -82,7 +82,8 @@ async function loadingAndContent(page) {
   assert.match(await page.locator('#cabinet-tab-incoming').textContent(),/Входящие 4/);
   assert.match(await page.locator('#cabinet-tab-outgoing').textContent(),/Исходящие 1/);
   const counters = await page.locator('#cabinet-panel .efficiency[data-efficiency-percent]').evaluateAll(elements => elements.map(element => ({counting:element.dataset.counting, value:Number(element.querySelector('[data-counter-number]').textContent.replace(',','.')), target:Number(element.dataset.efficiencyPercent)})));
-  assert.equal(counters.length,7);
+  assert.equal(counters.length,5,'Only assessed entities animate a numeric score');
+  assert.equal(await page.locator('#cabinet-panel .efficiency-unrated-card').count(),2,'Two processes demonstrate an uncalculated score');
   assert.ok(counters.some(counter => counter.counting === 'true' && counter.value < counter.target),'Efficiency animates through intermediate numbers');
   await settledCounters(page);
   assert.ok(await page.locator('#cabinet-panel .efficiency[data-efficiency-percent]').evaluateAll(elements => elements.every(element => Number(element.querySelector('[data-counter-number]').textContent.replace(',','.')) === Number(element.dataset.efficiencyPercent))), 'Efficiency reaches its final value');
@@ -118,6 +119,8 @@ async function filtersAndKeyboard(page) {
   await resetFilter(page,'paths');
   await filter(page,'paths','Без эффективности');await count(page,'paths',0);
   await section(page,'paths').locator('[data-cabinet-reset]').click();await count(page,'paths',4);
+  await filter(page,'processes','Без эффективности');await count(page,'processes',2);
+  await resetFilter(page,'processes');await count(page,'processes',3);
   await page.locator('#cabinet-search').fill('INS-000042');
   await page.waitForFunction(() => document.querySelectorAll('[data-cabinet-kind="insights"]').length === 1);
   await page.locator('#cabinet-search').press('Enter');

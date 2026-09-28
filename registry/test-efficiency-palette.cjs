@@ -8,7 +8,7 @@ const path = require('node:path');
 const {pathToFileURL} = require('node:url');
 const {chromium} = require(process.env.BPM_PLAYWRIGHT || '/Users/admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
 
-const url = pathToFileURL(path.join(__dirname, 'index.html')).href;
+const url = `${pathToFileURL(path.join(__dirname, 'index.html')).href}#main`;
 const RGB = {green:'rgb(52, 199, 89)', journeyGreen:'rgb(42, 198, 83)', yellow:'rgb(255, 204, 0)', red:'rgb(255, 56, 60)', white:'rgb(255, 255, 255)', border:'rgb(127, 127, 127)'};
 const samples = [null, undefined, 0, 23.5, 44.9, 45, 45.1, 64.9, 65, 65.1, 75, 84.9, 85, 85.1, 100];
 const report = label => console.log(`PASS — ${label}`);
@@ -90,29 +90,60 @@ function checkGlyph(row, value, journey, label, structureBucket) {
   if (value < 100) near(row.curtainStart, journey ? (value === 0 ? -32 : 64 * value / 100) : (value === 0 ? -8 : 24 * value / 100 + 1), `${label}: curtain boundary`);
 }
 
+async function checkUnratedCards(page, selector, expectedCount, label) {
+  const rows = await page.locator(selector).evaluateAll(elements => elements.map(element => {
+    const icon = element.querySelector('img.efficiency-glyph');
+    const box = icon?.getBoundingClientRect();
+    return {text:element.textContent.trim(), role:element.getAttribute('role'), label:element.getAttribute('aria-label'),
+      value:element.dataset.efficiencyPercent, src:icon?.getAttribute('src'), loaded:!!icon?.complete && icon.naturalWidth > 0,
+      width:box?.width, height:box?.height, alt:icon?.getAttribute('alt'), hidden:icon?.getAttribute('aria-hidden'),
+      numeric:!!element.querySelector('.efficiency-number, .percent, .trend, [data-efficiency], [data-counter-number]'),
+      sphere:!!element.querySelector('.efficiency-sphere, .efficiency-curtain')};
+  }));
+  assert.equal(rows.length,expectedCount,`${label}: expected NONE cards`);
+  rows.forEach((row,index) => {
+    const name = `${label} ${index}`;
+    assert.equal(row.text,'---',`${name}: three dashes`);
+    assert.equal(row.role,'img',name);
+    assert.equal(row.label,'Эффективность не посчитана',name);
+    assert.equal(row.value,undefined,`${name}: no fabricated numeric rating`);
+    assert.equal(row.src,'assets/efficiency-unrated.svg',`${name}: dedicated NONE icon`);
+    assert.equal(row.loaded,true,`${name}: icon asset loaded`);
+    near(row.width,24,`${name}: icon width`);
+    near(row.height,24,`${name}: icon height`);
+    assert.equal(row.alt,'',name);
+    assert.equal(row.hidden,'true',name);
+    assert.equal(row.numeric,false,`${name}: no percentage, trend or counter`);
+    assert.equal(row.sphere,false,`${name}: no CSS sphere or curtain`);
+  });
+}
+
 async function rendererFixtures(page) {
   await page.evaluate(values => {
     const fixture = document.createElement('section');
     fixture.id = 'efficiency-palette-fixture';
     fixture.style.cssText = 'position:absolute;top:0;left:0;width:100%;z-index:-1;pointer-events:none;background:#fff;padding:40px;box-sizing:border-box';
-    fixture.innerHTML = values.map((value,index) => `<article data-palette-sample="${index}" style="display:inline-flex;flex-direction:column;gap:28px;align-items:center;padding:36px;width:170px;vertical-align:top"><h3>${value == null ? 'Без подсчёта' : value + '%'}</h3><div data-palette-card>${window.BpmCardVisuals.efficiency({efficiency:value})}</div><div data-palette-table>${window.BpmCardVisuals.efficiency({efficiency:value},true)}</div><div data-palette-journey>${window.BpmJourneyDetails.renderSphere(value)}</div></article>`).join('');
+    fixture.innerHTML = values.map((value,index) => `<article data-palette-sample="${index}" style="display:inline-flex;flex-direction:column;gap:28px;align-items:center;padding:36px;width:170px;vertical-align:top"><h3>${value == null ? 'Без подсчёта' : value + '%'}</h3><div data-palette-card>${window.BpmCardVisuals.efficiency({efficiency:value})}</div><div data-palette-table>${window.BpmCardVisuals.efficiency({efficiency:value},true)}</div><div data-palette-glyph>${window.BpmCardVisuals.glyph(value)}</div><div data-palette-journey>${window.BpmJourneyDetails.renderSphere(value)}</div></article>`).join('');
     document.body.append(fixture);
   }, samples);
-  for (const mode of ['card','table']) {
+  await page.locator('#efficiency-palette-fixture img.efficiency-glyph').evaluateAll(images => Promise.all(images.map(image => image.decode())));
+  await checkUnratedCards(page,'#efficiency-palette-fixture [data-palette-card] .efficiency-unrated-card',2,'card renderer null/undefined');
+  for (const mode of ['card','table','glyph']) {
     const rows = await glyphs(page, `#efficiency-palette-fixture [data-palette-${mode}] .bpm-efficiency-glyph`);
-    assert.equal(rows.length, samples.length);
-    rows.forEach((row,index) => checkGlyph(row,samples[index],false,`${mode} renderer ${String(samples[index])}`));
-    const unrated = await page.locator(`#efficiency-palette-fixture [data-palette-${mode}] .efficiency`).evaluateAll(elements => elements.slice(0,2).map(element => ({text:element.textContent, label:element.getAttribute('aria-label'), value:element.dataset.efficiencyPercent})));
-    unrated.forEach(row => {
-      assert.equal(row.text.trim(), '—');
-      assert.equal(row.label, 'Эффективность не оценивалась');
-      assert.equal(row.value, undefined);
-    });
+    const values = mode === 'card' ? samples.filter(value => value != null) : samples;
+    assert.equal(rows.length,values.length,`${mode}: all renderer samples`);
+    rows.forEach((row,index) => checkGlyph(row,values[index],false,`${mode} renderer ${String(values[index])}`));
   }
+  const unrated = await page.locator('#efficiency-palette-fixture [data-palette-table] .efficiency').evaluateAll(elements => elements.slice(0,2).map(element => ({text:element.textContent, label:element.getAttribute('aria-label'), value:element.dataset.efficiencyPercent})));
+  unrated.forEach(row => {
+    assert.equal(row.text.trim(),'—');
+    assert.equal(row.label,'Эффективность не оценивалась');
+    assert.equal(row.value,undefined);
+  });
   const journeys = await glyphs(page, '#efficiency-palette-fixture [data-palette-journey] > span', true);
   journeys.forEach((row,index) => checkGlyph(row,samples[index],true,`journey renderer ${String(samples[index])}`));
   await page.locator('#efficiency-palette-fixture').evaluate(element => {element.hidden = true;});
-  report('rendered card/table/journey fixtures: exact gradient, unrated state, thresholds and sphere geometry');
+  report('rendered card/table/glyph/journey fixtures: Small Card NONE asset and three dashes; unchanged table/glyph unrated sphere, thresholds and geometry');
 }
 
 async function regularViews(page) {
@@ -123,7 +154,24 @@ async function regularViews(page) {
       await registryReady(page,view);
       const rows = await glyphs(page, `${view === 'cards' ? '.entity-card' : '.registry-table'} .bpm-efficiency-glyph`);
       assert.ok(rows.length > 0, `${entity} ${view}: actual glyphs rendered`);
-      rows.forEach((row,index) => checkGlyph(row,Number(row.value),false,`${entity} ${view} ${index}`));
+      rows.forEach((row,index) => checkGlyph(row,row.value === undefined ? null : Number(row.value),false,`${entity} ${view} ${index}`));
+      const records = await page.locator(view === 'cards' ? '.entity-card[data-record]' : '.registry-table tr[data-record]').evaluateAll(elements => elements.map(element => {
+        const source = window.BPM_DATA.find(row => row.id === element.dataset.record);
+        return {id:source.id, efficiency:source.efficiency, delta:source.delta};
+      }));
+      const unrated = records.filter(row => row.efficiency == null);
+      if (view === 'cards') {
+        await checkUnratedCards(page,'.entity-card .efficiency-unrated-card',unrated.length,`${entity} actual cards`);
+        assert.equal(rows.length + unrated.length,records.length,`${entity}: every card has an efficiency state`);
+      } else assert.equal(rows.length,records.length,`${entity}: every table row retains a CSS glyph`);
+      if (entity === 'processes') {
+        for (const id of ['processes-1233','processes-1234']) {
+          const source = records.find(row => row.id === id);
+          assert.ok(source,`${view}: demo process ${id} rendered`);
+          assert.equal(source.efficiency,null,`${id}: uncalculated demo record`);
+          assert.equal(source.delta,0,`${id}: no trend for an uncalculated record`);
+        }
+      }
       await noOverflow(page, `${entity} ${view}`);
     }
   }

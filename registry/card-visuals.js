@@ -23,7 +23,11 @@
   }
   function efficiency(row, table = false) {
     const percent = percentValue(row.efficiency);
-    if (percent === null) return `<span class="efficiency${table?' table-efficiency':''}" role="img" aria-label="Эффективность не оценивалась">${glyph(null, table)}<span class="efficiency-value" aria-hidden="true">—</span></span>`;
+    if (percent === null) {
+      // Figma 1253:25634 — Card / NONE uses an empty outline and three dashes.
+      if (!table) return '<span class="efficiency efficiency-unrated-card" role="img" aria-label="Эффективность не посчитана"><img class="efficiency-glyph" src="assets/efficiency-unrated.svg" width="24" height="24" alt="" aria-hidden="true"><span class="efficiency-value" aria-hidden="true">---</span></span>';
+      return `<span class="efficiency table-efficiency" role="img" aria-label="Эффективность не оценивалась">${glyph(null, table)}<span class="efficiency-value" aria-hidden="true">—</span></span>`;
+    }
     const [whole, fraction] = String(percent).split('.');
     const delta = Number(row.delta) || 0;
     const label = String(percent).replace('.', ',');

@@ -127,7 +127,11 @@
     const [key,direction]=sort.split('-');
     let comparison;
     if(key==='id')comparison=a.number-b.number;
-    else if(key==='eff')comparison=a.efficiency-b.efficiency;
+    else if(key==='eff'){
+      // An unavailable score is not zero; keep it after assessed rows in either direction.
+      if(a.efficiency==null||b.efficiency==null)return Number(a.efficiency==null)-Number(b.efficiency==null)||a.number-b.number;
+      comparison=a.efficiency-b.efficiency;
+    }
     else if(key==='tags')comparison=sortCollator.compare(a.tags.join(', '),b.tags.join(', '));
     else comparison=sortCollator.compare(a[key]||'',b[key]||'');
     return (direction==='desc'?-comparison:comparison)||a.number-b.number;
