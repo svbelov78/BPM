@@ -40,6 +40,7 @@
       return [id,{buckets,total:rows.length}];
     }));
     const filters = {block:[],division:[],owner:[]};
+    const hiddenLevels = new Set();
     const emptyEntityFilters=()=>({product:[],paths:[],processes:[],divisionLeader:[],processOwner:[],pathOwner:[]});
     const entityFilters = emptyEntityFilters();
     const searchCatalog = window.BPMStructureSearchModel.create(models);
@@ -48,7 +49,7 @@
     const openedPaths = new Set(), ownerFilters = {paths:[],processes:[]}, detailTables = new Map();
     const selects = {};
     let active=false, busy=false, query='', sort='count-desc', favoritesOnly=false;
-    let timer, searchTimer, frame, tree=[], visibleNodes=new Map(), revealSelection=false;
+    let timer, searchTimer, frame, tree=[], canonicalTree=[], visibleNodes=new Map(), revealSelection=false;
     let cachedQuery='', queryMatches=emptyEntityFilters();
     const animations = new Map();
     const animationKey = chart => chart.hasAttribute('data-average-chart') ? `average:${chart.dataset.averageChart}` : chart.dataset.chart;
@@ -59,10 +60,17 @@
     const alignmentObserver = new ResizeObserver(alignAverageMetrics);
 
     const options = values => [...new Set(values)].sort((a,b)=>a.localeCompare(b,'ru')).map(value=>({value,label:value}));
+    const visibility = key => ({shown:!hiddenLevels.has(key),label:labels[key],onChange:shown=>{
+      if(shown)hiddenLevels.delete(key);else hiddenLevels.add(key);
+      // Visibility only changes grouping. Filters, expansion state and each
+      // original table's pagination/sorting survive a hide/show round trip.
+      render();
+    }});
     for(const key of Object.keys(filters)) {
       const entries = key==='owner' ? options(model.records.flatMap(n=>n.owners||[n.owner])) : model.nodes.filter(n=>n.kind===key).map(n=>({value:n.id,label:n.name}));
-      selects[key]=api.createSelect(`structure-${key}`,{label:labels[key],options:entries,multiple:true,onChange:values=>{filters[key]=[...values];if(key==='owner')ownerFilters[entity]=[...values];pages.clear();reload();}});
+      selects[key]=api.createSelect(`structure-${key}`,{label:labels[key],options:entries,multiple:true,...(key==='owner'?{}:{visibility:visibility(key)}),onChange:values=>{filters[key]=[...values];if(key==='owner')ownerFilters[entity]=[...values];pages.clear();reload();}});
     }
+    selects.product=api.createSelect('structure-product',{label:labels.product,options:model.nodes.filter(node=>node.kind==='product').map(node=>({value:node.id,label:node.name})),multiple:true,visibility:visibility('product'),onChange:values=>{entityFilters.product=[...values];pages.clear();reload();}});
     selects.sort=api.createSelect('structure-sort',{label:'Сортировка',allowAll:false,icon:'sort',values:[sort],options:[{value:'count-desc',label:'Количество ↓'},{value:'count-asc',label:'Количество ↑'},{value:'name-asc',label:'Название А–Я'},{value:'average-desc',label:'Средняя эффективность ↓'},{value:'average-asc',label:'Средняя эффективность ↑'}],onChange:values=>{sort=values[0];render();}});
     $('structure-path-count').textContent=format(models.paths.total);
     $('structure-process-count').textContent=format(models.processes.total);
@@ -76,6 +84,7 @@
       onCopy:entry=>api.copyText(entry.code),onChoose:entry=>{
         if(entityFilters[entry.kind].includes(entry.id))return;
         entityFilters[entry.kind].push(entry.id);
+        if(entry.kind==='product')selects.product.set(entityFilters.product);
         clearTimeout(searchTimer);query='';$('structure-search').value='';
         revealSelection=true;opened.clear();openedPaths.clear();pages.clear();detailTables.clear();reload();
         $('structure-search-status').textContent=`Добавлен фильтр: ${[entry.code,entry.title].filter(Boolean).join(' ')}`;
@@ -111,7 +120,10 @@
         const averageEfficiency=window.BPMStructureCharts.average(rows).value;
         return {...node,children,records:rows,total:rows.length,buckets,averageEfficiency};
       }
-      const compare=(a,b)=>{
+      const sortNodes=nodes=>nodes.sort(compareNodes).map(node=>({...node,children:sortNodes(node.children)}));
+      return sortNodes(sourceModel.roots.map(node=>visit(node)).filter(Boolean));
+    }
+    function compareNodes(a,b) {
         const byName=()=>a.name.localeCompare(b.name,'ru');
         if(sort==='name-asc')return byName();
         if(sort==='average-asc'||sort==='average-desc') {
@@ -121,14 +133,12 @@
           return (sort==='average-asc'?av-bv:bv-av)||byName()||a.id.localeCompare(b.id);
         }
         return (sort==='count-asc'?a.total-b.total:b.total-a.total)||byName();
-      };
-      const sortNodes=nodes=>nodes.sort(compare).map(node=>({...node,children:sortNodes(node.children)}));
-      return sortNodes(sourceModel.roots.map(node=>visit(node)).filter(Boolean));
     }
     function filterTree() {
-      tree=buildTree(model);
-      visibleNodes=new Map();
-      const index=nodes=>nodes.forEach(node=>{visibleNodes.set(node.id,node);index(node.children);});index(tree);
+      canonicalTree=buildTree(model);
+      const projected=window.BPMStructureLevels.project(canonicalTree,{hidden:hiddenLevels,compare:compareNodes,flatId:`structure-flat-${entity}`});
+      tree=projected.roots;visibleNodes=projected.byId;
+      list.style.setProperty('--max-level',String(Math.max(0,projected.maxDepth)));
       if(revealSelection){visibleNodes.forEach(node=>opened.add(node.id));revealSelection=false;}
     }
 
@@ -151,10 +161,11 @@
     }
     function owner(name,owners=[],simulated=false) {const title=simulated?`Демонстрационный руководитель: ${name}`:owners.join('; ');return `<span class="structure-owner"${title?` title="${esc(title)}"`:''}>${name==='Руководитель не указан'?'':'<span class="avatar" aria-hidden="true"></span>'}<span>${esc(name)}</span></span>`;}
     function nodeMarkup(node) {
+      if(node.synthetic)return `<div class="structure-flat" id="panel-${node.id}" role="region" aria-label="${entity==='paths'?'Все клиентские пути':'Все процессы'}">${table(node)}</div>`;
       const isOpen=opened.has(node.id);
-      return `<article class="structure-node" data-kind="${node.kind}" data-node="${node.id}"><button class="structure-heading" id="heading-${node.id}" aria-expanded="${isOpen}" aria-controls="panel-${node.id}" data-expand="${node.id}"><span class="structure-title">${icon(node.kind)}<span class="structure-title-copy"><span class="structure-kind">${kindLabels[node.kind]}</span><span class="structure-name">${esc(node.name)}</span></span></span>${owner(node.owner,node.owners,node.ownerSimulated)}${showAverage?averageChart(node):''}${chart(node)}<span class="structure-chevron">${icon('chevron-down')}</span></button><div class="structure-children" id="panel-${node.id}" aria-labelledby="heading-${node.id}"${isOpen?'':' hidden'}>${isOpen?content(node):''}</div></article>`;
+      return `<article class="structure-node" data-kind="${node.kind}" data-node="${node.id}" style="--level:${node.depth}"><button class="structure-heading" id="heading-${node.id}" aria-expanded="${isOpen}" aria-controls="panel-${node.id}" data-expand="${node.id}"><span class="structure-title">${icon(node.kind)}<span class="structure-title-copy"><span class="structure-kind">${kindLabels[node.kind]}</span><span class="structure-name">${esc(node.name)}</span></span></span>${owner(node.owner,node.owners,node.ownerSimulated)}${showAverage?averageChart(node):''}${chart(node)}<span class="structure-chevron">${icon('chevron-down')}</span></button><div class="structure-children" id="panel-${node.id}" aria-labelledby="heading-${node.id}"${isOpen?'':' hidden'}>${isOpen?content(node):''}</div></article>`;
     }
-    function content(node) {return node.kind==='product'?(node.total?table(node):`<div class="structure-empty"><p>${entity==='paths'?'В источнике нет связанного клиентского пути.':'В источнике нет связанного процесса с корректным кодом.'} Продукт сохранён в структуре.</p></div>`):node.children.map(nodeMarkup).join('');}
+    function content(node) {return !node.children.length?(node.total?table(node):`<div class="structure-empty"><p>${entity==='paths'?'В источнике нет связанного клиентского пути.':'В источнике нет связанного процесса с корректным кодом.'} Группа сохранена в структуре.</p></div>`):node.children.map(nodeMarkup).join('');}
     function compareRows(a,b,key,direction) {
       let value=key==='id'?a.number-b.number:key==='efficiency'?(a.efficiency??-1)-(b.efficiency??-1):String(a[key]||'').localeCompare(String(b[key]||''),'ru');
       return (direction==='desc'?-value:value)||a.number-b.number;
@@ -247,7 +258,7 @@
     }
     function syncSummary() {
       list.dataset.entity=entity;
-      const total=unique(tree.flatMap(n=>n.records)).length;
+      const total=unique(canonicalTree.flatMap(n=>n.records)).length;
       for(const key of Object.keys(models)) {
         const count=key===entity?total:unique(buildTree(models[key]).flatMap(n=>n.records)).length;
         $(key==='paths'?'structure-path-count':'structure-process-count').textContent=format(count);
@@ -259,7 +270,8 @@
       $('structure-data-note').textContent=`Структура, клиентские пути и процессы — из файла «15092026_структура для подготовки мока данных.xlsx».${entity==='paths'?' Идентификаторы КП-ДЕМО условные: в Excel ID клиентских путей отсутствуют.':''}`;
       $('structure-chart-note').textContent=chartType==='1'?'Сравнение с лидером · Structure Chart 1 — общий масштаб с подложками.':'Соотношение эффективности · Structure Chart 2 — сегменты заполняют 100% площади каждой диаграммы.';
       api.onChange?.({favoritesOnly,favoritesCount:model.records.filter(api.isFavorite).length});
-      if(active)$('result-announcement').textContent=busy?`Загрузка структуры ${entityLabel}…`:`Структура: блоков ${tree.length}, ${entityLabel} ${total}.`;
+      list.setAttribute('aria-label',hiddenLevels.size===3?'Единый список без группировки':'Дерево структуры');
+      if(active)$('result-announcement').textContent=busy?`Загрузка структуры ${entityLabel}…`:`Структура: блоков ${canonicalTree.length}, ${entityLabel} ${total}.${hiddenLevels.size?` Скрыты уровни: ${[...hiddenLevels].map(key=>labels[key]).join(', ')}. Выбранные фильтры сохранены.`:''}`;
     }
     function setEntity(next) {
       if(next===entity||!models[next])return;
@@ -270,6 +282,7 @@
       selects.owner.host.querySelector('label').textContent=labels.owner;
       selects.owner.setOptions(options(model.records.flatMap(row=>row.owners||[row.owner])));
       selects.owner.set(filters.owner);
+      selects.product.setOptions(model.nodes.filter(node=>node.kind==='product').map(node=>({value:node.id,label:node.name})));
       opened.clear();openedPaths.clear();pages.clear();pageSizes.clear();rowSorts.clear();detailTables.clear();revealSelection=hasEntityFilters();reload();
     }
     function setChartType(next) {
@@ -380,6 +393,7 @@
     function reset() {
       clearTimeout(searchTimer);searchUI.close();query='';favoritesOnly=false;$('structure-search').value='';
       Object.keys(entityFilters).forEach(key=>entityFilters[key]=[]);revealSelection=false;
+      selects.product.set([]);
       Object.keys(filters).forEach(key=>{filters[key]=[];selects[key].set([]);});ownerFilters[entity]=[];opened.clear();openedPaths.clear();pages.clear();detailTables.clear();reload();
     }
     function replaceTable(id,focusSelector) {
@@ -433,7 +447,7 @@
       const key=button.dataset.structureFilter,value=button.dataset.value;
       if(key==='query'){query='';$('structure-search').value='';}
       else if(key==='favorites')favoritesOnly=false;
-      else if(Object.hasOwn(entityFilters,key)){entityFilters[key]=entityFilters[key].filter(v=>v!==value);revealSelection=hasEntityFilters();pages.clear();}
+      else if(Object.hasOwn(entityFilters,key)){entityFilters[key]=entityFilters[key].filter(v=>v!==value);if(key==='product')selects.product.set(entityFilters.product);revealSelection=hasEntityFilters();pages.clear();}
       else {filters[key]=filters[key].filter(v=>v!==value);selects[key].set(filters[key]);if(key==='owner')ownerFilters[entity]=[...filters[key]];}
       clearTimeout(searchTimer);searchUI.close();reload();$('structure-search').focus({preventScroll:true});
     });
@@ -446,7 +460,7 @@
       getEntity(){return entity;},
       exportRecords(scope='filtered') {
         if(scope==='page')return unique([...list.querySelectorAll('[data-structure-record]')].filter(el=>el.getClientRects().length).map(el=>records.get(el.dataset.structureRecord)).filter(row=>row?.entity===entity));
-        return unique(tree.flatMap(n=>n.records));
+        return unique(canonicalTree.flatMap(n=>n.records));
       }
     };
   }

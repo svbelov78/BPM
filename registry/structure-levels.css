@@ -1,0 +1,42 @@
+/* Figma Products-BPM 95:24026: three 50px level selects joined by 16px
+ * separators. Only the select is disabled; the eye remains an active button.
+ * The approved third label is Products, matching the actual tree hierarchy. */
+/* Match the single Figma row. Select tracks absorb the available width instead
+ * of forcing an early second row and stretching every control to fill it.
+ * At the 1697px reference: levels ≈729px, owner ≈280px, switches 181/255px.
+ * Keep the component's 50px height, typography and original icon sizes. */
+.structure-filters{display:grid;grid-template-columns:minmax(0,2.6fr) minmax(0,1fr) 181px 255px clamp(128px,11cqw,188px)}
+.structure-level-filters{display:flex;gap:4px;align-items:center;min-width:0}
+.structure-level-filters>.select-host{flex:1 1 0;min-width:0}
+.structure-level-separator{flex:0 0 16px;width:16px;height:16px}
+.structure-filters>.select-host{width:auto;min-width:0}
+.structure-level-filters .select-visibility{display:flex;align-items:center;justify-content:center;flex:0 0 24px;width:24px;height:24px;border-radius:4px}
+.structure-level-filters .select-visibility img{width:24px;height:24px}
+.structure-level-filters .select-visibility:hover img{filter:brightness(.21)}
+.structure-level-filters .select-visibility:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+.structure-level-filters .select-control.is-disabled{background:var(--color-bg-nordic);border-color:var(--panel);box-shadow:none;cursor:default}
+.structure-level-filters .is-disabled .internal-label,.structure-level-filters .select-input:disabled,.structure-level-filters .select-input:disabled::placeholder{color:var(--placeholder);opacity:1;-webkit-text-fill-color:var(--placeholder)}
+.structure-level-filters .select-toggle:disabled{cursor:default;opacity:1}
+.structure-flat{min-width:0}
+@container registry (max-width:1180px){
+  .structure-filters{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .structure-level-filters{grid-column:1/5}
+  .structure-filters>#structure-owner{grid-column:5/-1}
+  .structure-filters>.structure-average-control{grid-column:1/3;width:100%}
+  .structure-filters>.structure-chart-control{grid-column:3/5;width:100%}
+  .structure-filters>#structure-sort{grid-column:5/-1;width:100%}
+}
+@container registry (max-width:760px){
+  .structure-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .structure-level-filters,.structure-filters>#structure-owner,.structure-filters>#structure-sort{grid-column:1/-1}
+  .structure-filters>.structure-average-control{grid-column:1}
+  .structure-filters>.structure-chart-control{grid-column:2}
+}
+@container registry (max-width:640px){
+  .structure-level-filters{flex-direction:column;align-items:stretch;gap:12px}
+  .structure-level-separator{display:none}
+}
+@container registry (max-width:520px){
+  .structure-filters{grid-template-columns:minmax(0,1fr)}
+  .structure-filters>.structure-average-control,.structure-filters>.structure-chart-control{grid-column:1}
+}

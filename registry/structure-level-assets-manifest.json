@@ -1,0 +1,12 @@
+{
+  "sourceFile": "tOFCfQUjfFvAB0Pgqxb9xQ",
+  "sourceFrame": "95:24026",
+  "updated": "2026-09-28",
+  "assets": [
+    {"path":"assets/structure-eye.svg","nodeId":"1:16725","exportUrl":"https://www.figma.com/api/mcp/asset/e44be2a2-0efb-4599-a5b0-592479afb57d.svg","name":"Icon/24/Eye","width":24,"height":24},
+    {"path":"assets/structure-eye-off.svg","nodeId":"I95:24208;1257:325","exportUrl":"https://www.figma.com/api/mcp/asset/f52edca7-6679-4b8c-a10a-c9cc63e9d6e7.svg","name":"Left icon / hidden level","width":24,"height":24},
+    {"path":"assets/structure-level-separator.svg","nodeId":"2:487","exportUrl":"https://www.figma.com/api/mcp/asset/2f204780-b54b-4119-a364-1538df0ef969.svg","name":"Icon/16/Bulk","width":16,"height":16},
+    {"path":"assets/field-chevron-disabled-16.svg","nodeId":"I95:24208;234:56","exportUrl":"https://www.figma.com/api/mcp/asset/4986d11d-e364-4481-9218-ac0a21fa8440.svg","name":"Icon/16/Chevron Down · disabled","width":16,"height":16}
+  ],
+  "notes": "Original, unmodified Figma SVG exports. Product label explicitly approved by the user. Hiding a level preserves its selected filter values."
+}

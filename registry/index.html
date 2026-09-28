@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="structure-average.css">
   <link rel="stylesheet" href="structure-incoming.css">
   <link rel="stylesheet" href="structure-search.css">
+  <link rel="stylesheet" href="structure-levels.css">
   <link rel="stylesheet" href="task-visuals.css">
   <link rel="stylesheet" href="task-drawer.css">
   <link rel="stylesheet" href="task-flow.css">
@@ -50,6 +51,7 @@
   <script src="structure-incoming.js" defer></script>
   <script src="structure-search-model.js" defer></script>
   <script src="structure-search.js" defer></script>
+  <script src="structure-levels.js" defer></script>
   <script src="structure.js" defer></script>
   <script src="task-data.js" defer></script>
   <script src="task-store.js" defer></script>
@@ -114,7 +116,12 @@
       </div>
       <section id="structure-mode" aria-label="Структура процессов" hidden>
         <div class="structure-filters">
-          <div id="structure-block" class="select-host"></div><div id="structure-division" class="select-host"></div><div id="structure-owner" class="select-host"></div>
+          <div class="structure-level-filters" role="group" aria-label="Уровни дерева структуры">
+            <div id="structure-block" class="select-host"></div><img class="structure-level-separator" src="assets/structure-level-separator.svg" width="16" height="16" alt="">
+            <div id="structure-division" class="select-host"></div><img class="structure-level-separator" src="assets/structure-level-separator.svg" width="16" height="16" alt="">
+            <div id="structure-product" class="select-host"></div>
+          </div>
+          <div id="structure-owner" class="select-host"></div>
           <button type="button" id="structure-average-toggle" class="structure-average-control" role="switch" aria-checked="true" aria-label="Средняя эффективность" aria-describedby="structure-average-hint"><span class="structure-average-label">Средняя<br>эффективность</span><span class="structure-switch-track" aria-hidden="true"><span class="structure-switch-knob"></span></span></button>
           <label class="structure-chart-control" title="Соотношение эффективности — Structure Chart 2. Сравнение с лидером — Structure Chart 1, общий масштаб."><span class="structure-chart-label is-active" id="structure-quantity-label">Соотношение<br>эффективности</span><input id="structure-chart-toggle" type="checkbox" role="switch" aria-label="Сравнение с лидером — Structure Chart 1" aria-describedby="structure-chart-hint"><span class="structure-switch-track" aria-hidden="true"><span class="structure-switch-knob"></span></span><span class="structure-chart-label" id="structure-comparison-label">Сравнение<br>с лидером</span></label>
           <div id="structure-sort" class="select-host"></div>

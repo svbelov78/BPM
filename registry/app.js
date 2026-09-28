@@ -4,7 +4,7 @@
   const $ = (id) => document.getElementById(id);
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const image = (name, cls = '') => `<img src="assets/${esc(name)}.svg" alt=""${cls ? ` class="${cls}"` : ''}>`;
-  const fieldIcon = (name = 'field-chevron-down-16') => image(name, ['field-chevron-down-16','field-clear-16','chevron-down-pagination'].includes(name) ? 'field-action-icon' : '');
+  const fieldIcon = (name = 'field-chevron-down-16') => image(name, ['field-chevron-down-16','field-chevron-disabled-16','field-clear-16','chevron-down-pagination'].includes(name) ? 'field-action-icon' : '');
   const favoriteIcon = (cls='',name='liked',label='В избранном') => `<span class="favorite-heart ${cls}" ${label?`role="img" aria-label="${esc(label)}"`:'aria-hidden="true"'}>${image(name)}</span>`;
   const data = window.BPM_DATA || [];
   const allRecords = [...data,...(window.BPM_STRUCTURE?.records || []),...(window.BPM_STRUCTURE_PATHS?.records || []),...(window.BPM_CABINET_DATA?.entities || [])];
@@ -37,21 +37,31 @@
   class BpmSelect {
     constructor(id, config) {
       this.host = $(id); this.id = id; this.config = config; this.options = config.options; this.values = config.values || []; this.query = ''; this.active = -1;
-      this.host.innerHTML = `<div class="bpm-select"><div class="field select-control"><div class="select-content"><label class="internal-label" for="${id}-input">${esc(config.label)}</label><input class="select-input" id="${id}-input" type="text" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="${id}-list" autocomplete="off" spellcheck="false"></div><button type="button" class="select-toggle" tabindex="-1" aria-label="Открыть список: ${esc(config.label)}">${fieldIcon(config.icon)}</button></div></div>`;
+      this.shown = config.visibility?.shown !== false; this.disabled = !!config.visibility && !this.shown;
+      this.host.innerHTML = `<div class="bpm-select"><div class="field select-control">${config.visibility ? '<button type="button" class="select-visibility"></button>' : ''}<div class="select-content"><label class="internal-label" for="${id}-input">${esc(config.label)}</label><input class="select-input" id="${id}-input" type="text" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="${id}-list" autocomplete="off" spellcheck="false"></div><button type="button" class="select-toggle" tabindex="-1" aria-label="Открыть список: ${esc(config.label)}">${fieldIcon(config.icon)}</button></div></div>`;
       this.input = $(`${id}-input`); this.control = this.host.querySelector('.select-control'); this.toggle = this.host.querySelector('.select-toggle');
+      this.visibilityButton = this.host.querySelector('.select-visibility');
+      this.visibilityButton?.addEventListener('click', e => {
+        e.stopPropagation();
+        this.close();
+        this.setVisibility(!this.shown);
+        this.config.visibility.onChange?.(this.shown);
+      });
       this.input.addEventListener('focus', () => {if (!this.suppressFocusOpen) this.open();});
       this.input.addEventListener('click', () => this.open());
-      this.control.addEventListener('click', e => { if (!e.target.closest('.select-toggle')) this.input.focus(); });
+      this.control.addEventListener('click', e => { if (!this.disabled && !e.target.closest('.select-toggle, .select-visibility')) this.input.focus(); });
       this.toggle.addEventListener('mousedown', e => e.preventDefault());
       this.toggle.addEventListener('click', e => {
         e.stopPropagation();
+        if (this.disabled) return;
         if (this.config.multiple && this.values.length) {
           this.clear();
         } else if (this.popup) this.close();
         else { this.input.focus(); this.open(); }
       });
-      this.input.addEventListener('input', () => { this.query = this.input.value; if (!this.popup) this.open(false); this.active = -1; this.renderOptions(); });
+      this.input.addEventListener('input', () => { if (this.disabled) return; this.query = this.input.value; if (!this.popup) this.open(false); this.active = -1; this.renderOptions(); });
       this.input.addEventListener('keydown', e => this.keydown(e));
+      if (config.visibility) this.setVisibility(this.shown);
       this.refresh();
     }
     refresh() {
@@ -63,16 +73,28 @@
       this.input.placeholder = summary || this.config.placeholder || 'Все';
       this.input.setAttribute('aria-description', multiple ? `${summary || 'Выбраны все'}. Введите текст для поиска.` : 'Введите текст для поиска.');
       this.toggle.classList.toggle('is-clear',selected);
-      this.toggle.tabIndex = selected ? 0 : -1;
+      this.toggle.tabIndex = selected && !this.disabled ? 0 : -1;
       this.toggle.setAttribute('aria-label',`${selected ? 'Очистить' : 'Открыть список'}: ${this.config.label}`);
-      this.toggle.innerHTML = fieldIcon(selected ? 'field-clear-16' : this.config.icon);
+      this.toggle.innerHTML = fieldIcon(this.disabled ? 'field-chevron-disabled-16' : selected ? 'field-clear-16' : this.config.icon);
       if (this.popup) { this.renderOptions(); positionPopup(this.popup,this.control,this.config.minPopupWidth ?? (this.config.multiple ? 300 : 260),this.config.placement); }
     }
+    setVisibility(shown) {
+      if (!this.visibilityButton) return;
+      this.shown = !!shown; this.config.visibility.shown = this.shown; this.disabled = !this.shown;
+      if (this.disabled) this.close();
+      this.input.disabled = this.disabled; this.toggle.disabled = this.disabled;
+      this.control.classList.toggle('is-disabled',this.disabled); this.host.classList.toggle('is-disabled',this.disabled);
+      const action = `${this.shown ? 'Скрыть' : 'Показать'} уровень «${this.config.visibility.label || this.config.label}»`;
+      this.visibilityButton.setAttribute('aria-pressed',String(this.shown));
+      this.visibilityButton.setAttribute('aria-label',action); this.visibilityButton.title = action;
+      this.visibilityButton.innerHTML = image(this.shown ? 'structure-eye' : 'structure-eye-off');
+      this.refresh();
+    }
     set(values, notify = false) { this.values = values; this.query = ''; this.refresh(); if (notify) this.config.onChange(values); }
-    clear() {this.values=[];this.query='';this.input.value='';this.close();this.changed();this.suppressFocusOpen=true;this.input.focus({preventScroll:true});this.suppressFocusOpen=false;}
+    clear() {if(this.disabled)return;this.values=[];this.query='';this.input.value='';this.close();this.changed();this.suppressFocusOpen=true;this.input.focus({preventScroll:true});this.suppressFocusOpen=false;}
     setOptions(options) { this.options = options; this.refresh(); }
     open(clear = true) {
-      if (this.popup) return;
+      if (this.disabled || this.popup) return;
       closeDate(); closeAction(); if (activeSelect) activeSelect.close();
       activeSelect = this; if (clear) this.query = ''; this.input.value = this.query;
       this.popup = document.createElement('div'); this.popup.className = `select-popup${this.config.popupClass?' '+this.config.popupClass:''}`; this.popup.id = `${this.id}-list`; this.popup.setAttribute('role','listbox'); this.popup.setAttribute('aria-label',this.config.label);
@@ -96,6 +118,7 @@
       positionPopup(this.popup,this.control,this.config.minPopupWidth ?? (this.config.multiple ? 300 : 260),this.config.placement);
     }
     choose(value) {
+      if (this.disabled) return;
       if (!value) this.values = [];
       else if (this.config.multiple) this.values = this.values.includes(value) ? this.values.filter(v => v !== value) : [...this.values,value];
       else this.values = [value];
@@ -104,6 +127,7 @@
     }
     changed() { this.refresh(); this.config.onChange(this.values); }
     keydown(e) {
+      if (this.disabled) return;
       if (e.key === 'Escape') { if (this.popup) {e.preventDefault();e.stopPropagation();this.close();} return; }
       if (e.key === 'Tab') {this.close();return;}
       if (!this.popup && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete')) this.open();
