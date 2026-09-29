@@ -1,0 +1,17 @@
+{
+  "sourceFile": "tOFCfQUjfFvAB0Pgqxb9xQ",
+  "sourceFrame": "132:17902",
+  "updated": "2026-09-29",
+  "assets": [
+    {"path":"assets/sber.svg","nodeId":"1:1011","name":"Icon/24/Sber","width":24,"height":24},
+    {"path":"assets/search-suggest-search.svg","nodeId":"1:874","name":"Icon/24/Search","width":24,"height":24},
+    {"path":"assets/structure-eye.svg","nodeId":"1:16725","name":"Icon/24/Eye","width":24,"height":24},
+    {"path":"assets/structure-eye-off.svg","nodeId":"I132:17820;1257:325","name":"Left icon / hidden level","width":24,"height":24},
+    {"path":"assets/structure-level-separator.svg","nodeId":"2:487","name":"Icon/16/Bulk","width":16,"height":16},
+    {"path":"assets/field-chevron-down-16.svg","nodeId":"31:1985","name":"Icon/16/Chevron Down","width":16,"height":16},
+    {"path":"assets/field-chevron-disabled-16.svg","nodeId":"I132:17820;234:56","name":"Icon/16/Chevron Down disabled","width":16,"height":16},
+    {"path":"assets/sort.svg","nodeId":"1:1031","name":"Icon/24/Sorting","width":24,"height":24},
+    {"path":"assets/structure-person.svg","nodeId":"134:22075","componentId":"29:2811","name":"Icon/24/Person","width":24,"height":24}
+  ],
+  "notes":"Original Nordic exports at native sizes. Compact people button added from updated frame 132:17902 (Button 134:22074), 74×50 with Person24 and Chevron16. Product label retained as approved. Graph toggles remain removed. Tabs truncate only the entity label while preserving counts and 16px padding. Search entities, relation data and level-filter semantics preserved."
+}

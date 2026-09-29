@@ -1,15 +1,36 @@
-/* Figma Products-BPM 95:24026: three 50px level selects joined by 16px
- * separators. Only the select is disabled; the eye remains an active button.
- * The approved third label is Products, matching the actual tree hierarchy. */
-/* Match the single Figma row. Select tracks absorb the available width instead
- * of forcing an early second row and stretching every control to fill it.
- * At the 1697px reference: levels ≈729px, owner ≈280px, switches 181/255px.
- * Keep the component's 50px height, typography and original icon sizes. */
-.structure-filters{display:grid;grid-template-columns:minmax(0,2.6fr) minmax(0,1fr) 181px 255px clamp(128px,11cqw,188px)}
-.structure-level-filters{display:flex;gap:4px;align-items:center;min-width:0}
+/* Products BPM 132:17902 — compact, single-row structure filters.
+ * Native Nordic controls: 50px fields, 24px eyes, 16px chevrons/separators.
+ * Keep the approved third label Products, matching the actual tree level. */
+body:not(.structure-mode) .structure-level-filters,body:not(.structure-mode) .structure-sort-slot,body:not(.structure-mode) .structure-people-button{display:none}
+body.structure-mode .structure-toolbar.filter-primary{grid-template-columns:150px 323px minmax(180px,1fr) minmax(390px,602px) 74px 24px;grid-template-areas:"toggle tabs search levels people sorting";align-items:center;margin-bottom:24px}
+body.structure-mode .structure-toolbar>.structure-level-filters{grid-area:levels;width:100%}
+body.structure-mode .structure-toolbar>.structure-sort-slot{grid-area:sorting;width:24px;min-width:0}
+body.structure-mode .structure-tabs.entity-tabs{width:100%;min-width:0}
+body.structure-mode .structure-tabs.entity-tabs button{display:flex;align-items:center;justify-content:center;gap:4px;overflow:hidden;font-size:17px;line-height:24px;white-space:nowrap;padding-inline:16px}
+body.structure-mode .structure-tabs.entity-tabs button span{color:var(--text)}
+body.structure-mode .structure-tabs .structure-tab-label{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.structure-mode .structure-tabs .structure-tab-count{flex:0 0 auto;white-space:nowrap}
+body.structure-mode .structure-toolbar .structure-toggle img{width:24px;height:24px}
+.structure-people-button{grid-area:people;display:flex;align-items:center;justify-content:center;gap:8px;width:74px;height:50px;padding:0 12px;border:1px solid var(--border);border-radius:12px;background:var(--white)}
+.structure-people-button>img{width:24px;height:24px}
+.structure-people-button>img.structure-people-chevron{width:16px;height:16px;transition:transform .15s}
+.structure-people-button:hover{background:var(--hover);border-color:var(--secondary)}
+.structure-people-button[aria-expanded=true]{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
+.structure-people-button[aria-expanded=true] .structure-people-chevron{transform:rotate(180deg)}
+.structure-people-button.has-selection{background:var(--hover);border-color:var(--blue)}
+.structure-people-popup.select-popup{padding:12px;overflow:hidden;gap:8px}
+.structure-people-popup h2{font-size:17px;line-height:24px;font-weight:590}
+.structure-people-popup .structure-people-search{flex:0 0 auto;min-height:42px}
+.structure-people-popup .structure-people-search input{height:40px;font-size:15px;line-height:20px}
+.structure-people-list{min-height:0;overflow:auto;overscroll-behavior:auto;scrollbar-width:thin}
+.structure-people-list .select-option{padding:10px 8px}
+.structure-people-list .option-label{font-size:15px;line-height:20px;letter-spacing:0}
+.structure-people-role{display:block;font-size:11px;line-height:16px;font-weight:400;color:var(--secondary);margin-top:2px}
+.structure-people-popup mark{background:#fffa76;color:inherit;border-radius:4px;padding:0;font:inherit;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.structure-people-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:0 0 auto;border-top:1px solid var(--border);padding-top:4px;color:var(--secondary);font-size:13px;line-height:18px}
+.structure-level-filters{display:flex;gap:2px;align-items:center;min-width:0}
 .structure-level-filters>.select-host{flex:1 1 0;min-width:0}
 .structure-level-separator{flex:0 0 16px;width:16px;height:16px}
-.structure-filters>.select-host{width:auto;min-width:0}
 .structure-level-filters .select-visibility{display:flex;align-items:center;justify-content:center;flex:0 0 24px;width:24px;height:24px;border-radius:4px}
 .structure-level-filters .select-visibility img{width:24px;height:24px}
 .structure-level-filters .select-visibility:hover img{filter:brightness(.21)}
@@ -18,25 +39,33 @@
 .structure-level-filters .is-disabled .internal-label,.structure-level-filters .select-input:disabled,.structure-level-filters .select-input:disabled::placeholder{color:var(--placeholder);opacity:1;-webkit-text-fill-color:var(--placeholder)}
 .structure-level-filters .select-toggle:disabled{cursor:default;opacity:1}
 .structure-flat{min-width:0}
-@container registry (max-width:1180px){
-  .structure-filters{grid-template-columns:repeat(6,minmax(0,1fr))}
-  .structure-level-filters{grid-column:1/5}
-  .structure-filters>#structure-owner{grid-column:5/-1}
-  .structure-filters>.structure-average-control{grid-column:1/3;width:100%}
-  .structure-filters>.structure-chart-control{grid-column:3/5;width:100%}
-  .structure-filters>#structure-sort{grid-column:5/-1;width:100%}
+/* The native sortable combobox keeps its keyboard behavior and popup. Only
+ * its text is visually hidden; the 24px sorting asset remains the trigger. */
+.structure-sort-slot .select-control{position:relative;width:24px;height:50px;min-width:0;padding:0;border:0;border-radius:8px;background:transparent;box-shadow:none}
+.structure-sort-slot .select-content{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.structure-sort-slot .select-toggle{width:24px;height:50px;flex:0 0 24px}
+.structure-sort-slot .select-toggle img{width:24px;height:24px}
+.structure-sort-slot .select-control:focus-within{outline:2px solid var(--blue);outline-offset:3px}
+@container registry (max-width:1400px){
+  body.structure-mode .structure-toolbar.filter-primary{grid-template-columns:150px 270px minmax(140px,1fr) minmax(378px,1.9fr) 74px 24px;gap:12px}
+}
+@container registry (max-width:1120px){
+  body.structure-mode .structure-toolbar.filter-primary{grid-template-columns:150px minmax(0,1fr) 74px 24px;grid-template-areas:"toggle tabs people sorting" "search levels levels levels";gap:12px}
 }
 @container registry (max-width:760px){
-  .structure-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .structure-level-filters,.structure-filters>#structure-owner,.structure-filters>#structure-sort{grid-column:1/-1}
-  .structure-filters>.structure-average-control{grid-column:1}
-  .structure-filters>.structure-chart-control{grid-column:2}
+  body.structure-mode .structure-toolbar.filter-primary{grid-template-columns:150px minmax(0,1fr) 74px 24px;grid-template-areas:"toggle tabs people sorting" "search search search search" "levels levels levels levels"}
 }
-@container registry (max-width:640px){
-  .structure-level-filters{flex-direction:column;align-items:stretch;gap:12px}
-  .structure-level-separator{display:none}
+@container registry (max-width:620px){
+  body.structure-mode .structure-toolbar.filter-primary{grid-template-columns:minmax(0,1fr) 74px 32px;grid-template-areas:"toggle people sorting" "tabs tabs tabs" "search search search" "levels levels levels"}
+  body.structure-mode .structure-toggle.button{width:150px;font-size:17px}
+  body.structure-mode .structure-toolbar>.structure-sort-slot{width:32px}
+  .structure-sort-slot .select-control,.structure-sort-slot .select-toggle{width:32px}
 }
 @container registry (max-width:520px){
-  .structure-filters{grid-template-columns:minmax(0,1fr)}
-  .structure-filters>.structure-average-control,.structure-filters>.structure-chart-control{grid-column:1}
+  .structure-level-filters{flex-direction:column;align-items:stretch;gap:8px}
+  .structure-level-separator{display:none}
+}
+@container registry (max-width:290px){
+  body.structure-mode .structure-toolbar.filter-primary{column-gap:6px}
+  body.structure-mode .structure-toggle.button{width:100%;padding-inline:8px;gap:4px;font-size:15px}
 }

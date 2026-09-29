@@ -473,6 +473,7 @@
     detail:openDetail,copy:copyId,copyText,menu:openAction,
     onChange:info=>{if(structureMode){$('favorites').setAttribute('aria-pressed',String(info.favoritesOnly));$('favorite-count').textContent=info.favoritesCount;}}
   });
+  window.BpmStructureToolbar.mount();
   tasks=window.BpmTasks.create({
     createSelect:(id,config)=>new BpmSelect(id,config),toast,createTask,
     closePopups:()=>{activeSelect?.close();closeDate();closeAction();hideTooltip();},

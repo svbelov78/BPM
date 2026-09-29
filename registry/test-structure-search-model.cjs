@@ -89,6 +89,7 @@ assert(synthetic.search('расчет').some(entry => entry.id === 'p'));
 // in the display contract. The actual workbook stays unchanged.
 const normalizeName = value => String(value).toLocaleLowerCase('ru').replace(/ё/g, 'е').replace(/\s+/g, ' ').trim();
 const personKey = name => `person-${encodeURIComponent(normalizeName(name))}`;
+const isExcelError = name => /^#(?:N\/A|Н\/Д|VALUE!|ЗНАЧ!|REF!|ССЫЛКА!|NAME\?|ИМЯ\?|DIV\/0!|ДЕЛ\/0!|NUM!|ЧИСЛО!|NULL!|ПУСТО!)$/i.test(String(name).trim());
 const peopleKinds = ['divisionLeader', 'processOwner', 'pathOwner'];
 const people = api.entries.filter(entry => peopleKinds.includes(entry.kind));
 for (const kind of peopleKinds) assert(people.some(entry => entry.kind === kind), kind);
@@ -100,6 +101,7 @@ for (const person of people) {
   assert(person.sources.length > 0);
   assert(api.search(person.title).some(entry => entry.kind === person.kind && entry.id === person.id));
   assert(!/^\d+ владельц/.test(person.title), 'Combined owner-count labels are not people');
+  assert(!isExcelError(person.title), 'Excel error values are not people');
 }
 const expectedDivisions = new Map();
 function visitReal(nodes, names = []) {
@@ -118,6 +120,11 @@ for (const product of products) {
   }
   for (const row of product.records) {
     const owner = personKey(row.owner);
+    if(isExcelError(row.owner)) {
+      assert.equal(api.get('processOwner',owner),undefined,'Spreadsheet placeholder must not create a person');
+      assert(!api.matches(product,row,'processes',{processOwner:[owner]}));
+      continue;
+    }
     assert(api.get('processOwner', owner));
     assert(api.matches(product, row, 'processes', {processOwner: [owner]}));
     assert(!api.matches(product, row, 'processes', {processOwner: ['missing-person']}));
@@ -132,7 +139,7 @@ for (const row of models.paths.records) {
     if (link.processId && link.validProcessCode !== false) {
       const process = models.processes.records.find(item => item.id === link.processId);
       assert(api.matches(product, process, 'processes', {pathOwner: [owner]}));
-      assert(api.matches(product, row, 'paths', {processOwner: [personKey(process.owner)]}));
+      assert.equal(api.matches(product, row, 'paths', {processOwner: [personKey(process.owner)]}),!isExcelError(process.owner));
     }
   }
 }

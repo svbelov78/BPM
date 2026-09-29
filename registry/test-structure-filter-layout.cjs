@@ -31,12 +31,13 @@ async function geometry(page, label, singleRow) {
       const rect = element.getBoundingClientRect();
       return {x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height};
     };
-    const filters = document.querySelector('.structure-filters');
+    const filters = document.getElementById('structure-toolbar');
     return {
       viewport: innerWidth, documentWidth: document.documentElement.scrollWidth, bodyWidth: document.body.scrollWidth,
+      assets:[...filters.querySelectorAll('img')].filter(img=>img.getClientRects().length).map(img=>({src:img.getAttribute('src').slice(0,80),naturalWidth:img.naturalWidth,naturalHeight:img.naturalHeight,...box(img)})),
       filters: {...box(filters), scrollWidth: filters.scrollWidth, clientWidth: filters.clientWidth},
-      children: [...filters.children].map(element => ({id: element.id || element.className, ...box(element)})),
-      controls: ['block', 'division', 'product', 'owner', 'sort'].map(kind => {
+      children: [...filters.children].filter(element=>element.getClientRects().length).map(element => ({id: element.id || element.className, ...box(element)})),
+      controls: ['block', 'division', 'product'].map(kind => {
         const host = document.getElementById(`structure-${kind}`), control = host.querySelector('.select-control');
         const input = host.querySelector('.select-input'), style = getComputedStyle(input);
         const canvas = document.createElement('canvas').getContext('2d');
@@ -51,8 +52,9 @@ async function geometry(page, label, singleRow) {
     };
   });
   assert(data.documentWidth <= data.viewport + 1 && data.bodyWidth <= data.viewport + 1, `${label}: no page overflow`);
+  for(const asset of data.assets){assert(asset.naturalWidth>0&&asset.naturalHeight>0,`${label}: image loads ${asset.src}`);near(asset.width,asset.naturalWidth,`${label}: native icon width ${asset.src}`);near(asset.height,asset.naturalHeight,`${label}: native icon height ${asset.src}`);}
   assert(data.filters.scrollWidth <= data.filters.clientWidth + 1, `${label}: filters do not overflow`);
-  assert.equal(data.children.length, 5, `${label}: five top-level filter groups`);
+  assert.equal(data.children.length, 6, `${label}: six top-level filter groups, including people`);
   for (const child of data.children) {
     assert(child.x >= data.filters.x - 1 && child.right <= data.filters.right + 1, `${label}: ${child.id} stays within filters`);
     for (const other of data.children.filter(item => item !== child)) {
@@ -107,7 +109,7 @@ async function eyesWork(page, label) {
 }
 
 async function mobileTargets(page, label) {
-  for (const kind of [...kinds, 'owner', 'sort']) {
+  for (const kind of kinds) {
     const input = page.locator(`#structure-${kind}-input`);
     await input.click();
     assert.equal(await input.getAttribute('aria-expanded'), 'true', `${label}/${kind}: input opens options`);
@@ -146,9 +148,19 @@ async function mobileTargets(page, label) {
           await geometry(page, label, true);
           await eyesWork(page, label);
           await geometry(page, `${label}/restored`, true);
-          await page.locator('.structure-filters').screenshot({path: path.join(output, `filters-${width}-${menu}.png`)});
+          await page.locator('#structure-toolbar').screenshot({path: path.join(output, `filters-${width}-${menu}.png`)});
           console.log(`PASS — ${label}: one 50px row, aligned levels and functional eyes`);
         }
+        assert.equal(await page.locator('#structure-owner,#structure-average-toggle,#structure-chart-toggle').count(),0,'Removed settings have no hidden controls');
+        await page.locator('#structure-sort .select-toggle').click();
+        await page.locator('#structure-sort-list [data-option="average-desc"]').click();
+        assert.equal(await page.locator('#structure-sort-input').inputValue(),'Средняя эффективность ↓');
+        await page.locator('#structure-sort-input').focus();
+        await page.keyboard.press('Escape');
+        await page.keyboard.press('ArrowDown');
+        assert(await page.locator('#structure-sort-list').isVisible(),'Compact sorting is keyboard accessible');
+        await page.keyboard.press('Escape');
+        assert.equal(await page.locator('#structure-sort-list').count(),0,'Escape closes sorting');
         if (menu === 'collapsed') {
           for (const width of [390, 320]) {
             const label = `${width}px/mobile`;

@@ -6,7 +6,7 @@
   const icon = name => `<img src="assets/${name}.svg" alt="">`;
   const format = n => Number(n).toLocaleString('ru-RU');
   const normalize = value => String(value).toLocaleLowerCase('ru').replace(/ё/g,'е');
-  const labels = {block:'Блоки',division:'Подразделения',owner:'Владельцы процессов',query:'Поиск',favorites:'Список',product:'Продукты',paths:'Клиентские пути',processes:'Процессы',divisionLeader:'Руководители подразделений',processOwner:'Владельцы процессов',pathOwner:'Владельцы клиентских путей'};
+  const labels = {block:'Блоки',division:'Подразделения',query:'Поиск',favorites:'Список',product:'Продукты',paths:'Клиентские пути',processes:'Процессы',people:'Люди',divisionLeader:'Руководители подразделений',processOwner:'Владельцы процессов',pathOwner:'Владельцы клиентских путей'};
   const kindLabels = {block:'Блок',division:'Подразделение',product:'Продукт'};
   const PAGINATION_THRESHOLD = 50, DEFAULT_PAGE_SIZE = 50, PAGE_SIZES = [25,50,75,100], LOAD_MS = 2000, ANIMATION_MS = 1100;
 
@@ -16,20 +16,19 @@
 
   function create(api) {
     const models = {processes:window.BPM_STRUCTURE,paths:window.BPM_STRUCTURE_PATHS};
-    let entity='processes', model=models.processes, chartType='2', showAverage=true;
+    let entity='processes', model=models.processes;
+    const chartType='2', showAverage=true;
     const list = $('structure-list');
     list.classList.toggle('has-average',showAverage);
     const baseNodes = new Map(model.nodes.map(node => [node.id,node]));
     const records = new Map(Object.values(models).flatMap(m=>m.records).map(row => [row.id,row]));
-    // Keep reciprocal links outside the source records: paths already reference
-    // processes, so writing paths back onto processes would create cycles.
-    const processesByPath = new Map(), pathsByProcess = new Map();
+    // Client paths disclose their processes. The reverse relationships remain
+    // in the source/search models but are not an extra level in the process view.
+    const processesByPath = new Map();
     for(const path of models.paths.records) {
       const linked=[...new Map((path.linkedProcesses||[]).map(row=>[row.id,row])).values()]
         .sort((a,b)=>(a.number-b.number)||a.id.localeCompare(b.id));
       processesByPath.set(path.id,linked.map((row,index)=>{
-        if(!pathsByProcess.has(row.id))pathsByProcess.set(row.id,[]);
-        pathsByProcess.get(row.id).push(path);
         // Approved demo classification belongs to the relationship, not to the
         // process itself. Stable source-ID order makes it independent of UI sort.
         return {...row,relationshipType:index%4===3?'Дополнительный':'Основной',relationshipSimulated:true};
@@ -39,14 +38,14 @@
       const buckets=[0,0,0,0,0];rows.forEach(row=>buckets[row.bucket]++);
       return [id,{buckets,total:rows.length}];
     }));
-    const filters = {block:[],division:[],owner:[]};
+    const filters = {block:[],division:[]};
     const hiddenLevels = new Set();
-    const emptyEntityFilters=()=>({product:[],paths:[],processes:[],divisionLeader:[],processOwner:[],pathOwner:[]});
+    const emptyEntityFilters=()=>({product:[],paths:[],processes:[],people:[],divisionLeader:[],processOwner:[],pathOwner:[]});
     const entityFilters = emptyEntityFilters();
     const searchCatalog = window.BPMStructureSearchModel.create(models);
     const opened = new Set(), pages = new Map(), rowSorts = new Map(), animated = new Set();
     const pageSizes = new Map(), pageSelects = new Map();
-    const openedPaths = new Set(), ownerFilters = {paths:[],processes:[]}, detailTables = new Map();
+    const openedPaths = new Set(), detailTables = new Map();
     const selects = {};
     let active=false, busy=false, query='', sort='count-desc', favoritesOnly=false;
     let timer, searchTimer, frame, tree=[], canonicalTree=[], visibleNodes=new Map(), revealSelection=false;
@@ -59,7 +58,6 @@
     }), {threshold:0.1});
     const alignmentObserver = new ResizeObserver(alignAverageMetrics);
 
-    const options = values => [...new Set(values)].sort((a,b)=>a.localeCompare(b,'ru')).map(value=>({value,label:value}));
     const visibility = key => ({shown:!hiddenLevels.has(key),label:labels[key],onChange:shown=>{
       if(shown)hiddenLevels.delete(key);else hiddenLevels.add(key);
       // Visibility only changes grouping. Filters, expansion state and each
@@ -67,8 +65,8 @@
       render();
     }});
     for(const key of Object.keys(filters)) {
-      const entries = key==='owner' ? options(model.records.flatMap(n=>n.owners||[n.owner])) : model.nodes.filter(n=>n.kind===key).map(n=>({value:n.id,label:n.name}));
-      selects[key]=api.createSelect(`structure-${key}`,{label:labels[key],options:entries,multiple:true,...(key==='owner'?{}:{visibility:visibility(key)}),onChange:values=>{filters[key]=[...values];if(key==='owner')ownerFilters[entity]=[...values];pages.clear();reload();}});
+      const entries = model.nodes.filter(n=>n.kind===key).map(n=>({value:n.id,label:n.name}));
+      selects[key]=api.createSelect(`structure-${key}`,{label:labels[key],options:entries,multiple:true,visibility:visibility(key),onChange:values=>{filters[key]=[...values];pages.clear();reload();}});
     }
     selects.product=api.createSelect('structure-product',{label:labels.product,options:model.nodes.filter(node=>node.kind==='product').map(node=>({value:node.id,label:node.name})),multiple:true,visibility:visibility('product'),onChange:values=>{entityFilters.product=[...values];pages.clear();reload();}});
     selects.sort=api.createSelect('structure-sort',{label:'Сортировка',allowAll:false,icon:'sort',values:[sort],options:[{value:'count-desc',label:'Количество ↓'},{value:'count-asc',label:'Количество ↑'},{value:'name-asc',label:'Название А–Я'},{value:'average-desc',label:'Средняя эффективность ↓'},{value:'average-asc',label:'Средняя эффективность ↑'}],onChange:values=>{sort=values[0];render();}});
@@ -80,7 +78,7 @@
     const unique = rows => [...new Map(rows.map(row=>[row.id,row])).values()];
     const hasEntityFilters = () => Object.values(entityFilters).some(values=>values.length);
     const searchUI=window.BPMStructureSearch.mount({input:$('structure-search'),anchor:$('structure-search-wrap'),catalog:searchCatalog,
-      isActive:()=>active,isSelected:entry=>entityFilters[entry.kind].includes(entry.id),
+      isActive:()=>active,isSelected:entry=>entityFilters[entry.kind].includes(entry.id)||(entry.person&&entityFilters.people.includes(entry.id)),
       onCopy:entry=>api.copyText(entry.code),onChoose:entry=>{
         if(entityFilters[entry.kind].includes(entry.id))return;
         entityFilters[entry.kind].push(entry.id);
@@ -91,6 +89,19 @@
         $('structure-search').focus({preventScroll:true});
       }});
 
+    const peopleKeys=['people','divisionLeader','processOwner','pathOwner'];
+    const selectedPeople=()=>new Set(peopleKeys.flatMap(key=>entityFilters[key]));
+    const peopleChanged=()=>{revealSelection=hasEntityFilters();pages.clear();reload();};
+    const peopleUI=window.BPMStructurePeople.mount({button:$('structure-people'),people:searchCatalog.people,getSelected:selectedPeople,
+      beforeOpen:()=>{searchUI.close();Object.values(selects).forEach(select=>select.close());},
+      onToggle:id=>{
+        if(selectedPeople().has(id))peopleKeys.forEach(key=>{entityFilters[key]=entityFilters[key].filter(value=>value!==id);});
+        else entityFilters.people.push(id);
+        peopleChanged();
+      },
+      onClear:()=>{peopleKeys.forEach(key=>{entityFilters[key]=[];});peopleChanged();}
+    });
+
     function buildTree(sourceModel) {
       const needle=normalize(query.trim());
       if(cachedQuery!==needle){
@@ -99,15 +110,14 @@
       }
       const sourceEntity=sourceModel===models.paths?'paths':'processes';
       const matchingEntity=(node,row)=>Object.entries(queryMatches).some(([kind,ids])=>ids.length&&searchCatalog.matches(node,row,sourceEntity,{[kind]:ids}));
-      const owners=sourceModel===model?filters.owner:ownerFilters[sourceModel===models.paths?'paths':'processes'];
       function visit(node,path=[]) {
         if(node.kind==='block' && filters.block.length && !filters.block.includes(node.id))return null;
         if(node.kind==='division' && filters.division.length && !filters.division.includes(node.id))return null;
         const names=[...path,node.name];
         let children=[], rows=[];
         if(node.kind==='product') {
-          rows=node.records.filter(row=>searchCatalog.matches(node,row,sourceEntity,entityFilters)&&(!owners.length||(row.owners||[row.owner]).some(name=>owners.includes(name)))&&(!favoritesOnly||api.isFavorite(row))&&(!needle||matchingEntity(node,row)||normalize(`${names.join(' ')} ${row.title} ${row.code||''} ${row.number} ${(row.owners||[row.owner]).join(' ')} ${row.products?.join(' ')||''}`).includes(needle)));
-          const emptyProductMatch=!node.records.length&&!favoritesOnly&&!owners.length&&searchCatalog.matches(node,null,sourceEntity,entityFilters)&&(!needle||matchingEntity(node,null)||normalize(names.join(' ')).includes(needle));
+          rows=node.records.filter(row=>searchCatalog.matches(node,row,sourceEntity,entityFilters)&&(!favoritesOnly||api.isFavorite(row))&&(!needle||matchingEntity(node,row)||normalize(`${names.join(' ')} ${row.title} ${row.code||''} ${row.number} ${(row.owners||[row.owner]).join(' ')} ${row.products?.join(' ')||''}`).includes(needle)));
+          const emptyProductMatch=!node.records.length&&!favoritesOnly&&searchCatalog.matches(node,null,sourceEntity,entityFilters)&&(!needle||matchingEntity(node,null)||normalize(names.join(' ')).includes(needle));
           if(!rows.length&&!emptyProductMatch)return null;
         } else {
           children=node.children.map(child=>visit(child,names)).filter(Boolean);
@@ -185,14 +195,14 @@
       const favorite=api.isFavorite(row);
       const isPath=row.entity==='paths', prefix=isPath?'КП':'П';
       const idLabel=row.numberSimulated?row.code:`${prefix} ${row.number}`;
-      const drillId=`links-${node.id}-${row.id}`, pathOpen=openedPaths.has(drillId);
-      const relatedEntity=isPath?'processes':'paths';
-      const linked=(isPath?processesByPath:pathsByProcess).get(row.id)||[];
+      const drillId=`links-${node.id}-${row.id}`, pathOpen=isPath&&openedPaths.has(drillId);
+      const relatedEntity='processes';
+      const linked=isPath?(processesByPath.get(row.id)||[]):[];
       // For client paths, count is the number of linked processes, not variants.
       const variantCount=row.variantCount??(isPath?0:row.count);
-      const expansion=linked.length
-        ? `<button class="structure-row-count" data-structure-related="${row.id}" data-structure-${isPath?'path':'process'}="${row.id}" data-product="${node.id}" aria-expanded="${pathOpen}" aria-controls="panel-${drillId}">${relatedCountLabel(linked.length,relatedEntity)} ${icon('chevron-down')}</button>`
-        : `<span class="structure-row-count structure-no-efficiency">Нет связанных ${isPath?'процессов':'клиентских путей'}</span>`;
+      const expansion=!isPath?'':linked.length
+        ? `<button class="structure-row-count" data-structure-related="${row.id}" data-structure-path="${row.id}" data-product="${node.id}" aria-expanded="${pathOpen}" aria-controls="panel-${drillId}">${relatedCountLabel(linked.length,relatedEntity)} ${icon('chevron-down')}</button>`
+        : '<span class="structure-row-count structure-no-efficiency">Нет связанных процессов</span>';
       const efficiency=`<span class="structure-efficiency structure-bucket-${row.bucket}">${row.efficiency===null?'<span class="structure-no-efficiency">Нет оценки</span>':window.BpmCardVisuals.efficiency(row,true)}</span>`;
       const more=`<button class="structure-row-more icon-button" data-structure-menu="${row.id}" aria-label="Действия с ${isPath?'клиентским путём':'процессом'} ${row.number}" aria-haspopup="menu">${icon('more')}</button>`;
       const metrics=isPath?`<td class="structure-path-efficiency-cell">${efficiency}</td><td class="structure-path-chart-cell">${pathProcessChart(row,node)}${more}</td>`:`<td class="structure-process-efficiency-cell">${efficiency}${more}</td>`;
@@ -248,6 +258,7 @@
     }
 
     function renderChips() {
+      peopleUI.refresh();
       const groups=Object.entries(filters).filter(([,v])=>v.length).map(([key,values])=>({key,values}));
       Object.entries(entityFilters).filter(([,v])=>v.length).forEach(([key,values])=>groups.push({key,values}));
       if(query.trim())groups.unshift({key:'query',values:[query]});
@@ -263,64 +274,23 @@
         const count=key===entity?total:unique(buildTree(models[key]).flatMap(n=>n.records)).length;
         $(key==='paths'?'structure-path-count':'structure-process-count').textContent=format(count);
         const tab=$(`structure-${key}-tab`);tab.classList.toggle('active',key===entity);tab.setAttribute('aria-pressed',String(key===entity));
+        tab.setAttribute('aria-label',`${key==='paths'?'Клиентские пути':'Процессы'} ${format(count)}`);
       }
       const entityLabel=entity==='paths'?'клиентских путей':'процессов';
       $('structure-mode').setAttribute('aria-label',`Структура ${entityLabel}`);
       $('structure-search').setAttribute('aria-label','Поиск продукта, клиентского пути, процесса или человека');
       $('structure-data-note').textContent=`Структура, клиентские пути и процессы — из файла «15092026_структура для подготовки мока данных.xlsx».${entity==='paths'?' Идентификаторы КП-ДЕМО условные: в Excel ID клиентских путей отсутствуют.':''}`;
-      $('structure-chart-note').textContent=chartType==='1'?'Сравнение с лидером · Structure Chart 1 — общий масштаб с подложками.':'Соотношение эффективности · Structure Chart 2 — сегменты заполняют 100% площади каждой диаграммы.';
+      $('structure-chart-note').textContent='Соотношение эффективности · Structure Chart 2 — сегменты заполняют 100% площади каждой диаграммы.';
       api.onChange?.({favoritesOnly,favoritesCount:model.records.filter(api.isFavorite).length});
       list.setAttribute('aria-label',hiddenLevels.size===3?'Единый список без группировки':'Дерево структуры');
       if(active)$('result-announcement').textContent=busy?`Загрузка структуры ${entityLabel}…`:`Структура: блоков ${canonicalTree.length}, ${entityLabel} ${total}.${hiddenLevels.size?` Скрыты уровни: ${[...hiddenLevels].map(key=>labels[key]).join(', ')}. Выбранные фильтры сохранены.`:''}`;
     }
     function setEntity(next) {
       if(next===entity||!models[next])return;
-      clearTimeout(searchTimer);searchUI.close();Object.values(selects).forEach(select=>select.close());
-      ownerFilters[entity]=[...filters.owner];entity=next;model=models[entity];filters.owner=[...ownerFilters[entity]];
-      labels.owner=entity==='paths'?'Владельцы клиентских путей':'Владельцы процессов';
-      selects.owner.config.label=labels.owner;
-      selects.owner.host.querySelector('label').textContent=labels.owner;
-      selects.owner.setOptions(options(model.records.flatMap(row=>row.owners||[row.owner])));
-      selects.owner.set(filters.owner);
+      clearTimeout(searchTimer);searchUI.close();peopleUI.close();Object.values(selects).forEach(select=>select.close());
+      entity=next;model=models[entity];
       selects.product.setOptions(model.nodes.filter(node=>node.kind==='product').map(node=>({value:node.id,label:node.name})));
       opened.clear();openedPaths.clear();pages.clear();pageSizes.clear();rowSorts.clear();detailTables.clear();revealSelection=hasEntityFilters();reload();
-    }
-    function setChartType(next) {
-      if(next===chartType)return;
-      chartType=next;
-      $('structure-chart-toggle').checked=chartType==='1';
-      $('structure-quantity-label').classList.toggle('is-active',chartType==='2');
-      $('structure-comparison-label').classList.toggle('is-active',chartType==='1');
-      observer.disconnect();cancelAnimationFrame(frame);animations.clear();animated.clear();
-      if(active&&!busy) {
-        list.querySelectorAll('[data-chart]').forEach(element=>{
-          const pathChart=element.closest('[data-path-process-chart]');
-          if(pathChart) {
-            const row=records.get(pathChart.dataset.pathProcessChart),node=visibleNodes.get(pathChart.dataset.productChart);
-            if(row&&node)pathChart.outerHTML=pathProcessChart(row,node);
-            return;
-          }
-          const node=visibleNodes.get(element.dataset.chart);
-          if(node)element.closest('.structure-chart-scroll').outerHTML=chart(node);
-        });
-        observeCharts();
-      }
-      syncSummary();
-    }
-    function setAverageVisible(next) {
-      showAverage=next;
-      $('structure-average-toggle').setAttribute('aria-checked',String(next));
-      list.classList.toggle('has-average',next);
-      // Do not rebuild accordions: keep focus, expanded links, table pagination
-      // and local scroll positions when toggling this optional metric.
-      list.querySelectorAll('[data-average-chart]').forEach(chart=>{
-        observer.unobserve(chart);animations.delete(chart);animated.delete(animationKey(chart));chart.remove();
-      });
-      if(next&&!busy)list.querySelectorAll('[data-expand]').forEach(heading=>{
-        const node=visibleNodes.get(heading.dataset.expand);
-        if(node)heading.querySelector('.structure-chart-scroll').insertAdjacentHTML('beforebegin',averageChart(node));
-      });
-      if(next)observeCharts();else watchAverageAlignment();
     }
     function alignAverageMetrics() {
       if(!active||busy||!showAverage)return;
@@ -391,10 +361,10 @@
     }
     motion.addEventListener('change',e=>{if(e.matches){list.querySelectorAll('[data-chart],[data-average-chart]').forEach(chart=>{writeChart(chart,1);animated.add(animationKey(chart));});animations.clear();observer.disconnect();cancelAnimationFrame(frame);}});
     function reset() {
-      clearTimeout(searchTimer);searchUI.close();query='';favoritesOnly=false;$('structure-search').value='';
+      clearTimeout(searchTimer);searchUI.close();peopleUI.close();query='';favoritesOnly=false;$('structure-search').value='';
       Object.keys(entityFilters).forEach(key=>entityFilters[key]=[]);revealSelection=false;
       selects.product.set([]);
-      Object.keys(filters).forEach(key=>{filters[key]=[];selects[key].set([]);});ownerFilters[entity]=[];opened.clear();openedPaths.clear();pages.clear();detailTables.clear();reload();
+      Object.keys(filters).forEach(key=>{filters[key]=[];selects[key].set([]);});opened.clear();openedPaths.clear();pages.clear();detailTables.clear();reload();
     }
     function replaceTable(id,focusSelector) {
       const panel=$(`panel-${id}`),node=visibleNodes.get(id)||detailTables.get(id);if(!panel||!node)return;
@@ -440,20 +410,18 @@
     $('structure-clear-search').addEventListener('click',()=>{clearTimeout(searchTimer);searchUI.close();query='';$('structure-search').value='';reload();$('structure-search').focus();});
     $('structure-reset').addEventListener('click',reset);
     $('structure-entity-tabs').addEventListener('click',e=>{const tab=e.target.closest('[data-structure-entity]');if(tab)setEntity(tab.dataset.structureEntity);});
-    $('structure-chart-toggle').addEventListener('change',e=>setChartType(e.target.checked?'1':'2'));
-    $('structure-average-toggle').addEventListener('click',()=>setAverageVisible(!showAverage));
     $('structure-chips').addEventListener('click',e=>{
       const button=e.target.closest('[data-structure-filter]');if(!button)return;
       const key=button.dataset.structureFilter,value=button.dataset.value;
       if(key==='query'){query='';$('structure-search').value='';}
       else if(key==='favorites')favoritesOnly=false;
       else if(Object.hasOwn(entityFilters,key)){entityFilters[key]=entityFilters[key].filter(v=>v!==value);if(key==='product')selects.product.set(entityFilters.product);revealSelection=hasEntityFilters();pages.clear();}
-      else {filters[key]=filters[key].filter(v=>v!==value);selects[key].set(filters[key]);if(key==='owner')ownerFilters[entity]=[...filters[key]];}
+      else {filters[key]=filters[key].filter(v=>v!==value);selects[key].set(filters[key]);}
       clearTimeout(searchTimer);searchUI.close();reload();$('structure-search').focus({preventScroll:true});
     });
     return {
       enter(){active=true;opened.clear();openedPaths.clear();pages.clear();detailTables.clear();revealSelection=hasEntityFilters();reload();},
-      leave(){active=false;searchUI.close();clearTimeout(timer);clearTimeout(searchTimer);stopAnimations();disposePageSelects();Object.values(selects).forEach(select=>select.close());},
+      leave(){active=false;searchUI.close();peopleUI.close();clearTimeout(timer);clearTimeout(searchTimer);stopAnimations();disposePageSelects();Object.values(selects).forEach(select=>select.close());},
       reload,
       refresh(){render();},
       toggleFavorites(){favoritesOnly=!favoritesOnly;reload();},

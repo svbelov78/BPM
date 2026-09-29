@@ -1,4 +1,4 @@
-/* Reciprocal process ↔ client-path disclosure using the real Excel projection,
+/* Client-path → process disclosure using the real Excel projection,
  * then synthetic >50 lists to exercise the shared Table/Pagination contract.
  * Run with the bundled Node runtime, optionally set BPM_PLAYWRIGHT.
  */
@@ -173,15 +173,10 @@ async function realRelations(browser) {
     assert.equal(fixture.expectedPaths.length, 6);
     assert.ok(fixture.localPaths < fixture.expectedPaths.length, 'Fixture distinguishes global relationships from accidental product-scoped filtering');
     let product = await expandProduct(page, fixture.chain);
-    const reverse = await related(page, product, fixture.processId, 'processes');
-    assert.match(await reverse.button.innerText(), /^6 клиентских путей/);
-    assert.deepEqual(await rowIds(reverse.panel), fixture.expectedPaths, 'Process exposes all canonical KP relationships across product memberships');
-    assert.equal(await pager(reverse.panel).count(), 0, 'Six related KPs have no pagination');
-    assert.equal(await reverse.panel.locator('.structure-incoming-relationship').count(), 0, 'Process participation labels never appear on KP rows');
-    assert.equal(await reverse.panel.locator('[data-record-entity="paths"]').count(), 6);
-    await togglePersistence(page, reverse);
-    await detailAndCopy(page, reverse.panel, 'paths');
-    report('Process → all 6 related KPs, global membership, terminal rows, correct copy/KP drawer, keyboard disclosure and no small-list pagination');
+    assert.equal(await topRows(product).filter({has: page.locator(`[data-structure-detail="${fixture.processId}"]`)}).count(), 1);
+    assert.equal(await product.locator('[data-structure-related], .structure-linked-row').count(), 0, 'Process rows remain terminal even when canonical KP relationships exist');
+    assert.equal(await product.locator('[data-record-entity="paths"]').count(), 0, 'No hidden reverse KP rows are rendered');
+    report('Process rows are terminal while all 6 canonical related KP records remain in the source model');
 
     await entity(page, 'paths'); product = await expandProduct(page, fixture.chain);
     const forward = await related(page, product, fixture.pathId, 'paths');
@@ -209,7 +204,7 @@ async function syntheticRelations(browser) {
   try {
     await page.goto(url); await page.locator('#structure-toggle').click(); await ready(page);
     const chain = ['relations-block', 'relations-division', 'relations-product'];
-    for (const sourceEntity of ['processes', 'paths']) {
+    for (const sourceEntity of ['paths']) {
       await entity(page, sourceEntity);
       const product = await expandProduct(page, chain);
       const target = sourceEntity === 'processes' ? 'relations-process-001' : 'relations-path-001';
@@ -243,7 +238,7 @@ async function syntheticRelations(browser) {
     }
     await assertUnchanged(page);
     assert.deepEqual(errors, []);
-    report('Synthetic 60-related-entity lists in both directions use independent standard 50-row pagination and preserve complete links/source objects');
+    report('Synthetic 60-process disclosure uses independent standard 50-row pagination and preserves complete links/source objects');
   } finally {await context.close();}
 }
 

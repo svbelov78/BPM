@@ -12,6 +12,7 @@
     const valid = value => {
       if (typeof value !== 'string') return false;
       const name = normalize(value);
+      if (/^#(?:n\/a|н\/д|value!|знач!|ref!|ссылка!|name\?|имя\?|div\/0!|дел\/0!|num!|число!|null!|пусто!)$/i.test(name)) return false;
       return /[а-яa-z]/i.test(name) && !/^(?:[-.·\s]+|н\s*\/\s*д|n\s*\/\s*a|null|undefined|нет(?:\s+данных)?|не\s+(?:указан[аоы]?|определен[аоы]?|назначен[аоы]?|задан[аоы]?))$/i.test(name)
         && !/^(?:руководитель|владелец|ответственный|фио)\s+(?:.*\s+)?не\s+(?:указан|определен|назначен|задан)/i.test(name)
         && !/^\d+\s+(?:владельц|руководител|ответственн)/i.test(name);
@@ -134,6 +135,16 @@
       pathOwnerOccurrences.set(path.id, ownersByOccurrence);
     }
 
+    // The compact people filter lists each person once, across all their roles.
+    // Keep role-specific search entries separate so existing search semantics
+    // and occurrence-aware constraints remain unchanged.
+    const peopleById = new Map();
+    entries.filter(entry => entry.person).forEach(entry => {
+      if (!peopleById.has(entry.id)) peopleById.set(entry.id, {id:entry.id,kind:'people',title:entry.title,code:'',person:true,roles:[]});
+      peopleById.get(entry.id).roles.push(entry.kind);
+    });
+    const people = [...peopleById.values()].sort((a,b)=>a.title.localeCompare(b.title,'ru'));
+
     function search(query) {
       const needle = normalize(query);
       if (!needle) return [];
@@ -156,6 +167,12 @@
     }
 
     function matches(node, row, sourceEntity, selections = {}) {
+      if (selections.people?.length) {
+        const base = {...selections,people:[]};
+        if (!matches(node,row,sourceEntity,base)) return false;
+        return selections.people.some(id => peopleById.get(id)?.roles.some(kind =>
+          matches(node,row,sourceEntity,{...base,[kind]:[id]})));
+      }
       const selectedProducts = selections.product || [];
       const selectedPaths = selections.paths || [];
       const selectedProcesses = selections.processes || [];
@@ -195,7 +212,7 @@
       return true;
     }
 
-    return {entries, get: (kind, id) => byKey.get(`${kind}:${id}`), search, matches};
+    return {entries, people, get: (kind, id) => kind==='people'?peopleById.get(id):byKey.get(`${kind}:${id}`), search, matches};
   }
 
   window.BPMStructureSearchModel = {create};

@@ -288,44 +288,8 @@ async function inspectWidth(browser, width) {
       assert.equal(tableDesign.placeholderImages,0,'Outer table uses the blank avatar from the source');
       assert.equal(tableDesign.glyphFirst,true,'Structure efficiency glyph precedes the percentage');
     });
-    const relatedToggle = product.locator('.structure-table > tbody > tr[data-structure-record] .structure-row-count[aria-expanded]').first();
-    await relatedToggle.click();
-    const relatedDesign = await relatedToggle.evaluate(toggle => {
-      const outerRow = toggle.closest('tr'), outerTable = outerRow.closest('table');
-      const incomingTable = outerRow.nextElementSibling.querySelector('.structure-incoming-table');
-      const incomingRow = incomingTable.tBodies[0].rows[0];
-      const box = element => { const rect=element.getBoundingClientRect(); return {x:rect.x,width:rect.width}; };
-      const owner = outerRow.querySelector('.structure-owner');
-      const incomingOwner = incomingRow.querySelector('.structure-incoming-owner > .avatar');
-      const title = getComputedStyle(incomingRow.querySelector('.structure-incoming-title'));
-      const efficiency = incomingRow.querySelector('.structure-incoming-efficiency');
-      const outerEfficiencyCell = outerRow.cells[2];
-      const productHeading = outerTable.closest('.structure-node').querySelector(':scope > .structure-heading');
-      return {
-        owner:box(owner), incomingOwner:box(incomingOwner),
-        headingOwner:box(productHeading.querySelector('.structure-owner')),
-        outerTable:box(outerTable), outerViewport:box(outerTable.parentElement),
-        firstCell:box(incomingRow.cells[0]), parentFirstCell:box(outerRow.cells[0]),
-        incomingOwnerCell:box(incomingRow.cells[1]), incomingEfficiencyCell:box(incomingRow.cells[2]),
-        incomingEfficiency:box(efficiency.firstElementChild), outerEfficiencyCell:box(outerEfficiencyCell),
-        efficiencyPadding:getComputedStyle(efficiency).paddingLeft,
-        title:{size:title.fontSize,lineHeight:title.lineHeight,weight:title.fontWeight,tracking:title.letterSpacing}
-      };
-    });
-    check(width, 'parent and incoming column baselines', () => {
-      close(relatedDesign.incomingOwner.x,relatedDesign.owner.x,'Parent and incoming avatars share one vertical');
-      close(relatedDesign.firstCell.width,relatedDesign.parentFirstCell.width-16,'Incoming title column follows the parent minus its inset');
-      close(relatedDesign.incomingOwnerCell.width,684,'Incoming owner track retains the shared avatar baseline');
-      close(relatedDesign.incomingEfficiencyCell.width,184,'Incoming efficiency track');
-      close(relatedDesign.incomingEfficiency.x,relatedDesign.outerEfficiencyCell.x+24,'Incoming indicator uses the source 40px inset after its 16px table gutter');
-      assert.equal(relatedDesign.efficiencyPadding,'40px');
-      assert.deepEqual(relatedDesign.title,{size:'17px',lineHeight:'24px',weight:'590',tracking:'-0.51px'});
-      if(panelWidth>1100 && relatedDesign.outerTable.width<=relatedDesign.outerViewport.width+1) {
-        close(relatedDesign.owner.x,relatedDesign.headingOwner.x,'Accordion and table avatars share one vertical');
-      }
-    });
-    await incomingOwnerAppearance(product.locator('.structure-incoming-table'), width, 'Process → KP');
-    await noPageOverflow(page, width, 'expanded reciprocal list');
+    const reverseDisclosures = await product.locator('[data-structure-related], .structure-linked-row').count();
+    check(width, 'process rows have no client-path disclosure', () => assert.equal(reverseDisclosures, 0, 'Process rows remain terminal; linked KP expansion is removed'));
     check(width, 'table label wrappers', () => assert.equal(labels.length, 3, 'Only title, owner and efficiency column labels remain'));
     for (const label of labels) {
       check(width, `${label.text} table label`, () => {

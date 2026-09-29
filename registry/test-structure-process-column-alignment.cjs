@@ -1,4 +1,4 @@
-/* Process rows and their disclosed client paths share the accordion owner /
+/* Terminal process rows share the accordion owner /
  * efficiency axes. BPM_PROCESS_COLUMN_FILE tests a relocated offline HTML.
  * BPM_PROCESS_COLUMN_DIAGNOSTICS=1 prints geometry without failing alignment.
  */
@@ -47,7 +47,7 @@ function init({menu}) {
     }};}
   });
 }
-function geometry({chain, rowId, relatedId}) {
+function geometry({chain, rowId}) {
   const box = element => {
     const r = element.getBoundingClientRect();
     return {x:r.left, right:r.right, width:r.width, y:r.top, bottom:r.bottom};
@@ -59,15 +59,10 @@ function geometry({chain, rowId, relatedId}) {
   });
   const table = document.querySelector(`[id="panel-${chain.at(-1)}"] > .structure-table-scroll > .structure-process-table`);
   const row = [...table.tBodies[0].rows].find(r => r.dataset.structureRecord === rowId);
-  const nested = [...document.getElementById(relatedId).querySelectorAll('.structure-incoming-row')].map(element => ({
-    owner:box(element.querySelector('.structure-incoming-owner .avatar')),
-    sphere:element.querySelector('.bpm-efficiency-glyph') ? box(element.querySelector('.bpm-efficiency-glyph')) : null,
-    cells:element.cells.length
-  }));
   const panel = document.querySelector('.registry-panel'), style = getComputedStyle(panel);
   const header = table.tHead.rows[0].cells[2], scoreCell = row.querySelector('.structure-process-efficiency-cell');
   return {contentWidth:panel.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
-    pageWidth:document.documentElement.scrollWidth, headings, nested,
+    pageWidth:document.documentElement.scrollWidth, headings,
     row:{owner:box(row.querySelector('.structure-owner .avatar')), ownerBox:box(row.querySelector('.structure-owner')),
       sphere:box(scoreCell.querySelector('.bpm-efficiency-glyph')), pill:box(scoreCell.querySelector('.table-efficiency')),
       scoreCell:box(scoreCell), cells:row.cells.length, chartCount:row.querySelectorAll('[data-chart]').length},
@@ -105,58 +100,44 @@ function geometry({chain, rowId, relatedId}) {
         for (const id of chain) await page.locator(`[data-expand="${id}"]`).click();
         const panel = page.locator(`[id="panel-${chain.at(-1)}"]`);
         const row = panel.locator(`:scope > .structure-table-scroll > table > tbody > tr[data-structure-record="${rowId}"]`);
-        const link = row.locator('[data-structure-related]');
-        await link.click();
-        const relatedId = await link.getAttribute('aria-controls');
+        assert.equal(await panel.locator('[data-structure-related], .structure-linked-row').count(), 0, 'Processes have no reverse KP disclosure');
+        assert.equal(await page.locator('#structure-owner, #structure-average-toggle, #structure-chart-toggle').count(), 0, 'Removed settings are absent from the compact toolbar');
+        assert.equal(await page.locator('#structure-list [data-chart-type="1"]').count(), 0, 'Structure always uses proportional charts');
         for (const width of widths) {
           await page.setViewportSize({width,height:1080});
-          const shown = new Map();
-          for (const average of [true,false]) {
-            const toggle = page.locator('#structure-average-toggle');
-            if ((await toggle.getAttribute('aria-checked') === 'true') !== average) await toggle.click();
-            for (const chartType of [2,1]) {
-              await page.locator('#structure-chart-toggle').setChecked(chartType === 1);
-              await paint(page);
-              const data = await page.evaluate(geometry,{chain,rowId,relatedId});
-              const label = `${width}px/${menu}/average=${average}/chart=${chartType}`;
-              assert.ok(data.pageWidth <= width + 1, `${label}: no page-wide overflow`);
-              assert.equal(data.row.cells,3,`${label}: process row has three semantic columns`);
-              assert.equal(data.table.columns,3,`${label}: three colgroup columns`);
-              assert.equal(data.table.headings,3,`${label}: three visible headings`);
-              assert.equal(data.row.chartCount,0,`${label}: no invented process graph`);
-              assert.equal(data.header.text,'Эффективность',`${label}: efficiency label remains available`);
-              assert.ok(data.nested.length > 0 && data.nested.every(r => r.cells === 3), `${label}: reciprocal paths keep three columns`);
-              if (average) shown.set(chartType,data);
-              const oneRow = data.contentWidth > 1204;
-              if (oneRow) {
-                const first = data.headings[0], sphere = shown.get(chartType).headings[0].sphere;
-                for (const heading of data.headings.slice(1)) {
-                  near(heading.owner.x,first.owner.x,`${label} accordion owners`);
-                  if (average) near(heading.sphere.x,sphere.x,`${label} accordion spheres`);
-                }
-                near(data.row.owner.x,first.owner.x,`${label} process owner`);
-                near(data.row.sphere.x,sphere.x,`${label} process sphere`);
-                near(data.header.label.x,sphere.x,`${label} efficiency heading belongs to sphere track`);
-                for (const nested of data.nested) {
-                  near(nested.owner.x,first.owner.x,`${label} nested КП owner`);
-                  if (nested.sphere) near(nested.sphere.x,sphere.x,`${label} nested КП sphere`);
-                }
-                if (!average) near(data.row.owner.x,shown.get(chartType).row.owner.x,`${label} average toggle preserves owner axis`);
-                if (data.row.ownerBox.right > data.row.pill.x + 1) failures.push(`${label}: owner overlaps efficiency pill`);
-                if (data.table.scrollWidth > data.table.available + 1) failures.push(`${label}: unexpected one-row desktop horizontal overflow`);
-              }
-              const summary = {label,oneRow,contentWidth:data.contentWidth,
-                owners:[...data.headings.map(h => h.owner.x),data.row.owner.x,...data.nested.map(r => r.owner.x)],
-                spheres:[...data.headings.map(h => h.sphere?.x ?? null),data.row.sphere.x,...data.nested.map(r => r.sphere?.x ?? null)],
-                headerX:data.header.label.x,table:data.table};
-              metrics.push(summary);
-              if (diagnostics || (width === 1720 && average && chartType === 2)) console.log(JSON.stringify(summary));
-              if (width === 1720 && average && chartType === 2) {
-                await row.scrollIntoViewIfNeeded();
-                await page.waitForTimeout(300);
-                await page.screenshot({path:path.join(output,`process-columns-${width}-${menu}.png`)});
-              }
+          await paint(page);
+          const data = await page.evaluate(geometry,{chain,rowId});
+          const label = `${width}px/${menu}/average=true/chart=2`;
+          assert.ok(data.pageWidth <= width + 1, `${label}: no page-wide overflow`);
+          assert.equal(data.row.cells,3,`${label}: process row has three semantic columns`);
+          assert.equal(data.table.columns,3,`${label}: three colgroup columns`);
+          assert.equal(data.table.headings,3,`${label}: three visible headings`);
+          assert.equal(data.row.chartCount,0,`${label}: no invented process graph`);
+          assert.equal(data.header.text,'Эффективность',`${label}: efficiency label remains available`);
+          assert.ok(data.headings.every(heading => heading.sphere), `${label}: average efficiency remains visible on each level`);
+          const oneRow = data.contentWidth > 1204;
+          if (oneRow) {
+            const first = data.headings[0], sphere = first.sphere;
+            for (const heading of data.headings.slice(1)) {
+              near(heading.owner.x,first.owner.x,`${label} accordion owners`);
+              near(heading.sphere.x,sphere.x,`${label} accordion spheres`);
             }
+            near(data.row.owner.x,first.owner.x,`${label} process owner`);
+            near(data.row.sphere.x,sphere.x,`${label} process sphere`);
+            near(data.header.label.x,sphere.x,`${label} efficiency heading belongs to sphere track`);
+            if (data.row.ownerBox.right > data.row.pill.x + 1) failures.push(`${label}: owner overlaps efficiency pill`);
+            if (data.table.scrollWidth > data.table.available + 1) failures.push(`${label}: unexpected one-row desktop horizontal overflow`);
+          }
+          const summary = {label,oneRow,contentWidth:data.contentWidth,
+            owners:[...data.headings.map(h => h.owner.x),data.row.owner.x],
+            spheres:[...data.headings.map(h => h.sphere?.x ?? null),data.row.sphere.x],
+            headerX:data.header.label.x,table:data.table};
+          metrics.push(summary);
+          if (diagnostics || width === 1720) console.log(JSON.stringify(summary));
+          if (width === 1720) {
+            await row.scrollIntoViewIfNeeded();
+            await page.waitForTimeout(300);
+            await page.screenshot({path:path.join(output,`process-columns-${width}-${menu}.png`)});
           }
         }
         for (const width of [390,320]) {
@@ -170,8 +151,8 @@ function geometry({chain, rowId, relatedId}) {
         assert.deepEqual(external,[],'No external dependencies');
       } finally {await context.close();}
     }
-    console.log(`Checked ${metrics.length} desktop width/menu/average/chart combinations and four mobile cases; ${failures.length} alignment failures. Screenshots: ${output}`);
+    console.log(`Checked ${metrics.length} desktop width/menu combinations with fixed proportional charts/average efficiency and four mobile cases; ${failures.length} alignment failures. Screenshots: ${output}`);
     if (failures.length) console.log(failures.join('\n'));
-    if (!diagnostics) assert.deepEqual(failures,[],'Process table and reciprocal client paths share the accordion axes');
+    if (!diagnostics) assert.deepEqual(failures,[],'Process table shares the accordion axes');
   } finally {await browser.close();}
 })().catch(error => {console.error(error);process.exitCode=1;});

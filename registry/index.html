@@ -54,6 +54,8 @@
   <script src="structure-search-model.js" defer></script>
   <script src="structure-search.js" defer></script>
   <script src="structure-levels.js" defer></script>
+  <script src="structure-toolbar.js" defer></script>
+  <script src="structure-people.js" defer></script>
   <script src="structure.js" defer></script>
   <script src="task-data.js" defer></script>
   <script src="task-types-a.js" defer></script>
@@ -115,9 +117,11 @@
       <div id="structure-toolbar" class="structure-toolbar filter-primary">
         <button id="structure-toggle" class="button structure-toggle" aria-pressed="false" aria-controls="structure-mode"><img src="assets/sber.svg" alt="">Структура</button>
         <div class="entity-tabs" role="group" aria-label="Тип сущности"><button class="active" id="paths-tab" aria-pressed="true" data-entity="paths">Клиентские пути</button><button id="processes-tab" aria-pressed="false" data-entity="processes">Процессы</button></div>
-        <div id="structure-entity-tabs" class="entity-tabs structure-tabs" role="group" aria-label="Тип сущности в структуре" hidden><button id="structure-paths-tab" data-structure-entity="paths" aria-pressed="false">Клиентские пути <span id="structure-path-count">—</span></button><button id="structure-processes-tab" data-structure-entity="processes" class="active" aria-pressed="true">Процессы <span id="structure-process-count">—</span></button></div>
+        <div id="structure-entity-tabs" class="entity-tabs structure-tabs" role="group" aria-label="Тип сущности в структуре" hidden><button id="structure-paths-tab" data-structure-entity="paths" aria-pressed="false" title="Клиентские пути"><span class="structure-tab-label">Пути</span><span id="structure-path-count" class="structure-tab-count">—</span></button><button id="structure-processes-tab" data-structure-entity="processes" class="active" aria-pressed="true" title="Процессы"><span class="structure-tab-label">Процессы</span><span id="structure-process-count" class="structure-tab-count">—</span></button></div>
         <div id="registry-search-wrap" class="search-field field"><img src="assets/search.svg" alt=""><input id="registry-search" type="search" placeholder="Поиск ID, названию…" aria-label="Поиск по ID, названию или владельцу" autocomplete="off"><button id="clear-search" class="small-icon" aria-label="Очистить поиск" hidden><img src="assets/field-clear-16.svg" alt=""></button></div>
         <div id="structure-search-wrap" class="search-field field" hidden><img src="assets/search-suggest-search.svg" width="24" height="24" alt=""><input id="structure-search" type="search" placeholder="Поиск продукта, КП, процесса, человека…" aria-label="Поиск продукта, клиентского пути, процесса или человека" aria-describedby="structure-search-status" autocomplete="off" spellcheck="false"><button id="structure-clear-search" class="small-icon" aria-label="Очистить поиск в структуре" hidden><img src="assets/field-clear-16.svg" alt=""></button><span class="sr-only" id="structure-search-status" role="status" aria-live="polite">Выберите найденную сущность или человека, чтобы добавить в фильтры.</span></div>
+        <button id="structure-people" class="structure-people-button" type="button" aria-label="Фильтр по людям" aria-haspopup="dialog" aria-expanded="false" aria-controls="structure-people-popup" title="Фильтр по людям"><img src="assets/structure-person.svg" width="24" height="24" alt=""><img class="structure-people-chevron" src="assets/field-chevron-down-16.svg" width="16" height="16" alt=""></button>
+        <div class="structure-sort-slot"></div>
         <button id="mobile-filters-toggle" class="mobile-filters-toggle" aria-expanded="false" aria-controls="status-select filter-grid"><span id="mobile-filters-label">Фильтры</span><img src="assets/chevron-down-filter.svg" alt=""></button>
         <div id="status-select" class="select-host"></div>
       </div>
@@ -128,9 +132,6 @@
             <div id="structure-division" class="select-host"></div><img class="structure-level-separator" src="assets/structure-level-separator.svg" width="16" height="16" alt="">
             <div id="structure-product" class="select-host"></div>
           </div>
-          <div id="structure-owner" class="select-host"></div>
-          <button type="button" id="structure-average-toggle" class="structure-average-control" role="switch" aria-checked="true" aria-label="Средняя эффективность" aria-describedby="structure-average-hint"><span class="structure-average-label">Средняя<br>эффективность</span><span class="structure-switch-track" aria-hidden="true"><span class="structure-switch-knob"></span></span></button>
-          <label class="structure-chart-control" title="Соотношение эффективности — Structure Chart 2. Сравнение с лидером — Structure Chart 1, общий масштаб."><span class="structure-chart-label is-active" id="structure-quantity-label">Соотношение<br>эффективности</span><input id="structure-chart-toggle" type="checkbox" role="switch" aria-label="Сравнение с лидером — Structure Chart 1" aria-describedby="structure-chart-hint"><span class="structure-switch-track" aria-hidden="true"><span class="structure-switch-knob"></span></span><span class="structure-chart-label" id="structure-comparison-label">Сравнение<br>с лидером</span></label>
           <div id="structure-sort" class="select-host"></div>
         </div>
         <p id="structure-chart-hint" class="sr-only">Выключено: Соотношение эффективности, Structure Chart 2 — сегменты заполняют всю площадь диаграммы. Включено: Сравнение с лидером, Structure Chart 1 — общий масштаб с подложками.</p>

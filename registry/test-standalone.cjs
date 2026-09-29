@@ -119,10 +119,9 @@ async function main() {
     assert.equal(await page.locator('#structure-list > .structure-node').count(), 9);
     assert.equal(await page.locator('.structure-heading[aria-expanded="true"]').count(), 0);
     assert.ok(await page.locator('[data-chart-type="2"]').count() > 0);
-    await page.locator('#structure-chart-toggle').click();
-    assert.ok(await page.locator('[data-chart-type="1"]').count() > 0);
-    await page.locator('#structure-chart-toggle').click();
-    assert.ok(await page.locator('[data-chart-type="2"]').count() > 0);
+    assert.equal(await page.locator('#structure-list [data-chart-type="1"]').count(), 0, 'Structure uses the fixed proportional chart');
+    assert.ok(await page.locator('#structure-list [data-average-chart]').count() > 0, 'Average efficiency is always enabled');
+    assert.equal(await page.locator('#structure-owner, #structure-average-toggle, #structure-chart-toggle').count(), 0, 'Removed settings are absent from the compact toolbar');
     const fixture = await page.evaluate(() => {
       const path = window.BPM_STRUCTURE_PATHS.records.find(row => row.code === 'КП-ДЕМО-0027');
       const product = path.productLinks[0].id;
@@ -138,6 +137,12 @@ async function main() {
         if (await heading.getAttribute('aria-expanded') !== 'true') await heading.click();
       }
       const id = entity === 'processes' ? fixture.process : fixture.path;
+      if (entity === 'processes') {
+        assert.equal(await page.locator('#structure-list [data-structure-related], #structure-list .structure-linked-row').count(), 0, 'Process view has no reverse KP disclosure');
+        await assets(page, 'Structure terminal process rows');
+        await detail(page, page.locator(`[data-structure-detail="${id}"]`).first(), entity);
+        continue;
+      }
       const button = page.locator(`[data-structure-related="${id}"]`).first();
       const control = await button.getAttribute('aria-controls');
       await button.click();
@@ -160,7 +165,7 @@ async function main() {
       await page.keyboard.press('Escape');
       await dialog.waitFor({state: 'hidden'});
     }
-    report('Both Structure charts/entities, Excel-backed reciprocal relationships, participation tags, embedded source documentation and responsive layout');
+    report('Both Structure entities, fixed proportional charts and average efficiency, terminal process rows, Excel-backed KP → process disclosure, participation tags, embedded source documentation and responsive layout');
 
     await page.locator('#tasks-nav').click(); await ready(page, 'tasks-results');
     assert.ok(await page.locator('.task-table-row[data-task-id]').count() > 0);
