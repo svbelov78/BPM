@@ -44,8 +44,15 @@
 .pd-period-button:hover{background:var(--hover)}
 .pd-chevron-left{transform:rotate(90deg)}
 .pd-chevron-right{transform:rotate(-90deg)}
-.pd-dynamics-plot{width:100%;margin-top:81px;margin-bottom:85px}
+.pd-dynamics-plot{position:relative;width:100%;margin-top:81px;margin-bottom:85px}
 .pd-dynamics-bars{display:flex;gap:4px;align-items:flex-end;height:101px}
+.pd-dynamics-item{display:block;position:relative;flex:1;min-width:0;padding:0;border:0;border-radius:0;background:none}
+.pd-dynamics-item .pd-dynamics-bar{width:100%}
+.pd-dynamics-hit.is-active .pd-dynamics-bar{background:rgba(0,136,255,.1)}
+.pd-dynamics-hover-value{position:absolute;width:max-content;transform:translateX(-50%);pointer-events:none;z-index:1;text-align:center;white-space:nowrap;font-size:17px;line-height:24px;font-weight:400;letter-spacing:-.119px;color:var(--text)}
+.pd-dynamics-hover-month{position:absolute;transform:translateX(-50%);pointer-events:none;text-align:center;white-space:nowrap;font-size:13px;line-height:18px;font-weight:400;letter-spacing:-.039px;color:var(--text)}
+.pd-dynamics-plot.has-active-month .pd-dynamics-labels{visibility:hidden}
+@media print{.pd-dynamics-hover-value,.pd-dynamics-hover-month{display:none!important}.pd-dynamics-hit.is-active .pd-dynamics-bar{background:var(--bg)}.pd-dynamics-plot.has-active-month .pd-dynamics-labels{visibility:visible}}
 .pd-dynamics-bar{display:block;flex:1;min-width:0;background:var(--bg);border-top:4px solid #34c759}
 .pd-dynamics-negative{border-top-color:var(--red)}
 .pd-dynamics-warning{border-top-color:#ff8d28}
@@ -124,10 +131,9 @@
 .pd-drawer:not(.jd-drawer) .pd-sphere-viewport{height:281.266px}
 .pd-drawer:not(.jd-drawer) .pd-dynamics-widget{gap:0}
 .pd-drawer:not(.jd-drawer) .pd-dynamics-plot{margin-top:81.133px;margin-bottom:85.133px}
-.pd-drawer:not(.jd-drawer) .pd-dynamics-unstriped{border-top:0}
 .pd-drawer:not(.jd-drawer) .pd-dynamics-labels{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:4px;padding-right:0}
 .pd-drawer:not(.jd-drawer) .pd-dynamics-labels span{text-align:center}
-.pd-drawer:not(.jd-drawer) .pd-dynamics-labels span:last-child{grid-column:11}
+.pd-drawer:not(.jd-drawer) .pd-dynamics-labels span:last-child{grid-column:12}
 .pd-drawer:not(.jd-drawer) .pd-about-panel{background:var(--bg)}
 .pd-drawer:not(.jd-drawer) .pd-people-grid{grid-template-columns:minmax(0,290.666fr) minmax(0,618.667fr) minmax(0,305.333fr)}
 .pd-drawer:not(.jd-drawer) .pd-person{flex-direction:column;align-items:stretch;gap:4px}

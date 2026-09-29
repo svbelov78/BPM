@@ -1,0 +1,12 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Chevron" clip-path="url(#clip0_0_377)">
+<g id="IconShevronUp16">
+</g>
+<path id="Line 13(Border)" fill-rule="evenodd" clip-rule="evenodd" d="M14.8839 10.1161L8.88387 4.1161C8.58924 3.82147 8.29461 3.67416 7.99998 3.67416C7.70536 3.67416 7.41073 3.82147 7.1161 4.1161L1.1161 10.1161C0.621129 10.6111 0.621129 11.3889 1.1161 11.8839C1.61108 12.3788 2.38889 12.3788 2.88387 11.8839L7.99998 6.76775L13.1161 11.8839C13.6111 12.3788 14.3889 12.3788 14.8839 11.8839C15.3789 11.3889 15.3789 10.6111 14.8839 10.1161Z" fill="#7F7F7F"/>
+</g>
+<defs>
+<clipPath id="clip0_0_377">
+<rect width="16" height="16" fill="white"/>
+</clipPath>
+</defs>
+</svg>

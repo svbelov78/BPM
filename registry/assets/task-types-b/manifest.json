@@ -1,0 +1,21 @@
+{
+  "fileKey": "tOFCfQUjfFvAB0Pgqxb9xQ",
+  "sourceFrames": ["119:19739", "119:20091", "114:6320"],
+  "source": "get_design_context, exact original SVG exports; root dimensions preserved",
+  "assets": {
+    "switch-on.svg": {"component": "Switch / Green / 24 / Default", "node": "114:7813", "width": 58, "height": 44, "slotWidth": 48, "slotHeight": 24, "offsetX": 0, "offsetY": -6},
+    "switch-off.svg": {"component": "Switch / Neutral / 24 / Default", "node": "114:7821", "width": 58, "height": 44, "slotWidth": 48, "slotHeight": 24, "offsetX": -10, "offsetY": -6},
+    "switch-reject.svg": {"component": "Switch / Red / 24 / Default", "node": "114:7829", "width": 58, "height": 44, "slotWidth": 48, "slotHeight": 24, "offsetX": -10, "offsetY": -6},
+    "chevron-up-16.svg": {"component": "Icon/16/Chevron Up", "node": "2:13", "width": 16, "height": 16},
+    "warning-info-16.svg": {"component": "Icon/16/Info / warning", "node": "I119:20205;261:16", "width": 16, "height": 16}
+  },
+  "reuse": {
+    "plus": "assets/tasks/plus-blue.svg",
+    "empty": "assets/tasks/empty.svg",
+    "close": "assets/task-flow/close.svg",
+    "calendar": "assets/task-flow/calendar.svg",
+    "chevronDown": "assets/field-chevron-down-16.svg",
+    "clear": "assets/field-clear-16.svg",
+    "reply": "assets/task-flow/reset.svg"
+  }
+}

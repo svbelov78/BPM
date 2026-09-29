@@ -1,4 +1,4 @@
-/* Task creation · type choice only (Figma 1105:422). */
+/* Task creation · chooser shared by typical and specialised PDF flows. */
 (() => {
   'use strict';
 
@@ -6,9 +6,10 @@
   const types = [
     {id:'standard',label:'Типовая',description:'Организация управления клиентскими путями и процессами путем постановки задач сотрудникам, не зависимо от роли'},
     {id:'extended-access',label:'Согласование расширенного доступа к процессу',description:accessDescription},
-    {id:'metric-inapplicability',label:'Неприменимость метрик',description:accessDescription},
-    {id:'bulk-metric-inapplicability',label:'Массовая неприменимость метрик',description:accessDescription},
-    {id:'process-result-approval',label:'Согласование варианта предоставления результата процесса',description:accessDescription},
+    {id:'metric-inapplicability',label:'Неприменимость метрик',description:'Согласование неприменимости отдельных метрик для выбранного процесса'},
+    {id:'bulk-metric-inapplicability',label:'Массовая неприменимость метрик',description:'Настройка периода неприменимости метрик для группы процессов'},
+    {id:'role-management',label:'Управление ролями',description:'Назначение сотрудника на роль процесса или удаление с роли'},
+    {id:'process-result-approval',label:'Создание варианта предоставления результата процесса',description:'Создание, изменение и удаление вариантов предоставления результата процесса'},
     {id:'business-description-checklist',label:'Чек-лист самопроверки актуальности Бизнес-описания',description:'Для ежегодного аудита актуальности существующих бизнес-описаний (БО) процессов'},
     {id:'business-description-update',label:'Актуализация Бизнес-описания',description:'Для актуализации бизнес-описаний (БО) процессов'},
     {id:'insight',label:'Задача к инсайту',description:'Нацелена на улучшения по процессному производству'}

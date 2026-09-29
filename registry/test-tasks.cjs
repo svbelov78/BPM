@@ -4,7 +4,7 @@ const {chromium} = require(process.env.BPM_PLAYWRIGHT || '/Users/admin/.cache/co
 const base = process.env.BPM_TASKS_URL || 'http://127.0.0.1:4180/';
 const columns = ['title','processTitle','initiator','assignees','created','deadline','status'];
 const filterKeys = ['block','division','status','type','initiator','assignees'];
-const typeIds = ['standard','extended-access','metric-inapplicability','bulk-metric-inapplicability','process-result-approval','business-description-checklist','business-description-update','insight'];
+const typeIds = ['standard','extended-access','role-management','metric-inapplicability','bulk-metric-inapplicability','process-result-approval','business-description-checklist','business-description-update','insight'];
 const collator = new Intl.Collator('ru',{numeric:true,sensitivity:'base'});
 const report = message => console.log(`PASS — ${message}`);
 let data,sequence = 0;
@@ -215,22 +215,25 @@ async function exportCsv(page) {
 async function typeChooser(page) {
   await fresh(page);
   await page.locator('#tasks-create').click();await drawerReady(page);
-  assert.deepEqual(await page.locator('[data-task-type]').evaluateAll(elements => elements.map(element => element.dataset.taskType)),typeIds);
+  assert.deepEqual(await page.locator('[data-task-type]').evaluateAll(elements => elements.map(element => element.dataset.taskType).sort()),[...typeIds].sort());
   assert.equal(await page.locator('#task-drawer').getAttribute('aria-labelledby'),'task-drawer-title');
   assert.ok(await page.locator('.task-drawer-close').evaluate(element => element === document.activeElement));
   for (const type of typeIds.filter(type => type !== 'standard')) {
     await page.locator(`[data-task-type="${type}"]`).click();
     assert.equal(await page.locator('[data-task-type][aria-pressed="true"]').count(),1);
     assert.equal(await page.locator(`[data-task-type="${type}"]`).getAttribute('aria-pressed'),'true');
-    assert.equal(await page.locator('#task-drawer input,#task-drawer textarea,#task-drawer select,#task-drawer form').count(),0,'Unsupported type keeps the chooser');
-    assert.ok(await page.locator('#task-drawer').evaluate(element => element.open));
+    await page.locator('#special-task-flow[open][data-mode="create"]').waitFor();
+    assert.equal(await page.locator('#special-task-flow #stf-form').count(),1,'Specialised type opens its creation form');
+    assert.equal(await page.locator('#task-drawer').evaluate(element => element.open),false,'Specialised form replaces chooser');
     assert.equal(await page.evaluate(() => window.BPM_TASK_DATA.length),14,'Type choice does not create a task');
+    await page.locator('#special-task-flow [data-stf-action="cancel"]').click();
+    await page.waitForFunction(() => !document.getElementById('special-task-flow').open && !document.body.classList.contains('task-drawer-open'));
+    await page.locator('#tasks-create').click();await drawerReady(page);
   }
-  assert.equal(await page.locator('.task-choice-notice').isVisible(),true,'Choice provides an in-drawer confirmation');
   await closeDrawer(page);
   await page.locator('#tasks-create').click();await drawerReady(page);
   assert.equal(await page.locator('[data-task-type][aria-pressed="true"]').count(),0,'Reopening clears the choice');
-  assert.equal(await page.locator('.task-choice-notice').isVisible(),false,'Reopening clears the previous confirmation');
+  assert.equal(await page.locator('.task-choice-notice:visible').count(),0,'No obsolete unsupported-type notice remains');
   await page.locator('[data-task-type="standard"]').focus();await page.keyboard.press('Enter');
   await page.locator('#task-flow[open][data-mode="create"]').waitFor();
   assert.equal(await page.locator('#task-flow #tf-form').count(),1,'Standard type opens its creation form');
@@ -238,7 +241,7 @@ async function typeChooser(page) {
   await page.waitForFunction(() => !document.getElementById('task-flow').open && !document.body.classList.contains('task-drawer-open'));
   assert.ok(await page.locator('#tasks-create').evaluate(element => element === document.activeElement));
   await page.locator('#tasks-create').click();await drawerReady(page);await closeDrawer(page,'#tasks-create','backdrop');
-  report('eight task types, unsupported choices, standard form keyboard entry and close focus');
+  report('nine task types, all creation forms, standard form keyboard entry and close focus');
 }
 
 async function processAndNavigation(page) {
@@ -305,9 +308,15 @@ async function responsive(page) {
     await stablePaint(page);
     await page.screenshot({path:`/tmp/bpm-tasks-${width}-drawer.png`,fullPage:false});
     await page.locator('[data-task-type="extended-access"]').click();
-    const notice = await page.locator('.task-choice-notice').evaluate(element => {const r=element.getBoundingClientRect(),drawer=element.closest('dialog').getBoundingClientRect();return {left:r.left,right:r.right,drawerLeft:drawer.left,drawerRight:drawer.right};});
-    assert.ok(notice.left >= notice.drawerLeft - 1 && notice.right <= notice.drawerRight + 1,`${width}: choice notice stays inside drawer`);
-    await closeDrawer(page);
+    await page.locator('#special-task-flow[open][data-mode="create"]').waitFor();
+    await page.waitForFunction(() => {
+      const dialog=document.getElementById('special-task-flow');
+      return dialog.classList.contains('has-entered') || matchMedia('(prefers-reduced-motion: reduce)').matches;
+    });
+    const form = await page.locator('#special-task-flow').evaluate(element => {const r=element.getBoundingClientRect();return {left:r.left,right:r.right,scroll:element.scrollWidth,client:element.clientWidth};});
+    assert.ok(form.left >= -1 && form.right <= width+1 && form.scroll <= form.client+1,`${width}: specialised form stays inside viewport`);
+    await page.locator('#special-task-flow [data-stf-action="cancel"]').click();
+    await page.waitForFunction(() => !document.getElementById('special-task-flow').open && !document.body.classList.contains('task-drawer-open'));
   }
   report('1920/1440/390/320 responsive table/cards/drawer, screenshot artifacts in /tmp');
 }

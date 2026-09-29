@@ -7,10 +7,13 @@
 .task-card-tags,.task-table-tags{display:flex;align-items:center;gap:4px;min-width:0}
 .task-card-tags{flex-wrap:wrap}
 .task-type-tag{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;max-width:100%;height:24px;padding:0 8px;border:1px solid var(--border);border-radius:8px;color:var(--secondary);font-size:13px;line-height:18px;letter-spacing:-.039px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.task-type-standard{background:#34c7591a;border-color:#34c759}
-.task-type-access{background:#6155f51a;border-color:var(--indigo,#6155f5);color:var(--indigo,#6155f5)}
-.task-type-inapplicable{background:#ff8d281a;border-color:#ff8d28;color:#ff8d28}
-.task-type-variant{background:#0088ff1a;border-color:var(--blue)}
+/* Figma: Role119:21283, Access1:20620, Metric119:20161,
+   Bulk121:19560, Variant121:21982. Neutral Checklist/BO/Insight retain defaults. */
+.task-type-standard{--task-tag-bg:#34c7591a;--task-tag-border:#34c759}
+.task-type-access,.task-type-role{--task-tag-bg:rgba(97,85,245,.1);--task-tag-border:var(--indigo,#6155f5);--task-tag-color:var(--indigo,#6155f5)}
+.task-type-inapplicable{--task-tag-bg:rgba(255,141,40,.1);--task-tag-border:transparent;--task-tag-color:#ff8d28}
+.task-type-variant{--task-tag-bg:rgba(0,136,255,.1);--task-tag-border:var(--blue)}
+.task-type-tag[class*="task-type-"],.cabinet-card .task-type-tag[class*="task-type-"]{background:var(--task-tag-bg,transparent);border-color:var(--task-tag-border,var(--border));color:var(--task-tag-color,var(--secondary))}
 .task-id-badge{display:inline-flex;align-items:center;justify-content:center;gap:4px;flex-shrink:0;height:24px;padding:0 8px;background:var(--panel);border-radius:8px;font-size:13px;line-height:18px;letter-spacing:-.039px;white-space:nowrap}
 .task-id-badge:hover{background:var(--hover)}
 .task-id-badge:active{box-shadow:var(--click-shadow)}

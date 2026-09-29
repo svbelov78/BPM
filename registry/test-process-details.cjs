@@ -182,7 +182,8 @@ async function desktopGeometry(page) {
       positive:one('.pd-data-alert-positive'),confirmation:one('.pd-data-alert-confirm'),
       smallIcons:all('.pd-data-alert-icon > .pd-icon,.pd-data-efficiency-heading > .pd-icon'),
       arrowSlots:all('.pd-sort-arrow'),arrows:all('.pd-sort-arrow > .pd-icon'),
-      none:inCell('.efficiency-unrated-card'),pills:inCell('.table-efficiency'),actions:inCell('.pd-data-actions .pd-icon')};
+      none:inCell('.efficiency-unrated-card'),pills:inCell('.table-efficiency'),actions:inCell('.pd-data-actions .pd-icon'),
+      spheres:inCell('.pd-data-efficiency .efficiency-glyph'),noneSlot:one('.pd-data-efficiency-empty')};
   });
   near(monitoring.section.height,1032,'Figma monitoring section height');
   near(monitoring.heading.height,74,'Figma monitoring section heading height');
@@ -201,11 +202,18 @@ async function desktopGeometry(page) {
   assert.equal(monitoring.none.length,1,'Monitoring has one NONE indicator');
   assert.equal(monitoring.pills.length,4,'Monitoring has four rated efficiency pills');
   assert.equal(monitoring.actions.length,5,'Monitoring has one action icon per row');
+  near(monitoring.noneSlot.width,110,'Monitoring NONE reserves the same width as a rated pill');
+  assert.equal(monitoring.spheres.length,5,'Monitoring has five aligned spheres including NONE');
+  monitoring.spheres.forEach(({element,cell},index) => {
+    near(element.cx,monitoring.spheres[0].element.cx,`Monitoring sphere ${index + 1} shares the vertical axis`);
+    near(element.cy,cell.cy,`Monitoring sphere ${index + 1} is vertically centered in its row`);
+  });
   for (const [group,items,width,height] of [['NONE',monitoring.none,56,24],['efficiency pill',monitoring.pills,110,40],['action icon',monitoring.actions,24,24]]) {
     items.forEach(({element,cell},index) => {
       near(element.width,width,`Monitoring ${group} ${index + 1} width`);
       near(element.height,height,`Monitoring ${group} ${index + 1} height`);
-      near(element.cx,cell.cx,`Monitoring ${group} ${index + 1} horizontal center`);
+      if (group === 'NONE') near(element.cx,monitoring.noneSlot.cx - 15,'Monitoring NONE aligns its sphere, not the whole indicator');
+      else near(element.cx,cell.cx,`Monitoring ${group} ${index + 1} horizontal center`);
       near(element.cy,cell.cy,`Monitoring ${group} ${index + 1} vertical center`);
     });
   }

@@ -8,7 +8,7 @@
   const processAnchors = [['about','О процессе'],['monitoring','Мониторинг'],['insights','Инсайты'],['tasks','Задачи'],['documents','Документы']];
   let anchors=processAnchors;
   let dialog,main,row,options,selects=[],scrollFrame,toastTimer,returnFocus,loadingTimer,closingTimer;
-  let opening=0,closing=false;
+  let opening=0,closing=false,dynamicsCleanup;
   const LOADING_DURATION=2000;
   const filters = {insights:{status:'all',source:''},monitoring:{status:'all'}};
 
@@ -185,6 +185,7 @@
     loadingTimer=setTimeout(()=>{if(thisOpening===opening&&dialog.open&&!closing)finishLoading();},LOADING_DURATION);
   }
   function cleanup(restoreFocus=true) {
+    dynamicsCleanup?.();dynamicsCleanup=null;
     clearTimeout(loadingTimer);clearTimeout(closingTimer);closing=false;
     dialog.classList.remove('pd-is-closing','pd-has-entered');
     window.BpmProcessMotion?.cancel(dialog);finishLoading(false);
@@ -229,6 +230,7 @@
     dialog.innerHTML=`<div class="pd-layout"><div class="pd-main" tabindex="-1">${backlink}${content}</div><aside class="pd-navigation" aria-label="Разделы ${entityTitle}"><div class="pd-navigation-actions"><button class="pd-control pd-share" data-pd-action="share" aria-label="Скопировать ссылку ${isJourney?'на клиентский путь':'на процесс'}" title="Поделиться">${icon('imgIcon24Share')}</button><button class="pd-control pd-close" data-pd-action="close" aria-label="Закрыть деталку ${entityTitle}" title="Закрыть (Esc)" autofocus>${icon('imgIcon24Exit')}</button></div><nav class="pd-anchors">${anchors.map(([id,label],index)=>`<button type="button" data-pd-anchor="${id}" class="pd-anchor${index===0?' is-active':''}"${index===0?' aria-current="location"':''}>${label}</button>`).join('')}</nav></aside></div><div class="pd-notice" role="status" aria-live="polite" hidden></div>`;
     const announcement=document.createElement('div');announcement.className='sr-only pd-loading-announcement';announcement.setAttribute('role','status');announcement.setAttribute('aria-live','polite');announcement.textContent=`Загрузка деталки ${entityTitle}…`;dialog.append(announcement);
     main=dialog.querySelector('.pd-main');main.addEventListener('scroll',syncAnchor,{passive:true});
+    dynamicsCleanup=window.BpmDynamics.bind(dialog);
     dialog.querySelectorAll('details').forEach(node=>node.addEventListener('toggle',syncAnchor));
     dialog.showModal();document.body.classList.add('pd-drawer-open');main.scrollTop=0;
     const source=document.getElementById('pd-insights-source');
@@ -255,6 +257,7 @@
   }
   function close(){
     if(!dialog?.open||closing)return;
+    dynamicsCleanup?.();dynamicsCleanup=null;
     closing=true;clearTimeout(loadingTimer);window.BpmProcessMotion?.cancel(dialog);
     selects.forEach(select=>select.close());main.inert=true;
     if(matchMedia('(prefers-reduced-motion: reduce)').matches){dialog.close();return;}

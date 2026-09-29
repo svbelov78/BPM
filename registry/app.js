@@ -481,6 +481,9 @@
   window.BpmTaskFlow.configure({createSelect:(id,config)=>new BpmSelect(id,config),toast,closePopups,openProcess:openTaskProcess,onBack:createTask,onCreated:task=>{
     navigateService('tasks');tasks.showCreated(task.id);toast('Задача создана',{success:true});
   }});
+  window.BpmSpecialTaskFlow.configure({createSelect:(id,config)=>new BpmSelect(id,config),toast,closePopups,openProcess:openTaskProcess,onBack:createTask,onCreated:task=>{
+    navigateService('tasks');tasks.showCreated(task.id);toast('Задача создана',{success:true});
+  }});
   cabinet=window.BpmCabinet.create({
     toast,closePopups,openDetail,copyText,
     isFavorite:row=>state.favorites.has(row.id),toggleFavorite:favorite,
@@ -490,6 +493,7 @@
   function openTaskProcess(id,trigger){const row=allRecords.find(record=>record.entity==='processes'&&record.id===id);if(row)openDetail(row,trigger);else toast('Деталка связанного процесса пока не представлена в данных.');}
   function closeServiceDialogs(){
     window.BpmTaskFlow.close({restoreFocus:false});
+    window.BpmSpecialTaskFlow.close({restoreFocus:false});
     window.BpmProcessDrawer.close();window.BpmTaskDrawer.close({immediate:true,restoreFocus:false});
     document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());
   }
@@ -503,10 +507,8 @@
         window.BpmTaskFlow.open({mode:'create',trigger});
         return;
       }
-      const dialog=$('task-drawer');let note=dialog.querySelector('.task-choice-notice');
-      if(!note){note=document.createElement('div');note.className='toast task-choice-notice';note.setAttribute('role','status');dialog.append(note);}
-      note.textContent=`Выбран тип «${label}». Форма создания будет добавлена после получения макета.`;note.hidden=false;
-      clearTimeout(note._hideTimer);note._hideTimer=setTimeout(()=>{note.hidden=true;},4500);
+      window.BpmTaskDrawer.close({immediate:true,restoreFocus:false});
+      window.BpmSpecialTaskFlow.open({typeId:id,mode:'create',trigger});
     }});
   }
   function focusMain(){window.scrollTo({top:0,behavior:'instant'});$('main').focus({preventScroll:true});}

@@ -83,7 +83,8 @@
       const page=e.target.closest('[data-task-page]');if(page&&!page.disabled){state.page=Number(page.dataset.taskPage);load();return;}
       const task=e.target.closest('[data-task-id]');if(task&&!loading&&!window.getSelection()?.toString()){
         const row=store.get(task.dataset.taskId);
-        if(row?.type==='Типовая'){closePopups();window.BpmTaskFlow.open({mode:'view',taskId:row.id,trigger:task});}
+        if(window.BpmSpecialTaskFlow.supports(row)){closePopups();window.BpmSpecialTaskFlow.open({mode:'view',taskId:row.id,trigger:task});}
+        else if(row?.type==='Типовая'){closePopups();window.BpmTaskFlow.open({mode:'view',taskId:row.id,trigger:task});}
         else api.toast('Макет деталки этого типа задачи пока не передан. Доступны реестр и выбор типа новой задачи.');
       }
     });

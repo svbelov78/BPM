@@ -165,7 +165,7 @@
       if(d.cabinetMenu){showContext(row,button);return;}
       if(d.cabinetEfficiency){showTip(row,button,true);return;}
       if(row.kind==='tasks'){
-        if(row.local){closePopup();hideTip();api.closePopups();window.BpmTaskFlow.open({mode:'view',taskId:row.id,trigger:button});}
+        if(row.local){closePopup();hideTip();api.closePopups();(window.BpmSpecialTaskFlow.supports(row)?window.BpmSpecialTaskFlow:window.BpmTaskFlow).open({mode:'view',taskId:row.id,trigger:button});}
         else api.openTasks();
         return;
       }

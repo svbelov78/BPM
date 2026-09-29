@@ -94,7 +94,7 @@ async function stacked(page, id, label) {
 async function openChooser(page, label) {
   await page.locator(createSelector).click();
   await stacked(page, 'task-drawer', label);
-  assert.equal(await page.locator('#task-drawer [data-task-type]').count(), 8, `${label}: reuses existing eight task types`);
+  assert.equal(await page.locator('#task-drawer [data-task-type]').count(), 9, `${label}: exposes typical and eight specialised task types`);
 }
 async function closedChild(page, id, label) {
   await page.waitForFunction(id => !document.getElementById(id)?.open, id);

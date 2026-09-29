@@ -22,12 +22,17 @@
     const organization = `<article class="pd-overview-panel pd-organization">${field('Подразделение', sourceRecord?`${esc(row.block)}<br>${esc(row.division)}`:`Блок «${esc(row.block || 'Транзакционный банкинг B2C')}»<br>Дивизион «${esc(row.division || 'Кредитные карты')}»`)}${field('Статус в реестре', sourceRecord?'Не указан в источнике':`<span class="pd-field-status">${dot}<span>Подтвержден, создан ${esc(date)}</span></span>`)}${field('Статус исполнения', sourceRecord?'Не указан в источнике':`<span class="pd-field-status">${dot}<span>${esc(row.status || 'Исполняется')}, установлен ${esc(date)}</span></span>`)}${field('Актуальность бизнес-описания', sourceRecord?'Не указана в источнике':`<span class="pd-field-status">${dot}<span>Подписан, 01.02.2026<br>Иванов Сергей Иванович</span></span>`)}<p class="pd-small-muted">Процесс ПАО Сбербанк</p></article>`;
     const metadata = `<article class="pd-overview-panel pd-metadata-panel">${field('Документ, утвердивший выделение', '1/КП/Пот 13.01.2026')}${field('Тип результата', esc(row.type || 'Услуга'))}${field('Тип клиента', 'Внешний')}<div class="pd-overview-field pd-technology-field"><p class="pd-field-label">Технологический процесс</p><div class="pd-overview-tags">${Array.from({ length: 11 }, (_, i) => tag(`ТП${i + 1}`)).join('')}</div></div>${field('Вид информации', 'КТ, БТ, ДСП, ПДН')}<p class="pd-info-caption">${icon('imgIcon16Info', 'pd-icon-16')}<span>Присутствуют регуляторные риски</span></p><p class="pd-info-caption">${icon('imgIcon16Info', 'pd-icon-16')}<span>Инсайдерская информация отсутствует</span></p></article>`;
     const efficiency = `<article class="pd-overview-panel pd-efficiency-widget" data-pd-motion-group="efficiency"><div class="pd-widget-heading"><p>Эффективность</p><p class="pd-widget-value"><span data-pd-motion-number="50%">50%</span></p></div><div class="pd-sphere-viewport" role="img" aria-label="Эффективность 50 процентов"><div class="pd-large-sphere">${icon('imgSphereFixedPosition', 'pd-sphere-image')}<div class="pd-sphere-curtain"></div></div></div>${period('month', 'Сентябрь, 2026')}</article>`;
-    const bars = [22, 59, 101, 46, 59, 59, 59, 93, 101, 29.5, 68.251, 3];
-    // The current Process Details instance (1122:37292) overrides the master:
-    // 02/05/06/07 use the on-track gradient; 10/11 have no tone stripe.
-    // These are not empty months: retain their actual heights and motion.
-    const barTones = ['negative', 'on-track', '', 'warning', 'on-track', 'on-track', 'on-track', '', '', 'unstriped', 'unstriped', 'empty'];
-    const dynamics = `<article class="pd-overview-panel pd-dynamics-widget" data-pd-motion-group="dynamics"><div class="pd-widget-heading"><p>Динамика</p><p class="pd-widget-value pd-dynamics-value"><span data-pd-motion-number="0,5%">0,5%</span>${icon('imgTrend')}</p></div><div class="pd-dynamics-plot" role="img" aria-label="Динамика эффективности за 2026 год, 12 месяцев; изменение 0,5 процента"><div class="pd-dynamics-bars">${bars.map((height, i) => `<span class="pd-dynamics-bar${barTones[i] ? ' pd-dynamics-' + barTones[i] : ''}" style="height:${height}px;--pd-bar-index:${i}"></span>`).join('')}</div><div class="pd-dynamics-labels"><span>янв</span><span>сен</span></div></div>${period('year', '2026')}</article>`;
+    // Explicit synthetic history for the prototype, not actual process records.
+    // The same value drives the label, proportional height and efficiency band.
+    // September keeps the 72.3% example from Products-BPM / 1:14924.
+    const demoPercentages = [21.8, 58.4, 99.3, 45.5, 68.4, 70.6, 74.8, 91.7, 72.3, 29.2, 67.6, 78.8];
+    const months = demoPercentages.map(value => ({
+      value: `${String(value).replace('.', ',')} %`,
+      height: Math.max(4, 101 * value / 100),
+      tone: value < 45 ? 'negative' : value < 65 ? 'warning' : value < 85 ? 'on-track' : ''
+    }));
+    const plot = window.BpmDynamics.render({year:2026, labels:['янв','дек'], months}, esc);
+    const dynamics = `<article class="pd-overview-panel pd-dynamics-widget" data-pd-motion-group="dynamics"><div class="pd-widget-heading"><p>Динамика</p><p class="pd-widget-value pd-dynamics-value"><span data-pd-motion-number="0,5%">0,5%</span>${icon('imgTrend')}</p></div>${plot}${period('year', '2026')}</article>`;
 
     const starts = [
       'Идентифицированный и/или аутентифицированный клиент обратился для изменения лимита кредита по кредитной карте',

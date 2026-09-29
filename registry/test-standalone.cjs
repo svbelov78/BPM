@@ -182,7 +182,7 @@ async function main() {
     await page.locator('#tasks-reset').click(); await ready(page, 'tasks-results');
     await page.locator('#tasks-create').click();
     await page.locator('#task-drawer[open]').waitFor();
-    assert.equal(await page.locator('[data-task-type]').count(), 8);
+    assert.equal(await page.locator('[data-task-type]').count(), 9);
     await page.locator('[data-task-type="standard"]').click();
     await page.locator('#task-flow[open][data-mode="create"]').waitFor();
     assert.equal(await page.locator('#task-flow #tf-form').count(), 1);

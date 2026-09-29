@@ -3,7 +3,7 @@
   'use strict';
   const currentUser='Иванов Иван Васильевич';
   const storageKey='bpm-task-store:v1',version=1;
-  const statuses=new Set(['Создана','Выполняется','На согласовании','На доработке','Завершено','Отклонена','Отозвана']);
+  const statuses=new Set(['Создана','Выполняется','На согласовании','На доработке','Выполнена','Завершено','Отклонена','Отозвана','Отменено']);
   const textFields=['title','description','processId','processCode','processTitle','block','division','deadline','insightId','insightCode','insightTitle','initiator','executor','resultVariant','completionComment','rejectionReason','withdrawalReason','completedAt','rejectedAt','withdrawnAt','updatedAt'];
   const clone=value=>JSON.parse(JSON.stringify(value));
   const isObject=value=>!!value&&typeof value==='object'&&!Array.isArray(value);
@@ -17,10 +17,35 @@
     return Number(year)>=1800&&Number(year)<=2200&&date.getFullYear()===Number(year)&&date.getMonth()+1===Number(month)&&date.getDate()===Number(day);
   };
   const listeners=new Set();
+  // Version 1 remains readable: special-task payloads are additive, not a reset
+  // of the user's existing locally created typical tasks.
+  function flowData(value,depth=0){
+    if(depth>8)throw new TypeError('Слишком сложные данные задачи.');
+    if(value===null||typeof value==='boolean'||(typeof value==='number'&&Number.isFinite(value)))return value;
+    if(isText(value))return value;
+    if(Array.isArray(value)&&value.length<=200)return value.map(item=>flowData(item,depth+1));
+    if(isObject(value)&&Object.keys(value).length<=100){
+      const result={};
+      for(const [key,item] of Object.entries(value)){
+        if(!/^[\w-]{1,80}$/.test(key)||['__proto__','constructor','prototype'].includes(key))throw new TypeError('Некорректное поле сценария.');
+        result[key]=flowData(item,depth+1);
+      }
+      return result;
+    }
+    throw new TypeError('Некорректные данные сценария задачи.');
+  }
 
   function fields(input){
     if(!isObject(input))throw new TypeError('Ожидались поля задачи.');
     const result={};
+    if('flowType' in input){
+      if(!isText(input.flowType)||!Object.prototype.hasOwnProperty.call(window.BpmTaskTypes||{},input.flowType))throw new TypeError('Неизвестный тип задачи.');
+      result.flowType=input.flowType;
+    }
+    if('flowData' in input){
+      result.flowData=flowData(input.flowData);
+      if(JSON.stringify(result.flowData).length>100000)throw new TypeError('Слишком много данных задачи.');
+    }
     textFields.forEach(key=>{
       if(!Object.prototype.hasOwnProperty.call(input,key))return;
       if(!isText(input[key]))throw new TypeError(`Некорректное поле задачи: ${key}.`);
@@ -76,10 +101,12 @@
     const values=fields(input);
     if(!values.title?.trim())throw new TypeError('Укажите название задачи.');
     if(rows.length>=2000)throw new RangeError('Достигнут лимит локального хранилища задач.');
-    const now=new Date(),year=now.getFullYear(),pattern=new RegExp(`^ТЗ-${year}-(\\d+)$`);
+    const definition=values.flowType?window.BpmTaskTypes[values.flowType]:null;
+    const prefix=definition?.prefix||'ТЗ';
+    const now=new Date(),year=now.getFullYear(),pattern=new RegExp(`^${prefix}-${year}-(\\d+)$`);
     const serial=rows.reduce((max,row)=>Math.max(max,Number(pattern.exec(row.id)?.[1]||0)),0)+1;
     const createdISO=now.toISOString();
-    const row={description:'',processId:'',processCode:'',processTitle:'',block:'',division:'',deadline:'',assignees:[],variants:[],initiator:currentUser,comments:[],relatedCount:0,progress:0,overdue:false,highlight:false,...values,id:`ТЗ-${year}-${String(serial).padStart(6,'0')}`,number:rows.reduce((max,item)=>Math.max(max,item.number),0)+1,type:'Типовая',status:'Создана',created:createdISO,createdISO,local:true,outgoing:true};
+    const row={description:'',processId:'',processCode:'',processTitle:'',block:'',division:'',deadline:'',assignees:[],variants:[],initiator:currentUser,comments:[],relatedCount:0,progress:0,overdue:false,highlight:false,...values,id:`${prefix}-${year}-${String(serial).padStart(6,'0')}`,number:rows.reduce((max,item)=>Math.max(max,item.number),0)+1,type:definition?.label||'Типовая',status:definition?.createStatus||'Создана',created:createdISO,createdISO,local:true,outgoing:true};
     row.incoming=row.assignees.includes(currentUser);
     rows=[row,...rows];publish('create',row.id);return clone(row);
   }
@@ -89,7 +116,7 @@
     if('title' in values&&!values.title.trim())throw new TypeError('Укажите название задачи.');
     const previous=rows[index],row={...previous,...values,updatedAt:new Date().toISOString()};
     if('assignees' in values)row.incoming=row.assignees.includes(currentUser);
-    if(['Завершено','Отклонена','Отозвана'].includes(row.status)){row.overdue=false;row.highlight=false;}
+    if(['Завершено','Отклонена','Отозвана','Отменено'].includes(row.status)){row.overdue=false;row.highlight=false;}
     if(row.status==='Завершено')row.progress=100;
     rows=rows.map((item,i)=>i===index?row:item);publish('update',id);return clone(row);
   }

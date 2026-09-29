@@ -27,8 +27,21 @@
   const nameOf = person => typeof person === 'object' && person !== null ? person.name || person.label || '' : String(person || '');
   function typeTag(type = 'Тип задачи') {
     const label = String(type || 'Тип задачи');
-    const tone = /доступ/i.test(label) ? 'access' : /непримен/i.test(label) ? 'inapplicable' : /вариант/i.test(label) ? 'variant' : /типов/i.test(label) ? 'standard' : 'default';
-    const shortLabel = {access:'Доступы',inapplicable:'Неприменимость',variant:'Варианты',standard:'Типовая'}[tone] || label;
+    // Registry records carry the full type name; drawers use its short tag.
+    // Both forms resolve to the same approved Figma label and palette.
+    const rules = [
+      [/доступ/i, 'access', 'Доступы'],
+      [/управление ролями|^роли$/i, 'role', 'Роли'],
+      [/массовая неприменимость/i, 'inapplicable', 'Массовая неприменимость'],
+      [/непримен/i, 'inapplicable', 'Неприменимость'],
+      [/вариант/i, 'variant', 'Варианты'],
+      [/чек[-\s‑–]?лист|самопроверки актуальности/i, 'default', 'Чек-лист'],
+      [/актуализация бизнес[-\s]описания|^бизнес[-\s]описание$/i, 'default', 'Бизнес-описание'],
+      [/^задача к инсайту$/i, 'default', 'Задача к инсайту'],
+      [/типов/i, 'standard', 'Типовая']
+    ];
+    const match = rules.find(([pattern]) => pattern.test(label));
+    const [, tone = 'default', shortLabel = label] = match || [];
     return `<span class="task-type-tag task-type-${tone}" title="${escape(label)}">${escape(shortLabel)}</span>`;
   }
   function idBadge(value, {label = value, className = ''} = {}) {

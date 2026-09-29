@@ -256,20 +256,18 @@ async function processDrawer(page) {
     const style = getComputedStyle(element), stripe = getComputedStyle(element,'::before');
     return {height:element.getBoundingClientRect().height, classes:element.className, color:style.borderTopColor, border:style.borderTopWidth, image:stripe.backgroundImage, stripeHeight:stripe.height};
   }));
-  const heights = [22,59,101,46,59,59,59,93,101,29.5,68.251,3];
-  assert.equal(bars.length,heights.length);
+  const percentages = [21.8,58.4,99.3,45.5,68.4,70.6,74.8,91.7,72.3,29.2,67.6,78.8];
+  assert.equal(bars.length,percentages.length);
   bars.forEach((bar,index) => {
     const label = `dynamics month ${index + 1}`;
-    near(bar.height,heights[index],`${label}: height unchanged`);
-    if ([1,4,5,6].includes(index)) {
+    const value = percentages[index];
+    near(bar.height,101 * value / 100,`${label}: height proportional to the explicit demo percentage`);
+    assert.equal(bar.border,'4px',`${label}: every demo month has an efficiency stripe`);
+    if (value >= 65 && value < 85) {
       assert.match(bar.classes,/pd-dynamics-on-track/);
       gradient(bar.image,label);
       assert.equal(bar.stripeHeight,'4px');
-    } else if (index >= 9) {
-      // Updated Process Details instance 1122:37292 has no stripe in months 10–12.
-      assert.equal(bar.border,'0px',`${label}: unstriped in the current Figma instance`);
-      if (index < 11) assert.match(bar.classes,/pd-dynamics-unstriped/);
-    } else assert.equal(bar.color,index === 0 ? RGB.red : index === 3 ? 'rgb(255, 141, 40)' : RGB.green,`${label}: Figma solid category`);
+    } else assert.equal(bar.color,value < 45 ? RGB.red : value < 65 ? 'rgb(255, 141, 40)' : RGB.green,`${label}: solid category follows demo percentage`);
   });
   const monitor = await glyphs(page,'#pd-monitoring .bpm-efficiency-glyph');
   assert.ok(monitor.length > 0,'Process monitoring table uses production efficiency glyphs');
@@ -281,7 +279,7 @@ async function processDrawer(page) {
   });
   await page.locator('.pd-dynamics-widget').screenshot({path:'/tmp/bpm-efficiency-palette-process-dynamics.png'});
   await closeDrawer(page);
-  report('actual process drawer: monitoring glyphs, four on-track stripes, current Figma unstriped months 10–12 and unchanged bar heights');
+  report('actual process drawer: monitoring glyphs and all 12 synthetic dynamics percentages have matching stripes and proportional heights');
   return html;
 }
 
