@@ -1,4 +1,5 @@
-/* Figma Tasks 1105:21363 / 1105:20723. Shared task components use the registry tokens. */
+/* Figma Tasks cards 1105:21363 / registry table 137:12975.
+   Shared task components use the existing registry tokens. */
 .task-card{position:relative;display:flex;flex-direction:column;gap:16px;width:100%;max-width:var(--card-max-width);min-width:0;height:304px;padding:24px;border-radius:24px;background:var(--white);overflow:hidden;cursor:pointer}
 .task-card:hover{box-shadow:0 4px 6px #1a1a1a1f}
 .task-card:active{background:var(--positive);box-shadow:var(--click-shadow)}
@@ -34,7 +35,7 @@
 .task-card-footer .task-participant-route{flex-shrink:1;min-width:0}
 .task-card-footer .task-unassigned{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Keep the full date and 32px indicator on the avatar baseline. Only the
-   optional prefix is removed in tight cards; table deadlines are unchanged. */
+   optional prefix is removed in tight cards; tables omit it independently. */
 @container task-footer (max-width:340px){.task-card-footer .task-deadline-prefix{display:none}}
 @container task-footer (max-width:280px){.task-card-footer .task-participant-route{gap:4px}}
 .task-participant-route{display:inline-flex;align-items:center;gap:8px;flex-shrink:0}
@@ -56,17 +57,20 @@
 .tasks-table-scroll:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
 .tasks-table{table-layout:fixed;width:100%;min-width:1485px;border-collapse:separate;border-spacing:0;text-align:left;font-size:17px;line-height:24px;letter-spacing:-.119px}
 .tasks-table col{width:var(--task-column-width)}
-.task-heading-compact,.task-assignees-compact{display:none}
 .task-assignees-wide{display:inline-flex;vertical-align:middle}
-.task-assignee-count{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;color:var(--secondary);font-size:13px;line-height:18px}
-.tasks-table th{height:84px;padding:0;border:0;background:var(--bg);color:var(--secondary);font-size:17px;font-weight:400;line-height:24px;vertical-align:bottom;text-align:left}
-.task-sort-button{position:relative;display:flex;align-items:flex-end;gap:8px;width:100%;height:84px;padding:16px;text-align:left;font-size:17px;font-weight:400;line-height:24px;letter-spacing:-.119px}
+/* Registry table reference: Products BPM 137:12975. Keep the 56px header
+   and the row's first text baseline independent of the content length. */
+.tasks-table th{height:56px;padding:0;border:0;background:var(--bg);color:var(--secondary);font-size:13px;font-weight:400;line-height:18px;vertical-align:bottom;text-align:left}
+.task-sort-button{position:relative;display:flex;align-items:flex-end;gap:0;width:100%;height:56px;padding:16px;text-align:left;font-size:13px;font-weight:400;line-height:18px;letter-spacing:-.039px}
+.task-sort-button>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.task-col-assignees .task-sort-button{padding-inline:8px}
+.task-col-assignees .task-sort-button>span{white-space:normal;overflow-wrap:anywhere}
 .task-sort-button:hover{background:var(--hover);color:var(--text)}
-.task-sort-icon{display:block;flex:0 0 16px;width:16px;height:16px;margin-bottom:4px;opacity:0;transition:opacity .12s}
-.task-sort-button:is(.is-sorted,:hover,:focus-visible) .task-sort-icon{opacity:1}
+.task-sort-icon{display:none;flex:0 0 16px;width:16px;height:16px;margin:0;opacity:0;transition:opacity .12s}
+.task-sort-button:is(.is-sorted,:hover,:focus-visible){gap:8px}
+.task-sort-button:is(.is-sorted,:hover,:focus-visible) .task-sort-icon{display:block;opacity:1}
 .task-sort-icon.is-descending{transform:rotate(180deg)}
-.tasks-table th.task-col-created .task-sort-button{padding-inline:8px}
-.tasks-table td{height:180px;padding:0;border:0;border-bottom:1px solid var(--border);vertical-align:middle}
+.tasks-table td{height:180px;padding:0;border:0;border-bottom:1px solid var(--border);vertical-align:top}
 .tasks-table tbody tr:last-child td{border-bottom:0}
 .task-table-row{cursor:pointer}
 .task-table-row:hover{background:var(--hover)}
@@ -80,15 +84,21 @@
 .task-table-title:hover{color:var(--blue)}
 .task-table-description{margin:8px 0 0;color:var(--secondary);letter-spacing:-.119px}
 .tasks-table td.task-table-process{padding:24px 16px;vertical-align:top}
-.task-table-process>.task-id-badge{min-width:80px}
-.task-process-link{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;width:100%;max-height:96px;overflow:hidden;font-size:17px;line-height:24px;letter-spacing:-.119px;text-align:left;overflow-wrap:anywhere}
+.task-table-process>.task-id-badge{min-width:80px;vertical-align:top}
+.task-process-link{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;width:100%;max-height:96px;margin-top:8px;overflow:hidden;font-size:17px;font-weight:590;line-height:24px;letter-spacing:-.51px;text-align:left;overflow-wrap:anywhere}
 .task-process-link:hover{color:var(--blue)}
-.tasks-table td.task-table-initiator,.tasks-table td.task-table-assignees{padding:0 8px}
+.tasks-table td.task-table-initiator{padding:56px 8px 0}
+.tasks-table td.task-table-assignees{padding:63px 8px 0}
 .task-owner{display:flex;align-items:center;gap:8px;min-width:0}
-.task-owner-name{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-width:0;overflow-wrap:anywhere}
-.tasks-table td.task-table-created{padding:16px 8px 24px;white-space:nowrap}
-.tasks-table td.task-table-deadline{padding:0 10px}
-.tasks-table td.task-table-status{padding:0 4px}
+.task-owner-name{display:block;min-width:0;overflow-wrap:anywhere}
+.tasks-table td.task-table-created{padding:56px 16px 24px;white-space:nowrap}
+.task-table-created>time{display:block}
+.tasks-table td.task-table-deadline{padding:56px 16px 0}
+.task-table-deadline .task-deadline{align-items:flex-start;vertical-align:top}
+.tasks-table td.task-table-status{padding:55px 16px 0}
+.task-table-status .task-status{align-items:flex-start;vertical-align:top}
+.task-table-status .task-status>img{margin-top:6px}
+.task-table-status .task-status>span{overflow:visible;white-space:normal;overflow-wrap:anywhere}
 .task-muted{color:var(--secondary)}
 .tasks-table td.task-table-empty{height:200px;padding:32px 64px;color:var(--secondary);font-size:22px;line-height:30px;cursor:default}
 .task-skeleton-card,.task-skeleton-row{pointer-events:none;cursor:default}
@@ -101,27 +111,21 @@
 .task-skeleton-row .task-avatar-group .skeleton-avatar{margin-right:-5px;border:1px solid var(--white)}
 .task-skeleton-row .task-table-task .task-skeleton-lines{padding-top:6px}
 .task-skeleton-row .task-owner>.task-skeleton-lines{display:flex}
-/* Compact table from Figma 1113:4240 and 1113:26111: 1005–1217px. */
-@container(max-width:1399px){
-  .tasks-table{min-width:1005px}
-  .tasks-table col.task-col-title{width:max(248px,calc(50cqw - 254.5px))}
-  .tasks-table col.task-col-processTitle{width:max(206px,calc(50cqw - 296.5px))}
-  .tasks-table col.task-col-initiator{width:72px}
-  .tasks-table col.task-col-assignees{width:56px}
-  .tasks-table col.task-col-created{width:120px}
-  .tasks-table col.task-col-deadline{width:154px}
-  .tasks-table col.task-col-status{width:149px}
-  .task-heading-wide,.task-assignees-wide,.task-table-initiator .task-owner .task-owner-name{display:none}
-  .task-heading-compact{display:inline}
-  .task-assignees-compact{display:inline-flex;vertical-align:middle}
-  .task-col-initiator .task-sort-button{padding-inline:0;gap:0}
-  .task-col-assignees .task-sort-button,.task-col-deadline .task-sort-button,.task-col-status .task-sort-button{padding-inline:8px}
-  .task-col-initiator .task-sort-icon,.task-col-assignees .task-sort-icon{position:absolute;margin:0 0 49px 0}
-  .task-table-initiator .task-owner{justify-content:center}
-  .tasks-table td.task-table-assignees{text-align:center}
-  .tasks-table td.task-table-deadline{padding-inline:0;text-align:center}
-  .task-skeleton-row .task-owner>.task-skeleton-lines{display:none}
-  .task-skeleton-row .task-avatar-group .skeleton-avatar:not(:first-child){display:none}
+/* Preserve people at every width. Between 1193 and 1485px, interpolate
+   readable column minima to the reference widths; below that, scroll locally. */
+@container(max-width:1484px){
+  .tasks-table{--task-table-growth:max(0px,calc((100cqw - 1193px)/292));min-width:1193px}
+  .tasks-table col.task-col-title{width:calc(248px + var(--task-table-growth)*78)}
+  .tasks-table col.task-col-processTitle{width:calc(206px + var(--task-table-growth)*122)}
+  .tasks-table col.task-col-initiator{width:calc(192px + var(--task-table-growth)*56)}
+  .tasks-table col.task-col-assignees{width:129px}
+  .tasks-table col.task-col-created{width:calc(120px + var(--task-table-growth)*12)}
+  .tasks-table col.task-col-deadline{width:calc(149px + var(--task-table-growth)*12)}
+  .tasks-table col.task-col-status{width:calc(149px + var(--task-table-growth)*12)}
+  .task-col-initiator .task-sort-button,.task-col-deadline .task-sort-button,.task-col-status .task-sort-button{padding-inline:8px}
+  .task-col-created .task-sort-button{padding-inline:8px}
+  .tasks-table td.task-table-created{padding-inline:8px}
+  .tasks-table td.task-table-deadline,.tasks-table td.task-table-status{padding-inline:8px}
 }
 @media(max-width:767px){.tasks-cards-grid{gap:16px}.task-card{padding:24px}.task-card-tags{row-gap:6px}.task-card-title{-webkit-line-clamp:2}.task-card-footer .task-deadline{margin-left:auto}}
 @media(prefers-reduced-motion:reduce){.task-card{transition:none}}

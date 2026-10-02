@@ -42,6 +42,7 @@ const adapters = {
     [".src=`assets/chevron-${open?'up':'down'}.svg`", ".src=window.BPMEmbeddedAsset(`assets/chevron-${open?'up':'down'}.svg`)"],
   ],
   'calendar.js': [['src="assets/${name}.svg"','src="${window.BPMEmbeddedAsset(`assets/${name}.svg`)}"']],
+  'top-kp.js': [['src="assets/top-kp/legend-${color}.svg"','src="${window.BPMEmbeddedAsset(`assets/top-kp/legend-${color}.svg`)}"']],
   'structure.js': [['src="assets/${name}.svg"','src="${window.BPMEmbeddedAsset(`assets/${name}.svg`)}"']],
   'structure-incoming.js': [['src="assets/${name}.svg"','src="${window.BPMEmbeddedAsset(`assets/${name}.svg`)}"']],
   'tasks.js': [['src="${base}/${name}.svg"','src="${window.BPMEmbeddedAsset(`${base}/${name}.svg`)}"']],

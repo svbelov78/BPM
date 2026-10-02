@@ -1,4 +1,4 @@
-/* Tasks page: Figma 1105:21363 cards, 1105:20723 table, 1113:5061 type tags.
+/* Tasks page: Figma 1105:21363 cards, 137:12975 table, 1113:5061 type tags.
  * A shared HTML renderer for both registry views; interaction is delegated by the page. */
 (() => {
   'use strict';
@@ -53,14 +53,14 @@
     const statusDate = task.completedAt || task.rejectedAt || task.withdrawnAt || task.created;
     return `<span class="task-status">${icon(dot)}<span>${escape(label)}${withDate ? ` <span class="task-status-date">| ${escape(date(statusDate))}</span>` : ''}</span></span>`;
   }
-  function deadline(task) {
+  function deadline(task, {withPrefix = true} = {}) {
     if (task.status === 'Завершено' && task.completedAt) {
       const late = Boolean(task.deadline && task.deadline < day(task.completedAt));
       const source = late ? 'assets/task-flow/overdue.svg' : 'assets/task-flow/completed.svg';
       return `<span class="task-deadline${late ? ' is-overdue' : ''}" title="${late ? 'Превышен срок' : 'Закрыта в срок'}"><img src="${source}" alt="" aria-hidden="true"><span>${escape(date(task.completedAt))}</span></span>`;
     }
     const late = Boolean(task.overdue);
-    return `<span class="task-deadline${late ? ' is-overdue' : ''}"${late ? ' title="Срок задачи истёк"' : ''}>${icon(late ? 'deadline-overdue' : 'deadline-ontime')}<span>${task.deadline ? `${late ? '' : '<span class="task-deadline-prefix">до </span>'}${escape(date(task.deadline))}` : 'Без срока'}</span></span>`;
+    return `<span class="task-deadline${late ? ' is-overdue' : ''}"${late ? ' title="Срок задачи истёк"' : ''}>${icon(late ? 'deadline-overdue' : 'deadline-ontime')}<span>${task.deadline ? `${late || !withPrefix ? '' : '<span class="task-deadline-prefix">до </span>'}${escape(date(task.deadline))}` : 'Без срока'}</span></span>`;
   }
   function avatar(person, {personIcon = false} = {}) {
     const name = nameOf(person);
@@ -73,8 +73,7 @@
     return `<span class="task-avatar-group" aria-label="Исполнители: ${escape(names.join(', '))}">${names.slice(0, 3).map(person => avatar(person, {personIcon:true})).join('')}${names.length > 3 ? `<span class="task-avatar task-avatar-overflow" title="${escape(names.slice(3).join(', '))}">+${names.length - 3}</span>` : ''}</span>`;
   }
   function tableAssignees(people = []) {
-    const names = people.map(nameOf).filter(Boolean);
-    return `<span class="task-assignees-wide">${assignees(people)}</span><span class="task-assignees-compact" title="${escape(names.join(', '))}" aria-label="Исполнители: ${escape(names.join(', ') || 'не назначены')}">${names.length === 1 ? avatar(names[0], {personIcon:true}) : `<span class="task-assignee-count">${names.length || '—'}</span>`}</span>`;
+    return `<span class="task-assignees-wide">${assignees(people)}</span>`;
   }
   function card(task) {
     const processCode = task.processCode || task.processId;
@@ -92,14 +91,14 @@
   const columns = [
     {key:'title', label:'Тип, ID, Задача', width:326},
     {key:'processTitle', label:'Процесс', width:328},
-    {key:'initiator', label:'Инициатор', compactLabel:'Инициа-<br>тор', width:248},
-    {key:'assignees', label:'Ответствен-<br>ные', compactLabel:'Отв.', width:140},
-    {key:'created', label:'Создано', compactLabel:'Созда-<br>но', width:124},
-    {key:'deadline', label:'Срок задачи', width:176},
-    {key:'status', label:'Статус', width:143}
+    {key:'initiator', label:'Инициатор', width:248},
+    {key:'assignees', label:'Ответственные', width:129},
+    {key:'created', label:'Создано', width:132},
+    {key:'deadline', label:'Срок задачи', width:161},
+    {key:'status', label:'Статус', width:161}
   ];
   function header(sortKey, sortDir) {
-    return `<thead><tr>${columns.map(column => `<th scope="col" class="task-col-${column.key}" aria-sort="${sortKey === column.key ? sortDir === 'asc' ? 'ascending' : 'descending' : 'none'}"><button type="button" class="task-sort-button${sortKey === column.key ? ' is-sorted' : ''}" data-task-sort="${column.key}"><span${column.compactLabel ? ' class="task-heading-wide"' : ''}>${column.label}</span>${column.compactLabel ? `<span class="task-heading-compact">${column.compactLabel}</span>` : ''}${icon('sort', `task-sort-icon${sortKey === column.key && sortDir === 'desc' ? ' is-descending' : ''}`)}</button></th>`).join('')}</tr></thead>`;
+    return `<thead><tr>${columns.map(column => `<th scope="col" class="task-col-${column.key}" aria-sort="${sortKey === column.key ? sortDir === 'asc' ? 'ascending' : 'descending' : 'none'}"><button type="button" class="task-sort-button${sortKey === column.key ? ' is-sorted' : ''}" data-task-sort="${column.key}"><span>${column.label}</span>${icon('table-sort', `task-sort-icon${sortKey === column.key && sortDir === 'desc' ? ' is-descending' : ''}`)}</button></th>`).join('')}</tr></thead>`;
   }
   function tableRow(task) {
     const createdTime = String(task.created || '').match(/[T ](\d{2}:\d{2})/)?.[1] || '';
@@ -110,7 +109,7 @@
       <td class="task-table-initiator"><span class="task-owner">${avatar(task.initiator, {personIcon:true})}<span class="task-owner-name">${escape(nameOf(task.initiator))}</span></span></td>
       <td class="task-table-assignees">${tableAssignees(task.assignees)}</td>
       <td class="task-table-created"><time datetime="${escape(task.created)}">${escape(date(task.created))}${createdTime ? `<br>${escape(createdTime)}` : ''}</time></td>
-      <td class="task-table-deadline">${deadline(task)}</td>
+      <td class="task-table-deadline">${deadline(task, {withPrefix:false})}</td>
       <td class="task-table-status">${status(task)}</td>
     </tr>`;
   }

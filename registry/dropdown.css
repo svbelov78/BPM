@@ -12,6 +12,7 @@
 }
 .action-menu { border-radius: 16px; }
 .select-popup .select-option {
+  align-items: flex-start;
   min-height: 50px;
   padding: 13px 16px;
   gap: 8px;

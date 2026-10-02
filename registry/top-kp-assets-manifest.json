@@ -1,0 +1,19 @@
+{
+  "fileKey": "tOFCfQUjfFvAB0Pgqxb9xQ",
+  "nodeId": "204:2915",
+  "component": "tooltip_cardKP",
+  "assets": [
+    { "file": "assets/top-kp/tooltip-copy.svg", "nodeId": "1:1038", "name": "Icon/16/Copy", "width": 16, "height": 16 },
+    { "file": "assets/top-kp/tooltip-arrow.svg", "nodeId": "204:1317", "name": "Arrow", "width": 24, "height": 8 },
+    { "file": "assets/top-kp/legend-red.svg", "sourceNode": "204:3183", "name": "Legend 0–44%", "width": 16, "height": 16 },
+    { "file": "assets/top-kp/legend-yellow.svg", "sourceNode": "204:3183", "name": "Legend 45–64%", "width": 16, "height": 16 },
+    { "file": "assets/top-kp/legend-gray.svg", "sourceNode": "204:3183", "name": "Legend 65–84%", "width": 16, "height": 16 },
+    { "file": "assets/top-kp/legend-green.svg", "sourceNode": "204:3183", "name": "Legend 85–100%", "width": 16, "height": 16 },
+    { "file": "assets/top-kp/legend-none.svg", "sourceNode": "204:3183", "name": "Legend no data", "width": 16, "height": 16 },
+    { "file": "assets/top-kp/filter-chevron.svg", "sourceNode": "204:3159", "name": "Select chevron", "width": 16, "height": 16 },
+    { "file": "assets/top-kp/erase.svg", "fileKey": "QdYByHLCCMIKfTI0O0SXiE", "nodeId": "222:74", "name": "Icon/24/Erase", "width": 24, "height": 24, "colorOverride": "Blue text / --blue / #0088FF; original vector geometry preserved" }
+  ],
+  "dynamicComponents": {
+    "efficiency": "BpmCardVisuals.efficiency — native Efficiency/Small, driven by the same score as the TOP-KP card and drawer"
+  }
+}

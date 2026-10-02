@@ -1,0 +1,125 @@
+/* KP-UNIT 1280:1141 and ТОП-КП 158:20244.
+ * A single map-level width is shared by every leaf, including incomplete rows. */
+.top-kp-panel { --top-card-width:88px; --top-card-height:36px; --top-gap:4px; --top-section-gap:8px; display:flex; flex-direction:column; max-height:var(--top-panel-height,920px); width:100%; padding:24px; border-radius:32px; background:var(--panel); container:top-kp / inline-size; }
+.top-kp-mode main { padding-bottom:16px; }
+.top-kp-heading { display:flex; flex-direction:column; flex-shrink:0; gap:24px; margin-bottom:24px; }
+.top-kp-title-row { display:flex; align-items:center; justify-content:space-between; gap:24px; }
+.top-kp-heading h1 { font-size:26px; line-height:31px; font-weight:700; letter-spacing:-.078px; }
+.top-kp-count { color:var(--secondary); white-space:nowrap; }
+.top-kp-filter-toolbar { display:grid; grid-template-columns:minmax(0,1fr); align-items:start; gap:8px; }
+.top-kp-filter-toolbar.has-active-filters { grid-template-columns:minmax(0,1fr) 34px; }
+.top-kp-reset-slot { width:34px; padding-top:24px; }
+.top-kp-reset img { width:24px; height:24px; }
+.top-kp-filters { display:grid; grid-template-columns:minmax(0,405fr) minmax(0,155fr) minmax(0,654fr) minmax(0,447fr); gap:12px; }
+/* Captions have their own 12px line + 4px gap inside each group. Their height
+ * participates in the header budget instead of consuming the title's gap. */
+.top-kp-filter-group { position:relative; display:grid; min-width:0; gap:8px; padding-top:16px; }
+.top-kp-filter-group:not(:last-child) { padding-right:12px; border-right:1px solid var(--text); }
+.top-kp-filter-group--structure { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.top-kp-filter-group--internal { grid-template-columns:repeat(4,minmax(0,1fr)); }
+.top-kp-filter-group--maturity { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.top-kp-filter-caption { position:absolute; top:0; left:4px; right:0; color:var(--text); font-size:9px; line-height:12px; font-weight:510; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.top-kp-filter { min-width:0; }
+.top-kp-filter .field { height:50px; min-height:50px; }
+.top-kp-filter .select-input { text-overflow:ellipsis; }
+.top-kp-filter .select-toggle { width:16px; height:24px; }
+.top-kp-filter .select-toggle img { width:16px; height:16px; }
+.top-kp-map-viewport { min-height:0; flex:0 1 auto; overflow:auto; overscroll-behavior:auto; scrollbar-width:thin; }
+.top-kp-map { display:flex; flex-direction:column; align-items:stretch; gap:var(--top-section-gap); }
+.top-kp-row { display:flex; align-items:flex-start; flex-wrap:wrap; gap:var(--top-node-gap,8px); min-width:0; max-width:100%; }
+.top-kp-stack { display:flex; flex-direction:column; align-items:stretch; gap:var(--top-node-gap,8px); min-width:0; max-width:100%; }
+.top-kp-block { display:flex; flex-direction:column; gap:8px; width:max-content; min-width:0; max-width:100%; border-radius:16px; }
+.top-kp-block>h2,.top-kp-department--major>h3 { margin:0; font-size:26px; font-weight:400; line-height:31px; letter-spacing:-.078px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.top-kp-department { min-width:0; max-width:100%; }
+.top-kp-department:not(.top-kp-department--major)>h3 { position:relative; margin:0; padding:4px 8px 4px 2px; border-top:1px solid var(--color-border-divider,rgba(26,26,26,.2)); border-bottom:1px solid var(--color-border-divider,rgba(26,26,26,.2)); font-size:13px; line-height:18px; letter-spacing:-.039px; font-weight:400; min-height:28px; max-width:100%; }
+.top-kp-department>h3 span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.top-kp-department--major { display:flex; flex-direction:column; gap:8px; }
+.top-kp-group { display:flex; flex-direction:column; gap:var(--top-label-gap,8px); padding:8px 8px 8px var(--top-group-left,0px); border-radius:12px; background:var(--panel); min-width:0; max-width:100%; width:max-content; }
+/* Preserve the three-floor, 920px composition on constrained desktops.
+ * Header separators keep explicit space; packing adapts the cards to the
+ * remaining height without borrowing space from the title or filter labels. */
+.top-kp-panel[data-spacing=compact] { padding-top:16px; padding-bottom:16px; }
+.top-kp-panel[data-spacing=compact] .top-kp-heading { gap:16px; margin-bottom:16px; }
+.top-kp-panel[data-spacing=compact] .top-kp-group { padding-top:4px; padding-bottom:4px; }
+.top-kp-group-title { margin:0; font-size:9px; line-height:12px; font-weight:510; letter-spacing:0; text-transform:uppercase; height:12px; max-width:calc(var(--top-card-width)*var(--top-columns) + var(--top-gap)*(var(--top-columns) - 1)); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.top-kp-group[data-source-category=D11]>.top-kp-group-title { font-weight:400; }
+.top-kp-cards { display:grid; grid-template-columns:repeat(var(--top-columns),var(--top-card-width)); gap:var(--top-gap); align-items:start; }
+.top-kp-card { display:flex; flex-direction:column; justify-content:flex-start; width:var(--top-card-width); height:var(--top-card-height); min-width:0; padding:4px 8px; border:2px solid var(--top-card-border,var(--efficiency-unrated-border)); border-radius:8px; background:var(--white); text-align:left; font-size:9px; line-height:12px; font-weight:510; letter-spacing:0; transition:box-shadow .12s,color .12s; }
+.top-kp-card-title { display:-webkit-box; flex-shrink:0; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; overflow-wrap:anywhere; text-transform:uppercase; }
+.top-kp-card:not(:disabled):hover { color:var(--blue); box-shadow:0 4px 12px #1a1a1a1f; }
+.top-kp-card:not(:disabled):active { background:linear-gradient(90deg,#ffeefd 0%,#f1ffea 55%,#fff 100%); box-shadow:inset 0 2px 4px #1a1a1a29; color:#006dcc; }
+.top-kp-card.is-filtered-out { opacity:.25; pointer-events:none; cursor:default; color:var(--text); }
+.top-kp-card:focus-visible { position:relative; z-index:1; outline:2px solid var(--blue); outline-offset:2px; }
+.top-kp-card[data-band=green] { --top-card-border:#34c759; }
+.top-kp-card[data-band=yellow] { --top-card-border:#ffcc00; }
+.top-kp-card[data-band=red] { --top-card-border:#ff383c; }
+.top-kp-card[data-band=gray] { --top-card-border:#7f7f7f; }
+/* Figma adaptive states 194:5578; updated KP-UNIT uses radius 8 and border 2.
+ * Select the richest state that fits BOTH axes; spacing never scales. */
+.top-kp-panel[data-fit=true] .top-kp-row { flex-wrap:nowrap; }
+.top-kp-panel[data-fit=true] :is(.top-kp-row,.top-kp-stack)>* { flex-shrink:0; }
+.top-kp-panel[data-fit=true] .top-kp-map-viewport { overflow:visible; }
+.top-kp-panel[data-density=small] { --top-card-height:48px; }
+.top-kp-panel[data-density=regular] { --top-card-height:60px; }
+.top-kp-panel[data-density=large] { --top-card-height:72px; }
+.top-kp-panel:is([data-density=small],[data-density=regular]) .top-kp-card { font-size:13px; line-height:18px; font-weight:400; letter-spacing:-.039px; }
+.top-kp-panel[data-density=large] .top-kp-card { font-size:17px; line-height:24px; font-weight:590; letter-spacing:-.51px; }
+.top-kp-panel:not([data-density=compact]) .top-kp-card-title { text-transform:none; }
+.top-kp-card-code { display:none; flex-shrink:0; width:100%; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; color:var(--secondary); font-size:9px; line-height:12px; font-weight:510; letter-spacing:0; text-transform:uppercase; }
+.top-kp-panel:is([data-density=regular],[data-density=large]) .top-kp-card-code { display:block; }
+.top-kp-legend { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px 16px; padding-right:24px; font-size:9px; line-height:12px; font-weight:510; text-transform:uppercase; }
+.top-kp-legend>span { display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
+.top-kp-legend img { width:16px; height:16px; flex:none; }
+.top-kp-legend-title { color:var(--text); }
+@container top-kp (max-width:1000px) {
+  .top-kp-title-row { flex-wrap:wrap; gap:8px; }
+  .top-kp-legend { flex-basis:100%; justify-content:flex-start; padding-right:0; }
+}
+@container top-kp (max-width:900px) {
+  .top-kp-filters { grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px 12px; }
+  .top-kp-filter-group.top-kp-filter-group--internal { grid-column:1 / -1; grid-row:2; padding-right:0; border-right:0; }
+  .top-kp-filter-group--maturity { grid-column:1 / -1; }
+  .top-kp-filter-group.top-kp-filter-group--efficiency { padding-right:0; border-right:0; }
+}
+@container top-kp (max-width:450px) {
+  .top-kp-heading h1 { font-size:22px; line-height:26px; }
+  .top-kp-filters { grid-template-columns:minmax(0,1fr); }
+  .top-kp-filter-group.top-kp-filter-group--internal { grid-template-columns:repeat(2,minmax(0,1fr)); grid-row:auto; }
+  .top-kp-filter-group.top-kp-filter-group--structure { padding-right:0; border-right:0; }
+  .top-kp-legend { gap:4px 8px; }
+}
+/* Short desktop windows retain all three floors. Recover space from the
+ * outer bottom gutter, never from caption lines or the map's own spacing. */
+@media (min-width:1280px) and (max-height:960px) {
+  .top-kp-mode main { padding-bottom:8px; }
+  .top-kp-panel[data-spacing=compact] { padding-bottom:8px; }
+  .top-kp-panel[data-spacing=compact] .top-kp-heading { gap:12px; }
+}
+/* Interactive hover card, Products-BPM 204:2915. Reuse ID Counter and the
+ * dynamic Efficiency/Small renderer; the exported pointer keeps its native size. */
+.top-kp-hover { position:fixed; z-index:600; width:min(363px,calc(100vw - 24px)); padding-bottom:8px; color:var(--white); font-size:13px; line-height:18px; }
+.top-kp-hover-bubble { display:flex; flex-direction:column; align-items:stretch; gap:8px; padding:16px; border-radius:16px; background:var(--text); overflow:hidden; }
+.top-kp-hover-top { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+.top-kp-hover .id-badge { min-width:0; max-width:calc(100% - 92px); color:var(--text); font-weight:400; }
+.top-kp-hover .id-badge>span { overflow:hidden; text-overflow:ellipsis; }
+.top-kp-hover .id-badge:disabled { opacity:1; }
+.top-kp-hover .id-badge:disabled:hover { background:var(--panel); }
+.top-kp-hover .id-badge img { width:16px; height:16px; }
+.top-kp-hover .efficiency { gap:8px; font-size:17px; line-height:24px; font-weight:400; letter-spacing:-.119px; color:var(--white); }
+.top-kp-hover .efficiency :is(.fraction,.percent) { font-size:13px; line-height:18px; letter-spacing:-.039px; }
+.top-kp-hover strong { display:block; font-size:17px; line-height:24px; font-weight:590; letter-spacing:-.51px; overflow-wrap:anywhere; }
+.top-kp-hover-path { margin:0; font-size:13px; line-height:18px; letter-spacing:-.039px; overflow-wrap:anywhere; }
+.top-kp-hover-arrow { position:absolute; left:var(--top-arrow-left); bottom:0; width:24px; height:8px; }
+.top-kp-hover::after { content:""; position:absolute; left:0; right:0; top:100%; height:4px; }
+.top-kp-hover[data-placement=below] { padding-top:8px; padding-bottom:0; }
+.top-kp-hover[data-placement=below] .top-kp-hover-arrow { top:0; bottom:auto; transform:rotate(180deg); }
+.top-kp-hover[data-placement=below]::after { top:auto; bottom:100%; }
+@media(max-width:767px) {
+  .top-kp-panel { padding:16px 12px; border-radius:24px; }
+  .top-kp-heading h1 { font-size:22px; line-height:26px; }
+  .top-kp-map-viewport { max-height:min(800px,calc(100dvh - 160px)); }
+}
+@media(max-width:767px) and (max-height:700px) {
+  .top-kp-panel { max-height:none; }
+  .top-kp-map-viewport { min-height:180px; }
+}

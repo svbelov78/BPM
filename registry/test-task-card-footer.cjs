@@ -10,7 +10,7 @@ const path = require('node:path');
 const {pathToFileURL} = require('node:url');
 const {chromium} = require(process.env.BPM_PLAYWRIGHT || '/Users/admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
 const file = process.env.BPM_TASK_FOOTER_FILE ? path.resolve(process.env.BPM_TASK_FOOTER_FILE) : path.join(__dirname,'index.html');
-const base = pathToFileURL(file).href;
+const base = process.env.BPM_TASK_FOOTER_URL || pathToFileURL(file).href;
 const output = fs.mkdtempSync(path.join(os.tmpdir(),'bpm-task-footer-'));
 const failures = [],measurements = [];
 const people = ['Мария Иванова','Алексей Орлов','Дмитрий Козлов','Анна Петрова','Ирина Смирнова','Пётр Сидоров'];
@@ -138,9 +138,9 @@ async function tablePrefix(page){
       const prefix=cell.querySelector('.task-deadline-prefix');return {text:cell.innerText,prefix:prefix&&getComputedStyle(prefix).display,fontSize:getComputedStyle(cell.querySelector('.task-deadline')).fontSize};
     }));
     check(deadlines.length===5,`Table/${width}: all assignee fixtures exist`);
-    check(deadlines.every(row=>/до\s+30\.09\.2026/.test(row.text)&&row.prefix!=='none'&&row.fontSize==='17px'),`Table/${width}: full 'до' prefix and date typography remain unchanged`);
+    check(deadlines.every(row=>/^30\.09\.2026$/.test(row.text.trim())&&!row.prefix&&row.fontSize==='17px'),`Table/${width}: table date has no 'до' prefix and retains its typography`);
   }
-  console.log('CHECKED — table retains “до 30.09.2026” at desktop and mobile widths');
+  console.log('CHECKED — table uses “30.09.2026” without a prefix at desktop and mobile widths');
 }
 (async()=>{
   const browser=await chromium.launch({headless:true,channel:'chrome'}),errors=[];

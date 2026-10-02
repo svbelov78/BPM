@@ -32,6 +32,7 @@
   <link rel="stylesheet" href="tasks.css">
   <link rel="stylesheet" href="cabinet-cards.css">
   <link rel="stylesheet" href="cabinet.css">
+  <link rel="stylesheet" href="top-kp.css">
   <link rel="stylesheet" href="scroll-fades.css">
   <script src="demo-data.js" defer></script>
   <script src="structure-source.js" defer></script>
@@ -71,6 +72,10 @@
   <script src="cabinet-data.js" defer></script>
   <script src="cabinet-cards.js" defer></script>
   <script src="cabinet.js" defer></script>
+  <script src="top-kp-data.js" defer></script>
+  <script src="top-kp-identifiers.js" defer></script>
+  <script src="top-kp-filters.js" defer></script>
+  <script src="top-kp.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -92,7 +97,7 @@
       <button class="nav-item" id="paths-nav" aria-expanded="true" aria-controls="paths-submenu" data-tooltip="Пути и процессы"><span class="nav-tile"><img src="assets/paths.svg" alt=""></span><span class="menu-label">Пути и процессы</span><img class="nav-chevron" src="assets/chevron-down.svg" alt=""></button>
       <div class="submenu" id="paths-submenu">
         <a href="#main" id="registry-nav" class="subitem current" aria-current="page">Реестр КП и П</a>
-        <button class="subitem" id="top-paths">TOP КП</button>
+        <a href="#top-kp" class="subitem" id="top-paths">ТОП-КП</a>
         <a href="#tasks" id="tasks-nav" class="subitem">Задачи</a>
         <button class="subitem" data-service="Инсайты">Инсайты</button>
         <button class="subitem" data-service="Редизайны">Редизайны</button>
@@ -156,6 +161,7 @@
     </section>
     <section id="tasks-panel" class="tasks-panel" aria-labelledby="tasks-title" hidden></section>
     <section id="cabinet-panel" class="cabinet-panel" aria-labelledby="cabinet-title" hidden></section>
+    <section id="top-kp-panel" class="top-kp-panel" aria-labelledby="top-kp-title" hidden></section>
   </main>
   <div class="sr-only" id="result-announcement" role="status" aria-live="polite" aria-atomic="true"></div>
   <div class="toast" id="toast" role="status" hidden></div>

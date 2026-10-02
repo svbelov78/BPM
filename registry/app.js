@@ -7,11 +7,11 @@
   const fieldIcon = (name = 'field-chevron-down-16') => image(name, ['field-chevron-down-16','field-chevron-disabled-16','field-clear-16','chevron-down-pagination'].includes(name) ? 'field-action-icon' : '');
   const favoriteIcon = (cls='',name='liked',label='В избранном') => `<span class="favorite-heart ${cls}" ${label?`role="img" aria-label="${esc(label)}"`:'aria-hidden="true"'}>${image(name)}</span>`;
   const data = window.BPM_DATA || [];
-  const allRecords = [...data,...(window.BPM_STRUCTURE?.records || []),...(window.BPM_STRUCTURE_PATHS?.records || []),...(window.BPM_CABINET_DATA?.entities || [])];
+  const allRecords = [...data,...(window.BPM_STRUCTURE?.records || []),...(window.BPM_STRUCTURE_PATHS?.records || []),...(window.BPM_CABINET_DATA?.entities || []),...(window.BPM_TOP_KP?.records || [])];
   const defaults = {from:'2001-08-21',to:'2026-09-13'};
   const state = {entity:'paths',view:'cards',query:'',filters:{status:[],block:[],division:[],process:[],owner:[]},sort:'id-asc',sorts:{cards:'id-asc',table:'id-asc'},from:defaults.from,to:defaults.to,page:1,size:20,favoritesOnly:false,top:false,favorites:new Set(['paths-1232','paths-1233'])};
   try { const saved = JSON.parse(localStorage.getItem('bpm-registry-favorites')); if (Array.isArray(saved)) state.favorites = new Set(saved.filter(id => allRecords.some(row => row.id === id))); } catch (_) { /* Storage may be unavailable for local files. */ }
-  let structureMode=false, structure, tasksMode=false, tasks, cabinetMode=false, cabinet, resumeStructure=false;
+  let structureMode=false, structure, tasksMode=false, tasks, cabinetMode=false, cabinet, topKpMode=false, topKp, resumeStructure=false;
   const selects = {};
   let activeSelect = null, datePopup = null, actionMenu = null, tooltip = null, toastTimer;
   const LOADING_DURATION = 2000;
@@ -217,7 +217,7 @@
     $('result-announcement').textContent=isLoading?'Загрузка реестра…':`${state.entity==='paths'?'Клиентские пути':'Процессы'}: найдено ${count}. Страница ${state.page} из ${pages}.`;
   }
   function loadResults() {
-    if(tasksMode||cabinetMode)return;
+    if(tasksMode||cabinetMode||topKpMode)return;
     if(structureMode){structure.reload();return;}
     clearTimeout(loadingTimer);
     closeAction();
@@ -230,7 +230,7 @@
     },LOADING_DURATION);
   }
   function render() {
-    if(tasksMode||cabinetMode)return;
+    if(tasksMode||cabinetMode||topKpMode)return;
     if(structureMode){structure.refresh();return;}
     document.body.classList.toggle('table-view',state.view==='table');
     $('sort-select').hidden=state.view==='table';
@@ -285,6 +285,7 @@
   function openDetail(row, trigger = document.activeElement) {
     if(!row)return;
     activeSelect?.close();closeDate();closeAction();hideTooltip();
+    if(row.source==='top-kp')row=window.BpmTopKp.detailRecord(row);
     if(row.entity==='processes'||row.entity==='paths'){
       window.BpmProcessDrawer.open(row,{trigger,isFavorite:record=>state.favorites.has(record.id),toggleFavorite:favorite,createSelect:(id,config)=>new BpmSelect(id,config),createTask});
       return;
@@ -403,7 +404,7 @@
   $('sidebar').addEventListener('focusin',e=>{if(keyboardMode&&!menuPeekDismissed)setMenuPeek(true);});
   $('sidebar').addEventListener('focusout',e=>{if(!$('sidebar').contains(e.relatedTarget)){menuPeekDismissed=false;setMenuPeek(false);}});
   [['paths-nav','paths-submenu'],['gemba-nav','gemba-submenu']].forEach(([buttonId,menuId])=>{$(buttonId).addEventListener('click',()=>{if(innerWidth>=768&&document.body.classList.contains('menu-collapsed')&&!document.body.classList.contains('menu-peek')){menuPeekDismissed=false;setMenuPeek(true);return;}const open=$(buttonId).getAttribute('aria-expanded')!=='true';$(buttonId).setAttribute('aria-expanded',String(open));$(menuId).hidden=!open;$(buttonId).querySelector('.nav-chevron').src=`assets/chevron-${open?'up':'down'}.svg`;});});
-  $('top-paths').addEventListener('click',()=>{navigateRegistry('paths');state.top=true;setSort('eff-desc');changed();});
+  $('top-paths').addEventListener('click',e=>{e.preventDefault();navigateService('top-kp');});
   $('registry-nav').addEventListener('click',e=>{e.preventDefault();navigateRegistry(state.entity);});
   $('tasks-nav').addEventListener('click',e=>{e.preventDefault();navigateService('tasks');});
   $('cabinet-nav').addEventListener('click',()=>navigateService('cabinet'));
@@ -432,6 +433,7 @@
   function openSharedDetail(){
     if(!location.hash||location.hash==='#cabinet'){setService('cabinet');return;}
     if(location.hash==='#tasks'){setService(true);return;}
+    if(location.hash==='#top-kp'){setService('top-kp');return;}
     if(location.hash==='#main'){setService(false);return;}
     const match=location.hash.match(/^#(process|journey|path)=(.+)$/);if(!match)return;
     let id;try{id=decodeURIComponent(match[2]);}catch(_){return;}
@@ -446,7 +448,12 @@
       }
     }
     if(!row)return;
-    if(tasksMode||cabinetMode)setService(false);
+    if(row.source==='top-kp'){
+      setService('top-kp');
+      openDetail(row,$('top-paths'));
+      return;
+    }
+    if(tasksMode||cabinetMode||topKpMode)setService(false);
     if(row.source==='xlsx'){
       if(!structureMode)setStructure(true);
       if(structure.getEntity()!==entity)document.querySelector(`[data-structure-entity="${entity}"]`)?.click();
@@ -490,6 +497,7 @@
     isFavorite:row=>state.favorites.has(row.id),toggleFavorite:favorite,
     openTasks:()=>navigateService('tasks'),navigateRegistry,createTask
   });
+  topKp=window.BpmTopKp.create({openDetail,copyText,toast,closePopups,createSelect:(id,config)=>new BpmSelect(id,config)});
   function closePopups(){activeSelect?.close();closeDate();closeAction();hideTooltip();}
   function openTaskProcess(id,trigger){const row=allRecords.find(record=>record.entity==='processes'&&record.id===id);if(row)openDetail(row,trigger);else toast('Деталка связанного процесса пока не представлена в данных.');}
   function closeServiceDialogs(){
@@ -524,30 +532,33 @@
     navigateService('registry');
   }
   function setService(value){
-    // Keep the existing boolean callers compatible with the third section.
+    // Keep the original boolean registry/tasks callers compatible with sections.
     const service=value===true?'tasks':value===false?'registry':value;
-    const previous=tasksMode?'tasks':cabinetMode?'cabinet':'registry';
+    const previous=tasksMode?'tasks':cabinetMode?'cabinet':topKpMode?'top-kp':'registry';
     closePopups();closeMobile();closeServiceDialogs();
     if(service!==previous){
       if(previous==='registry'){
         resumeStructure=structureMode;if(structureMode)setStructure(false);
         clearTimeout(loadingTimer);isLoading=false;window.BpmCardVisuals.cancelCounters($('results'));
       }else if(previous==='tasks')tasks.leave();
-      else cabinet.leave();
-      tasksMode=service==='tasks';cabinetMode=service==='cabinet';
+      else if(previous==='cabinet')cabinet.leave();
+      else topKp.leave();
+      tasksMode=service==='tasks';cabinetMode=service==='cabinet';topKpMode=service==='top-kp';
       $('registry-panel').hidden=service!=='registry';
-      $('tasks-panel').hidden=!tasksMode;$('cabinet-panel').hidden=!cabinetMode;
+      $('tasks-panel').hidden=!tasksMode;$('cabinet-panel').hidden=!cabinetMode;$('top-kp-panel').hidden=!topKpMode;
       document.body.classList.remove('table-view');
       if(tasksMode)tasks.enter();
       else if(cabinetMode)cabinet.enter();
+      else if(topKpMode)topKp.enter();
       else if(resumeStructure){resumeStructure=false;setStructure(true);}
       else loadResults();
     }
     document.body.classList.toggle('tasks-mode',tasksMode);
     document.body.classList.toggle('cabinet-mode',cabinetMode);
-    document.title=cabinetMode?'Мой кабинет — Sber BPM':tasksMode?'Задачи — Sber BPM':'Реестр КП и П — Sber BPM';
-    $('main').setAttribute('aria-labelledby',cabinetMode?'cabinet-title':tasksMode?'tasks-title':'page-title');
-    [['cabinet-nav',cabinetMode],['tasks-nav',tasksMode],['registry-nav',!tasksMode&&!cabinetMode]].forEach(([id,current])=>{$(id).classList.toggle('current',current);if(current)$(id).setAttribute('aria-current','page');else $(id).removeAttribute('aria-current');});
+    document.body.classList.toggle('top-kp-mode',topKpMode);
+    document.title=cabinetMode?'Мой кабинет — Sber BPM':tasksMode?'Задачи — Sber BPM':topKpMode?'ТОП-КП — Sber BPM':'Реестр КП и П — Sber BPM';
+    $('main').setAttribute('aria-labelledby',cabinetMode?'cabinet-title':tasksMode?'tasks-title':topKpMode?'top-kp-title':'page-title');
+    [['cabinet-nav',cabinetMode],['tasks-nav',tasksMode],['top-paths',topKpMode],['registry-nav',!tasksMode&&!cabinetMode&&!topKpMode]].forEach(([id,current])=>{$(id).classList.toggle('current',current);if(current)$(id).setAttribute('aria-current','page');else $(id).removeAttribute('aria-current');});
   }
   $('structure-toggle').addEventListener('click',()=>setStructure(!structureMode));
   window.addEventListener('hashchange',()=>{openSharedDetail();if(!document.querySelector('dialog[open]'))focusMain();});

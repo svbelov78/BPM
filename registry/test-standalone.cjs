@@ -11,6 +11,24 @@ const {chromium} = require(process.env.BPM_PLAYWRIGHT || '/Users/admin/.cache/co
 const source = path.resolve(process.argv[2] || path.join(__dirname, '..', 'Sber-BPM-Registry-Standalone.html'));
 const report = text => console.log(`PASS — ${text}`);
 const ready = (page, id = 'results') => page.waitForFunction(id => document.getElementById(id)?.getAttribute('aria-busy') === 'false', id);
+const supportingGroups=new Set(['K10','L10','M10','N10','O10','P10','Q10','R10','S10']);
+function headingStyles(root) {
+  const style=element=>{const s=getComputedStyle(element);return {font:s.fontSize,line:s.lineHeight,weight:s.fontWeight,whiteSpace:s.whiteSpace,transform:s.textTransform,background:s.backgroundImage,radius:s.borderRadius,top:s.borderTopWidth,bottom:s.borderBottomWidth,borderColor:s.borderTopColor,padding:s.padding};};
+  const title=root.querySelector('h1').getBoundingClientRect(),legend=root.querySelector('.top-kp-legend').getBoundingClientRect();
+  return {spacing:root.dataset.spacing,padding:getComputedStyle(root).padding,contentWidth:root.clientWidth-parseFloat(getComputedStyle(root).paddingLeft)-parseFloat(getComputedStyle(root).paddingRight),headingGap:getComputedStyle(root.querySelector('.top-kp-heading')).gap,headingMargin:getComputedStyle(root.querySelector('.top-kp-heading')).marginBottom,footerCount:root.querySelectorAll('.top-kp-footer').length,legendBelowTitle:legend.top-title.bottom,filterGroups:[...root.querySelectorAll('.top-kp-filter-group')].map(group=>({paddingTop:getComputedStyle(group).paddingTop,captionTop:group.querySelector('.top-kp-filter-caption')?getComputedStyle(group.querySelector('.top-kp-filter-caption')).top:null})),h1:style(root.querySelector('h1')),h2:[...root.querySelectorAll('.top-kp-block>h2')].map(style),h3:[...root.querySelectorAll('.top-kp-department>h3')].map(el=>({cell:el.parentElement.dataset.sourceCategory,...style(el)})),groups:[...root.querySelectorAll('.top-kp-group')].map(el=>({cell:el.dataset.sourceCategory,gap:getComputedStyle(el).gap,padding:getComputedStyle(el).padding,title:style(el.querySelector('h4'))}))};
+}
+function assertHeadingStyles(styles,width,height) {
+  const compact=styles.spacing==='compact';assert.ok(['compact','design'].includes(styles.spacing));if(compact)assert.ok(width>=1280,'Compact vertical padding is a desktop height fallback only');
+  const shortDesktop=width>=1280&&height<=960;
+  assert.equal(styles.padding,width<768?'16px 12px':compact?(shortDesktop?'16px 24px 8px':'16px 24px'):'24px');assert.equal(styles.headingGap,compact?(shortDesktop?'12px':'16px'):'24px');assert.equal(styles.headingMargin,compact?'16px':'24px');
+  for(const group of styles.filterGroups){assert.equal(group.paddingTop,'16px','Caption line has its own layout space');if(group.captionTop!==null)assert.equal(group.captionTop,'0px');}
+  if(styles.contentWidth<=1000)assert.ok(styles.legendBelowTitle>=7.9,'Legend owns a separate row at container widths up to 1000px');
+  const narrowTitle=width<768||styles.contentWidth<=450;assert.equal(styles.h1.font,narrowTitle?'22px':'26px');assert.equal(styles.h1.line,narrowTitle?'26px':'31px');assert.equal(styles.h1.weight,'700');
+  assert.equal(styles.footerCount,0,'The removed TOP footer does not remain as hidden DOM');
+  for(const h of styles.h2){assert.equal(h.font,'26px');assert.equal(h.line,'31px');assert.equal(h.weight,'400');assert.equal(h.whiteSpace,'nowrap');}
+  for(const h of styles.h3){const major=h.cell==='A21';assert.equal(h.font,major?'26px':'13px');assert.equal(h.line,major?'31px':'18px');assert.equal(h.weight,'400');assert.equal(h.background,'none');assert.equal(h.radius,'0px');assert.equal(h.top,major?'0px':'1px');assert.equal(h.bottom,major?'0px':'1px');if(!major){assert.equal(h.borderColor,'rgba(26, 26, 26, 0.2)');assert.equal(h.padding,'4px 8px 4px 2px');}}
+  for(const group of styles.groups){const left=['L2','M2','C11','D11'].includes(group.cell);assert.equal(group.padding,compact?(left?'4px 8px':'4px 8px 4px 0px'):(left?'8px':'8px 8px 8px 0px'),group.cell);assert.equal(group.gap,compact?'4px':supportingGroups.has(group.cell)||['A2','B2','D2','G11'].includes(group.cell)?'10px':'8px',group.cell);assert.equal(group.title.font,'9px');assert.equal(group.title.line,'12px');assert.equal(group.title.weight,group.cell==='D11'?'400':'510');assert.equal(group.title.transform,'uppercase');assert.equal(group.title.whiteSpace,'nowrap');}
+}
 
 async function assets(page, label) {
   const images = await page.evaluate(async () => {
@@ -59,6 +77,210 @@ async function responsive(page, label) {
     if (width === 1920 || width === 390) await page.screenshot({path: path.join(os.tmpdir(), `bpm-standalone-${label}-${width}.png`)});
   }
   await page.setViewportSize({width: 1920, height: 1080});
+}
+
+async function topKp(page, url) {
+  await page.locator('#top-paths').click();
+  await page.waitForFunction(() => !document.querySelector('#top-kp-panel')?.hidden && document.querySelectorAll('#top-kp-panel [data-top-kp-id]').length === 136);
+  assert.equal(new URL(page.url()).hash, '#top-kp');
+  assert.equal(await page.locator('#top-paths').getAttribute('aria-current'), 'page');
+  const source = await page.evaluate(() => ({
+    count: window.BPM_TOP_KP.records.length,
+    blocks: window.BPM_TOP_KP.blocks.map(block => block.name),
+    first: window.BPM_TOP_KP.records.find(record => record.sourceCell === 'A3'),
+    firstCode: window.BpmTopKpIdentifiers.codeFor(window.BPM_TOP_KP.records.find(record => record.sourceCell === 'A3')),
+    missing: window.BPM_TOP_KP.records.every(record => !record.code && record.efficiency === null && record.owner === null && record.linkedProcesses.length === 0)
+  }));
+  assert.equal(source.count, 136);
+  assert.deepEqual(source.blocks, ['Каналы', 'Управление клиентским опытом', 'Корпоративное управление', 'Основной бизнес', 'Поддерживающие процессы']);
+  assert.equal(source.first.title, 'Идентификация по SberID');
+  assert.equal(source.missing, true, 'Synthetic display values do not overwrite missing Excel data');
+  const identifiers=await page.locator('.top-kp-card').evaluateAll(cards=>cards.map(card=>({id:card.dataset.topKpId,code:card.querySelector('.top-kp-card-code').textContent,expected:window.BpmTopKpIdentifiers.codeFor(window.BPM_TOP_KP.records.find(record=>record.id===card.dataset.topKpId))})));
+  assert.equal(new Set(identifiers.map(record=>record.code)).size,136,'All demo business IDs are unique');
+  for(const record of identifiers){assert.match(record.code,/^КП\d{4}$/);assert.equal(record.code,record.expected,'Card ID matches the stable demo identifier adapter');}
+  assert.equal(await page.locator('[data-source-category="H10"] > h3').textContent(), 'Управление багосостоянием', 'Workbook category names are preserved');
+  assert.equal(await page.locator('[data-top-kp-id="top-kp-sheet1-i4"] .top-kp-card-title').textContent(), 'Подключение подписки СберПрайм');
+
+  assert.equal(await page.locator('.top-kp-count').textContent(),'136','Current record count is shown next to the title');
+  assert.equal(await page.locator('.top-kp-filters .top-kp-filter').count(),10,'All ten Figma filters are embedded');
+  assert.deepEqual(await page.locator('.top-kp-filter .internal-label').allTextContents(),['Блоки','ССП','Эффективность','CSAT/CSI','Технические ошибки','Обращения','Вариативность','PM','Бенчмаркинг','Гемба']);
+  assert.deepEqual(await page.locator('.top-kp-legend>span').allTextContents(),['Эффективность','0–44%','45–64%','65–84%','85–100%','Нет данных']);
+  const topIcons=await page.locator('.top-kp-legend img,.top-kp-filter .select-toggle img').evaluateAll(async images=>{await Promise.all(images.map(image=>image.decode()));return images.map(image=>({src:image.getAttribute('src'),width:image.getBoundingClientRect().width,height:image.getBoundingClientRect().height,naturalWidth:image.naturalWidth,naturalHeight:image.naturalHeight}));});
+  assert.equal(topIcons.length,15,'Five legend icons and ten dropdown chevrons');
+  for(const icon of topIcons){assert.match(icon.src,/^data:image\/svg\+xml/,'TOP icons are embedded SVGs, not sibling files');assert.equal(icon.width,16);assert.equal(icon.height,16);assert.ok(icon.naturalWidth>0&&icon.naturalHeight>0);}
+  async function verifyTopFilters(label) {
+    const reset=page.locator('.top-kp-reset');
+    assert.equal(await reset.isVisible(),false,'Reset is hidden until a filter is selected');
+    await page.locator('#top-filter-efficiency .select-input').click();
+    const popup=page.locator('.top-kp-filter-popup');
+    await popup.waitFor();
+    const menu=await popup.evaluate(element=>({left:element.getBoundingClientRect().left,right:element.getBoundingClientRect().right,width:innerWidth,options:[...element.querySelectorAll('[role="option"]')].map(option=>{const style=getComputedStyle(option);return {font:style.fontSize,line:style.lineHeight,weight:style.fontWeight};})}));
+    assert.ok(menu.left>=0&&menu.right<=menu.width+1,`${label}: dropdown stays inside viewport`);
+    for(const option of menu.options)assert.deepEqual(option,{font:'17px',line:'24px',weight:'590'},`${label}: shared UI semibold dropdown typography`);
+    await page.screenshot({path:path.join(os.tmpdir(),`bpm-standalone-top-kp-filter-${label}.png`)});
+    await popup.locator('[role="option"]').filter({hasText:/^Лидер$/}).click();
+    await page.waitForFunction(()=>document.querySelectorAll('.top-kp-card:disabled').length>0);
+    const filtered=await page.evaluate(()=>({total:document.querySelectorAll('.top-kp-card').length,enabled:document.querySelectorAll('.top-kp-card:not(:disabled)').length,count:document.querySelector('.top-kp-count').textContent,faded:[...document.querySelectorAll('.top-kp-card:disabled')].every(card=>getComputedStyle(card).opacity==='0.25')}));
+    assert.equal(filtered.total,136,'Filtering does not remove or reflow Excel cards');assert.ok(filtered.enabled>0&&filtered.enabled<136);assert.equal(filtered.count,`${filtered.enabled} / 136`);assert.equal(filtered.faded,true);
+    // Closing an option list can expose a card beneath the pointer and its preview.
+    await page.mouse.move(1,1);await page.locator('#top-kp-tooltip').waitFor({state:'hidden'});
+    await page.locator('#top-filter-pm .select-input').click();
+    await page.locator('.top-kp-filter-popup [role="option"]').filter({hasText:/^Есть$/}).click();
+    await page.mouse.move(1,1);await page.locator('#top-kp-tooltip').waitFor({state:'hidden'});
+    assert.equal(await reset.isVisible(),true,'Eraser appears for active filters');
+    assert.equal(await reset.getAttribute('aria-label'),'Сбросить все фильтры');
+    await reset.scrollIntoViewIfNeeded();
+    const eraser=await reset.locator('img').evaluate(async image=>{await image.decode();const box=image.getBoundingClientRect();return {src:image.getAttribute('src'),width:box.width,height:box.height,naturalWidth:image.naturalWidth,naturalHeight:image.naturalHeight};});
+    assert.match(eraser.src,/^data:image\/svg\+xml/);assert.equal(eraser.width,24);assert.equal(eraser.height,24);assert.ok(eraser.naturalWidth>0&&eraser.naturalHeight>0);
+    const eraserSvg=/;base64,/.test(eraser.src)?Buffer.from(eraser.src.split(',')[1],'base64').toString('utf8'):decodeURIComponent(eraser.src.slice(eraser.src.indexOf(',')+1));
+    assert.match(eraserSvg,/fill=["']#0088ff["']/i,'Eraser uses the Blue text token');
+    await page.screenshot({path:path.join(os.tmpdir(),`bpm-standalone-top-kp-reset-${label}.png`)});
+    await reset.click();
+    await page.waitForFunction(()=>document.querySelectorAll('.top-kp-card:disabled').length===0);
+    assert.equal(await page.locator('.top-kp-count').textContent(),'136');
+    assert.equal(await reset.isVisible(),false,'Eraser hides after resetting all filters');
+    assert.deepEqual(await page.locator('.top-kp-filter .select-input').evaluateAll(inputs=>inputs.map(input=>input.title)),Array(10).fill('Все'));
+    assert.equal(await page.locator('.top-kp-filter-popup').count(),0,'Reset returns focus without reopening a dropdown');
+    assert.deepEqual(await page.locator('.top-kp-card-code').allTextContents(),identifiers.map(record=>record.code),'Filtering/reset never changes demo IDs');
+  }
+  await verifyTopFilters('desktop');
+  await assets(page,'ТОП-КП embedded filter/legend assets');
+  report('Offline TOP count, 136 stable unique demo IDs, embedded legend/filter/eraser icons, 25% filter opacity and global reset');
+
+  const departmentBackgrounds = await page.locator('.top-kp-department > h3').evaluateAll(elements => [...new Set(elements.map(element => getComputedStyle(element).backgroundImage))]);
+  assert.deepEqual(departmentBackgrounds, ['none'], 'Updated Figma department headings use dividers, not the old gradient asset');
+
+  const topViewports = [[320,844],[390,844],[768,1024],[1024,768],[1280,920],[1440,920],[1600,1000],[1920,920],[1920,1080],[2047,1107],[2560,920],[2560,1440],[3200,1800],[3840,920],[3840,2160],[3840,1920]];
+  const tiers={compact:{height:36,font:'9px',line:'12px',code:false},small:{height:48,font:'13px',line:'18px',code:false},regular:{height:60,font:'13px',line:'18px',code:true},large:{height:72,font:'17px',line:'24px',code:true}};
+  const topGeometry = [];
+  for (const [width,height] of topViewports) {
+    await page.setViewportSize({width, height});
+    await page.mouse.move(width - 1, 1);
+    await page.waitForTimeout(250);
+    await page.evaluate(async()=>{for(let frame=0;frame<5;frame++)await new Promise(requestAnimationFrame);});
+    const geometry = await page.evaluate(() => {
+      const root = document.querySelector('#top-kp-panel'), panel = root.getBoundingClientRect(), main = root.parentElement, mainStyle = getComputedStyle(main);
+      const elements = [...root.querySelectorAll('.top-kp-card')], cards = elements.map(card => card.getBoundingClientRect().width), viewport = root.querySelector('.top-kp-map-viewport');
+      const titles = new Map(elements.map(card => [card.dataset.topKpId, card.querySelector('.top-kp-card-title').textContent]));
+      const title=elements[0].querySelector('.top-kp-card-title'), titleStyle=getComputedStyle(title), codes=elements.map(card=>({code:card.querySelector('.top-kp-card-code'),title:card.querySelector('.top-kp-card-title')}));
+      return {cards, panel: {width: panel.width, height: panel.height}, availableWidth: main.clientWidth-parseFloat(mainStyle.paddingLeft)-parseFloat(mainStyle.paddingRight), documentWidth: document.documentElement.scrollWidth, viewportWidth: viewport.clientWidth, viewportScrollWidth: viewport.scrollWidth,viewportHeight:viewport.clientHeight,viewportScrollHeight:viewport.scrollHeight, fontSize:titleStyle.fontSize,lineHeight:titleStyle.lineHeight,titleClamp:titleStyle.webkitLineClamp,titleWidth:title.getBoundingClientRect().width,cardHeight: elements[0].getBoundingClientRect().height,radii:[...new Set(elements.map(card=>getComputedStyle(card).borderRadius))],cardGaps:[...root.querySelectorAll('.top-kp-cards')].map(grid=>({cell:grid.parentElement.dataset.sourceCategory,row:getComputedStyle(grid).rowGap,column:getComputedStyle(grid).columnGap})),groupGaps:[...root.querySelectorAll('.top-kp-row,.top-kp-stack,.top-kp-map')].filter(group=>group.children.length>1).map(group=>({gap:getComputedStyle(group).gap,topBlocks:group.classList.contains('top-kp-row')&&[...group.children].every(child=>child.classList.contains('top-kp-block'))})),visibleCodes:codes.filter(({code})=>code&&getComputedStyle(code).display!=='none').length,codesAboveTitle:codes.filter(({code,title})=>code&&getComputedStyle(code).display!=='none'&&code.getBoundingClientRect().bottom<=title.getBoundingClientRect().top+.1).length,density: root.dataset.density, exactNames: window.BPM_TOP_KP.records.every(record => titles.get(record.id) === record.title)};
+    });
+    topGeometry.push({width,height,...geometry});
+    assert.equal(geometry.cards.length, 136, `${width}px: all Excel cards remain present`);
+    assert.ok(geometry.cards.every(value => value > 0 && Math.abs(value - geometry.cards[0]) < .1), `${width}px: all cards have the same global width`);
+    assert.equal(geometry.exactNames, true, `${width}px: every source name remains intact after reflow`);
+    assert.ok(Math.abs(geometry.panel.width-geometry.availableWidth) <= 1, `${width}px: map fills the available layout width`);
+    if (width <= 1440) assert.ok(geometry.panel.height <= 920.1, `${width}px: compact map keeps its 920px cap`);
+    assert.ok(geometry.documentWidth <= width + 1, `${width}px: no horizontal page overflow`);
+    assert.ok(geometry.viewportScrollWidth <= geometry.viewportWidth + 1, `${width}px: no horizontal inner overflow`);
+    if(width>=1280) assert.ok(geometry.viewportScrollHeight<=geometry.viewportHeight+1,`${width}×${height}: full map fits without inner scrolling`);
+    if(width>=1280) {
+      const fit=await page.locator('#top-kp-panel').evaluate(root=>({bottom:root.getBoundingClientRect().bottom+scrollY,floors:root.querySelector('.top-kp-map').children.length,fit:root.dataset.fit}));
+      assert.equal(fit.floors,3,`${width}×${height}: three map floors`);assert.equal(fit.fit,'true',`${width}×${height}: fitted desktop layout`);
+      assert.ok(fit.bottom<=height+1,`${width}×${height}: all three floors fit viewport (${fit.bottom}px)`);
+    }
+    const tier=tiers[geometry.density];assert.ok(tier,`${width}×${height}: valid Figma tier`);
+    assert.equal(geometry.fontSize,tier.font);assert.equal(geometry.lineHeight,tier.line);assert.equal(geometry.titleClamp,'2');
+    assert.ok(Math.abs(geometry.cardHeight-tier.height)<.1,`${width}×${height}: component height`);
+    assert.deepEqual(geometry.radii,['8px'],`${width}×${height}: updated component radius`);
+    assert.deepEqual(await page.locator('.top-kp-card').evaluateAll(cards=>[...new Set(cards.map(card=>getComputedStyle(card).borderTopWidth))]),['2px'],`${width}×${height}: updated component border thickness`);
+    assert.equal(geometry.visibleCodes,tier.code?136:0,`${width}×${height}: adaptive ID visibility`);assert.equal(geometry.codesAboveTitle,geometry.visibleCodes,`${width}×${height}: ID is above title`);
+    assert.ok(geometry.cardGaps.every(gap=>gap.row==='4px'&&gap.column==='4px'),`${width}×${height}: updated Figma 4px card gaps`);
+    assert.ok(geometry.groupGaps.every(({gap,topBlocks})=>gap===(topBlocks?'16px':'8px')),`${width}×${height}: updated Figma container gaps`);
+    assertHeadingStyles(await page.locator('#top-kp-panel').evaluate(headingStyles),width,height);
+    await assets(page, `ТОП-КП ${width}px`);
+    if ([1440,390,2047,3840].includes(width)) await page.screenshot({path: path.join(os.tmpdir(), `bpm-standalone-top-kp-${width}x${height}.png`)});
+    if(width===1440||width===2047)await verifyTopFilters(`${width}x${height}`);
+  }
+  const compact = topGeometry.find(item => item.width === 1440), desktop = topGeometry.find(item => item.width === 1920&&item.height===1080), fourK = topGeometry.find(item => item.width === 3840&&item.height===2160);
+  assert.ok(desktop.panel.width > 1440 && fourK.panel.width > desktop.panel.width, 'Panel expands beyond the old 1440px cap');
+  assert.ok(desktop.cards[0] > compact.cards[0] && fourK.cards[0] > desktop.cards[0], 'Card widths increase on wide screens');
+  assert.ok(fourK.titleWidth>desktop.titleWidth&&desktop.titleWidth>compact.titleWidth,'Wider adaptive cards expose more title text');
+  assert.ok(fourK.visibleCodes>0,'Wide cards expose the ID row');
+
+  for(const width of [1440,1920])for(const mode of ['expanded','collapsed']) {
+    const menuPage=await page.context().newPage();
+    try {
+      await menuPage.setViewportSize({width,height:920});
+      await menuPage.addInitScript(mode=>localStorage.setItem('bpm-registry-menu',mode),mode);
+      await menuPage.goto(`${url}#top-kp`);
+      await menuPage.waitForFunction(()=>document.querySelectorAll('.top-kp-card').length===136);
+      await menuPage.evaluate(async()=>{await document.fonts.ready;for(let frame=0;frame<5;frame++)await new Promise(requestAnimationFrame);});
+      const fitted=await menuPage.locator('#top-kp-panel').evaluate(root=>{
+        const cards=[...root.querySelectorAll('.top-kp-card')].map(card=>card.getBoundingClientRect());let overlaps=0;
+        for(let a=0;a<cards.length;a++)for(let b=a+1;b<cards.length;b++)if(Math.min(cards[a].right,cards[b].right)-Math.max(cards[a].left,cards[b].left)>.1&&Math.min(cards[a].bottom,cards[b].bottom)-Math.max(cards[a].top,cards[b].top)>.1)overlaps++;
+        const view=root.querySelector('.top-kp-map-viewport');
+        return {fit:root.dataset.fit,bottom:root.getBoundingClientRect().bottom+scrollY,overlaps,overflow:view.scrollHeight-view.clientHeight,collapsed:document.body.classList.contains('menu-collapsed')};
+      });
+      assert.equal(fitted.collapsed,mode==='collapsed');assert.equal(fitted.fit,'true',`${width}px ${mode}: fitted map`);
+      assert.ok(fitted.bottom<=921,`${width}px ${mode}: map bottom ${fitted.bottom}`);assert.ok(fitted.overflow<=1,`${width}px ${mode}: no inner vertical scroll`);assert.equal(fitted.overlaps,0,`${width}px ${mode}: no overlapping cards`);
+      report(`ТОП-КП ${width}×920 / ${mode} menu: three floors fit without overlapping cards`);
+    } finally {await menuPage.close();}
+  }
+
+  await page.setViewportSize({width:390,height:844});
+  await page.waitForTimeout(200);
+  await page.evaluate(()=>scrollTo(0,0));
+  await verifyTopFilters('mobile');
+  const viewport = page.locator('.top-kp-map-viewport');
+  await page.evaluate(() => scrollTo(0, 0));
+  await viewport.evaluate(element => {element.scrollTop = 0;});
+  await page.waitForFunction(() => document.querySelector('.top-kp-map-viewport')?.dataset.scrollFade === 'bottom');
+  const scrollState = await viewport.evaluate(element => ({overflow: element.scrollHeight - element.clientHeight, behavior: getComputedStyle(element).overscrollBehaviorY, mask: getComputedStyle(element).maskImage}));
+  assert.ok(scrollState.overflow > 100, 'Mobile map has genuine inner overflow');
+  assert.equal(scrollState.behavior, 'auto', 'Map allows native scroll chaining');
+  assert.match(scrollState.mask, /linear-gradient/, 'Mobile overflowing map has a gradient edge');
+  const box = await viewport.boundingBox();
+  await page.mouse.move(box.x + box.width / 2, Math.min(800, box.y + box.height / 2));
+  await page.mouse.wheel(0, 140);
+  await page.waitForFunction(() => {
+    const element = document.querySelector('.top-kp-map-viewport');
+    return element.scrollTop > 0 && element.dataset.scrollFade === 'both';
+  });
+  await viewport.evaluate(element => {element.scrollTop = element.scrollHeight;});
+  await page.waitForFunction(() => document.querySelector('.top-kp-map-viewport')?.dataset.scrollFade === 'top');
+  const pageScrollBefore = await page.evaluate(() => ({y: scrollY, room: document.documentElement.scrollHeight - innerHeight - scrollY}));
+  if (pageScrollBefore.room > 2) {
+    await page.mouse.wheel(0, 180);
+    await page.waitForFunction(y => scrollY > y, pageScrollBefore.y);
+  }
+
+  await page.setViewportSize({width: 1440, height: 920});
+  await viewport.evaluate(element => {element.scrollTop = 0;});
+  const first = page.locator(`[data-top-kp-id="${source.first.id}"]`);
+  await first.click();
+  await page.waitForFunction(() => {
+    const drawer = document.querySelector('#process-drawer');
+    return drawer?.open && drawer.dataset.pdEntity === 'paths' && !drawer.classList.contains('pd-is-loading') && !drawer.querySelector('.pd-main')?.inert;
+  });
+  const drawer = page.locator('#process-drawer');
+  assert.equal(await drawer.locator('#pd-title').textContent(), source.first.title);
+  assert.match(await drawer.innerText(), /Каналы|Цифровой канал/);
+  assert.equal(await page.locator('#top-kp-detail').count(), 0, 'Excel card uses the standard КП drawer, not a separate custom modal');
+  const efficiency = await page.evaluate(id => window.BpmTopKp.score(window.BPM_TOP_KP.records.find(record => record.id === id)), source.first.id);
+  await page.waitForFunction(value => Number(document.querySelector('#process-drawer .jd-widget .pd-widget-value')?.textContent.replace('%','').replace(',','.').trim()) === value, efficiency);
+  assert.equal(await drawer.locator('#jd-included-processes .jd-process-card').count(), 0, 'No invented process relationships');
+  assert.equal(await drawer.locator('.pd-heading-labels [data-pd-action="copy"]').count(), 1, 'The authorized demo business ID can be copied');
+  assert.equal(await drawer.locator('.pd-heading-labels .pd-id-badge').textContent(), source.firstCode, 'Card and standard drawer share the same demo ID');
+  assert.equal(await drawer.locator('.pd-heading-labels [data-pd-action="copy"]').getAttribute('data-pd-copy'),source.firstCode);
+  for (const anchor of ['about','assessment','benchmark','additional']) {
+    assert.equal(await drawer.locator(`#pd-${anchor}`).count(), 1);
+    assert.equal(await drawer.locator(`[data-pd-anchor="${anchor}"]`).count(), 1);
+  }
+  await assets(page, 'ТОП-КП detail');
+  await page.keyboard.press('Escape');
+  await page.locator('#process-drawer[open]').waitFor({state: 'hidden'});
+  assert.equal(await first.evaluate(element => element === document.activeElement), true, 'Escape returns to the selected map card');
+
+  const deepLink = await page.context().newPage();
+  try {
+    await deepLink.goto(`${url}#top-kp`);
+    await deepLink.waitForFunction(() => !document.querySelector('#top-kp-panel')?.hidden && document.querySelectorAll('#top-kp-panel .top-kp-card').length === 136);
+    assert.equal(await deepLink.locator('#top-paths').getAttribute('aria-current'), 'page', 'Renamed standalone opens directly at #top-kp');
+    await assets(deepLink, 'ТОП-КП direct hash navigation');
+  } finally {await deepLink.close();}
+  await page.setViewportSize({width: 1920, height: 1080});
+  report('Offline ТОП-КП navigation/deep link, 136 source-backed equal-width cards, updated Figma headers/dividers/padding, responsive map through 4K, native inner scroll/fades and standard КП drawer');
 }
 
 async function main() {
@@ -197,6 +419,8 @@ async function main() {
     await responsive(page, 'tasks');
     report('Tasks table/cards, tabs, search, calendar range, standard creation form and responsive layout');
 
+    await topKp(page, url);
+
     await page.locator('#registry-nav').click(); await ready(page);
     for (const id of ['paths-nav', 'gemba-nav']) {
       await page.locator(`#${id}`).click(); await assets(page, `${id} collapsed chevron`);
@@ -226,7 +450,7 @@ async function main() {
     assert.deepEqual(errors, [], 'No JavaScript errors');
     assert.deepEqual(failures, [], 'No failed resource loads');
     assert.deepEqual(unexpected, [], 'No sibling-file or network resource requests');
-    console.log(JSON.stringify({status: 'PASS', source, isolatedFile: copy, bytes: fs.statSync(copy).size, resourceTypes: [...resources], errors, failures, unexpected, screenshots: path.join(os.tmpdir(), 'bpm-standalone-{registry,structure,tasks}-{1920,390}.png')}, null, 2));
+    console.log(JSON.stringify({status: 'PASS', source, isolatedFile: copy, bytes: fs.statSync(copy).size, resourceTypes: [...resources], errors, failures, unexpected, screenshots: [path.join(os.tmpdir(), 'bpm-standalone-{registry,structure,tasks}-{1920,390}.png'), path.join(os.tmpdir(), 'bpm-standalone-top-kp-{1440x920,390x844,2047x1107,3840x2160,3840x1920}.png'),path.join(os.tmpdir(),'bpm-standalone-top-kp-{filter,reset}-{desktop,mobile,1440x920,2047x1107}.png')]}, null, 2));
   } catch (error) {
     await page.screenshot({path: path.join(os.tmpdir(), 'bpm-standalone-failure.png')}).catch(() => {});
     console.error(JSON.stringify({errors, failures, unexpected, isolatedFile: copy}, null, 2));
