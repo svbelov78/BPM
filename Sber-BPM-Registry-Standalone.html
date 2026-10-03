@@ -2313,11 +2313,11 @@ body.structure-mode .structure-toolbar .structure-toggle img{width:24px;height:2
 
 </style>
   <style data-bpm-source="top-kp.css">
-/* KP-UNIT 1280:1141 and ТОП-КП 158:20244.
+/* KP-UNIT adaptive cards 1309:1081 and ТОП-КП 158:20244.
  * A single map-level width is shared by every leaf, including incomplete rows. */
-.top-kp-panel { --top-card-width:88px; --top-card-height:36px; --top-gap:4px; --top-section-gap:8px; display:flex; flex-direction:column; max-height:var(--top-panel-height,920px); width:100%; padding:24px; border-radius:32px; background:var(--panel); container:top-kp / inline-size; }
+.top-kp-panel { --top-card-width:80px; --top-card-height:45px; --top-gap:4px; --top-section-gap:8px; display:flex; flex-direction:column; max-height:var(--top-panel-height,920px); width:100%; padding:24px; border-radius:32px; background:var(--panel); container:top-kp / inline-size; }
 .top-kp-mode main { padding-bottom:16px; }
-.top-kp-heading { display:flex; flex-direction:column; flex-shrink:0; gap:24px; margin-bottom:24px; }
+.top-kp-heading { display:flex; flex-direction:column; flex-shrink:0; gap:16px; margin-bottom:24px; }
 .top-kp-title-row { display:flex; align-items:center; justify-content:space-between; gap:24px; }
 .top-kp-heading h1 { font-size:26px; line-height:31px; font-weight:700; letter-spacing:-.078px; }
 .top-kp-count { color:var(--secondary); white-space:nowrap; }
@@ -2343,24 +2343,28 @@ body.structure-mode .structure-toolbar .structure-toggle img{width:24px;height:2
 .top-kp-map { display:flex; flex-direction:column; align-items:stretch; gap:var(--top-section-gap); }
 .top-kp-row { display:flex; align-items:flex-start; flex-wrap:wrap; gap:var(--top-node-gap,8px); min-width:0; max-width:100%; }
 .top-kp-stack { display:flex; flex-direction:column; align-items:stretch; gap:var(--top-node-gap,8px); min-width:0; max-width:100%; }
-.top-kp-block { display:flex; flex-direction:column; gap:8px; width:max-content; min-width:0; max-width:100%; border-radius:16px; }
-.top-kp-block>h2,.top-kp-department--major>h3 { margin:0; font-size:26px; font-weight:400; line-height:31px; letter-spacing:-.078px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.top-kp-block { display:flex; flex-direction:column; gap:0; width:max-content; min-width:0; max-width:100%; border-radius:16px; }
+.top-kp-block>h2,.top-kp-department--major>h3 { margin:0; font-size:17px; font-weight:590; line-height:24px; letter-spacing:-.51px; font-variation-settings:"wdth" 100; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .top-kp-department { min-width:0; max-width:100%; }
 .top-kp-department:not(.top-kp-department--major)>h3 { position:relative; margin:0; padding:4px 8px 4px 2px; border-top:1px solid var(--color-border-divider,rgba(26,26,26,.2)); border-bottom:1px solid var(--color-border-divider,rgba(26,26,26,.2)); font-size:13px; line-height:18px; letter-spacing:-.039px; font-weight:400; min-height:28px; max-width:100%; }
 .top-kp-department>h3 span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.top-kp-department--major { display:flex; flex-direction:column; gap:8px; }
-.top-kp-group { display:flex; flex-direction:column; gap:var(--top-label-gap,8px); padding:8px 8px 8px var(--top-group-left,0px); border-radius:12px; background:var(--panel); min-width:0; max-width:100%; width:max-content; }
-/* Preserve the three-floor, 920px composition on constrained desktops.
+.top-kp-department--major { display:flex; flex-direction:column; gap:0; }
+.top-kp-group { display:flex; flex-direction:column; gap:var(--top-label-gap,8px); padding:8px var(--top-group-right,0px) 8px 0; border-radius:12px; background:var(--panel); min-width:0; max-width:100%; width:max-content; }
+/* Preserve explicit space around the three-floor composition on short desktops.
  * Header separators keep explicit space; packing adapts the cards to the
  * remaining height without borrowing space from the title or filter labels. */
 .top-kp-panel[data-spacing=compact] { padding-top:16px; padding-bottom:16px; }
 .top-kp-panel[data-spacing=compact] .top-kp-heading { gap:16px; margin-bottom:16px; }
 .top-kp-panel[data-spacing=compact] .top-kp-group { padding-top:4px; padding-bottom:4px; }
-.top-kp-group-title { margin:0; font-size:9px; line-height:12px; font-weight:510; letter-spacing:0; text-transform:uppercase; height:12px; max-width:calc(var(--top-card-width)*var(--top-columns) + var(--top-gap)*(var(--top-columns) - 1)); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.top-kp-group-title { margin:0; font-size:9px; line-height:12px; font-weight:510; letter-spacing:0; text-transform:uppercase; height:12px; max-width:calc(var(--top-card-width)*var(--top-columns) + var(--top-column-gap,4px)*(var(--top-columns) - 1)); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.top-kp-panel [data-heading-full][data-tooltip]:focus-visible { outline:2px solid var(--blue); outline-offset:2px; border-radius:2px; }
+.top-kp-heading-tooltip { max-width:min(360px,calc(100vw - 16px)); white-space:normal; overflow-wrap:anywhere; }
+.top-kp-heading-tooltip:after { left:var(--tooltip-arrow-left,calc(50% - 4px)); }
+.top-kp-heading-tooltip[data-placement=below]:after { top:-4px; bottom:auto; }
 .top-kp-group[data-source-category=D11]>.top-kp-group-title { font-weight:400; }
-.top-kp-cards { display:grid; grid-template-columns:repeat(var(--top-columns),var(--top-card-width)); gap:var(--top-gap); align-items:start; }
-.top-kp-card { display:flex; flex-direction:column; justify-content:flex-start; width:var(--top-card-width); height:var(--top-card-height); min-width:0; padding:4px 8px; border:2px solid var(--top-card-border,var(--efficiency-unrated-border)); border-radius:8px; background:var(--white); text-align:left; font-size:9px; line-height:12px; font-weight:510; letter-spacing:0; transition:box-shadow .12s,color .12s; }
-.top-kp-card-title { display:-webkit-box; flex-shrink:0; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; overflow-wrap:anywhere; text-transform:uppercase; }
+.top-kp-cards { display:grid; grid-template-columns:repeat(var(--top-columns),var(--top-card-width)); gap:var(--top-row-gap,4px) var(--top-column-gap,4px); align-items:start; }
+.top-kp-card { display:flex; flex-direction:column; justify-content:flex-start; width:var(--top-card-width); height:var(--top-card-height,45px); min-width:80px; padding:4px 6px; border:2px solid var(--top-card-border,var(--efficiency-unrated-border)); border-radius:8px; background:var(--white); text-align:left; font-size:11px; line-height:11px; font-weight:510; letter-spacing:-.66px; font-variation-settings:"wdth" 100; transition:box-shadow .12s,color .12s; }
+.top-kp-card-title { display:-webkit-box; flex-shrink:0; -webkit-box-orient:vertical; -webkit-line-clamp:var(--top-card-lines,3); overflow:hidden; white-space:normal; word-break:break-all; overflow-wrap:anywhere; text-transform:none; }
 .top-kp-card:not(:disabled):hover { color:var(--blue); box-shadow:0 4px 12px #1a1a1a1f; }
 .top-kp-card:not(:disabled):active { background:linear-gradient(90deg,#ffeefd 0%,#f1ffea 55%,#fff 100%); box-shadow:inset 0 2px 4px #1a1a1a29; color:#006dcc; }
 .top-kp-card.is-filtered-out { opacity:.25; pointer-events:none; cursor:default; color:var(--text); }
@@ -2369,19 +2373,17 @@ body.structure-mode .structure-toolbar .structure-toggle img{width:24px;height:2
 .top-kp-card[data-band=yellow] { --top-card-border:#ffcc00; }
 .top-kp-card[data-band=red] { --top-card-border:#ff383c; }
 .top-kp-card[data-band=gray] { --top-card-border:#7f7f7f; }
-/* Figma adaptive states 194:5578; updated KP-UNIT uses radius 8 and border 2.
- * Select the richest state that fits BOTH axes; spacing never scales. */
+/* Custom, non-token typography from 1309:1081: 11/11 Medium, 13/14 Regular,
+ * 17/16 Medium. All cards share the selected two- or three-line height.
+ * IDs live in hover/detail. The test surface shares the production rules. */
+.top-kp-measure { position:fixed; left:0; top:0; visibility:hidden; pointer-events:none; contain:layout style; }
 .top-kp-panel[data-fit=true] .top-kp-row { flex-wrap:nowrap; }
 .top-kp-panel[data-fit=true] :is(.top-kp-row,.top-kp-stack)>* { flex-shrink:0; }
 .top-kp-panel[data-fit=true] .top-kp-map-viewport { overflow:visible; }
-.top-kp-panel[data-density=small] { --top-card-height:48px; }
-.top-kp-panel[data-density=regular] { --top-card-height:60px; }
-.top-kp-panel[data-density=large] { --top-card-height:72px; }
-.top-kp-panel:is([data-density=small],[data-density=regular]) .top-kp-card { font-size:13px; line-height:18px; font-weight:400; letter-spacing:-.039px; }
-.top-kp-panel[data-density=large] .top-kp-card { font-size:17px; line-height:24px; font-weight:590; letter-spacing:-.51px; }
-.top-kp-panel:not([data-density=compact]) .top-kp-card-title { text-transform:none; }
-.top-kp-card-code { display:none; flex-shrink:0; width:100%; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; color:var(--secondary); font-size:9px; line-height:12px; font-weight:510; letter-spacing:0; text-transform:uppercase; }
-.top-kp-panel:is([data-density=regular],[data-density=large]) .top-kp-card-code { display:block; }
+:is(.top-kp-panel,.top-kp-measure)[data-density=regular] .top-kp-card { font-size:13px; line-height:14px; font-weight:400; letter-spacing:-.91px; }
+:is(.top-kp-panel,.top-kp-measure)[data-density=large] .top-kp-card { padding:6px; border-radius:10px; font-size:17px; line-height:16px; font-weight:510; letter-spacing:-1.02px; }
+:is(.top-kp-panel,.top-kp-measure)[data-density=regular] { --top-card-height:54px; }
+:is(.top-kp-panel,.top-kp-measure)[data-density=large] { --top-card-height:64px; }
 .top-kp-legend { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px 16px; padding-right:24px; font-size:9px; line-height:12px; font-weight:510; text-transform:uppercase; }
 .top-kp-legend>span { display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
 .top-kp-legend img { width:16px; height:16px; flex:none; }
@@ -2403,7 +2405,7 @@ body.structure-mode .structure-toolbar .structure-toggle img{width:24px;height:2
   .top-kp-filter-group.top-kp-filter-group--structure { padding-right:0; border-right:0; }
   .top-kp-legend { gap:4px 8px; }
 }
-/* Short desktop windows retain all three floors. Recover space from the
+/* Short desktop windows recover space for the three floors from the
  * outer bottom gutter, never from caption lines or the map's own spacing. */
 @media (min-width:1280px) and (max-height:960px) {
   .top-kp-mode main { padding-bottom:8px; }
@@ -9904,35 +9906,49 @@ window.BpmProcessAssets = Object.freeze({
       block('H1',stack(row(group('H2'),group('I2')),group('J2',2))),
       block('K1',row(stack(group('K2',2),group('K6',2)),stack(group('L2',2),group('M2',2))))
     ),
-    block('A9',row(
+    row(block('A9',row(
       department('A10',row(stack(group('A11',2),group('B11',2)),stack(group('C11',3),group('D11',3)),stack(group('F11'),group('E18')))),
       department('G10',group('G11')),
-      department('H10',row(group('H11'),group('I11'))),
-      department('A21',row(stack(group('A22'),group('B22')),stack(group('C22'),group('D22')),group('F22'),group('G22')))
+      department('H10',row(group('H11'),group('I11')))
     )),
+      department('A21',row(stack(group('A22'),group('B22')),stack(group('C22'),group('D22')),group('F22'),group('G22')))
+    ),
     block('K9',row(group('K10',2),group('L10',2),group('M10',2),group('N10'),stack(group('S10'),group('O10')),group('Q10',2),stack(group('R10',3),group('P10',3))))
   ];
   function cardsFor(item) {return item.cards || item.groups.flatMap(group=>group.cards);}
-  // Card gutters are always 4px; SSP padding provides the other half of
-  // the visible 16px horizontal separation between neighbouring groups.
-  const supportingCells=new Set(['K10','L10','M10','N10','O10','P10','Q10','R10','S10']);
+  // Group gutters belong to the row/stack, not individual SSP padding.
+  // Keep component-level card gutters independent from group separation.
   let compactSpacing=false;
   function groupMetrics(node) {
-    return {cardGap:4,left:['L2','M2','C11','D11'].includes(node.cell)?8:0,right:8,vertical:compactSpacing?4:8,labelGap:compactSpacing?4:supportingCells.has(node.cell)||['A2','B2','D2','G11'].includes(node.cell)?10:8};
+    const cell=node.cell;
+    return {columnGap:cell==='N10'?10:['H2','I2','J2','B22','D22','F22','G22','O10'].includes(cell)?8:4,
+      rowGap:['A11','F11','S10'].includes(cell)?10:['A2','J2','A22','C22'].includes(cell)?8:4,
+      left:0,right:0,vertical:compactSpacing?4:8,
+      labelGap:compactSpacing?4:['A2','B2','D2','G11','L10'].includes(cell)?10:8};
   }
-  const nodeGap=node=>node.gap??(node.kind==='row'&&node.children.every(child=>child.kind==='block')?16:8);
+  const isMajor=node=>node.kind==='block'||node.kind==='department'&&node.cell==='A21';
+  const nodeGap=node=>node.gap??(node.kind==='row'&&node.children.every(isMajor)?16:8);
   // Intrinsic width of the unwrapped design; max across all three bands.
   function widthOf(node,width,spacing) {
-    if(node.kind==='group'){const metric=groupMetrics(node);return node.columns*width+(node.columns-1)*metric.cardGap+metric.left+metric.right;}
+    if(node.kind==='group'){const metric=groupMetrics(node);return node.columns*width+(node.columns-1)*metric.columnGap+metric.left+metric.right;}
     const widths=node.children.map(child=>widthOf(child,width,spacing));
     return node.kind==='row'?widths.reduce((a,b)=>a+b,0)+nodeGap(node)*(widths.length-1):Math.max(...widths);
   }
   const spacing={cardGap:4,groupPadding:8,sectionGap:8};
-  const tiers=[{name:'large',height:72,minWidth:270},{name:'regular',height:60,minWidth:100},{name:'small',height:48,minWidth:80},{name:'compact',height:36,minWidth:48}];
-  function frontier(states,maxWidth) {
-    let best=Infinity;
+  const tiers=[
+    {name:'large',lines:3,height:64,minWidth:270,twoLineHeight:48,twoLineWidth:320},
+    {name:'regular',lines:3,height:54,minWidth:100,twoLineHeight:40,twoLineWidth:128},
+    {name:'compact',lines:3,height:45,minWidth:80,twoLineHeight:34,twoLineWidth:100}
+  ];
+  const variants=tier=>[tier,{...tier,lines:2,height:tier.twoLineHeight,minWidth:tier.twoLineWidth}];
+  const textRoom=layout=>(layout.width-16)*layout.tier.lines;
+  function frontier(states,maxWidth,fill=false) {
+    let best=Infinity,lastWidth=-1;
     return states.filter(state=>state.width<=maxWidth).sort((a,b)=>a.width-b.width||a.height-b.height).filter(state=>{
-      if(state.height>=best)return false;best=state.height;return true;
+      // The sizing pass only needs the narrowest state at a given height.
+      // The final fill pass also retains wider, equally short compositions.
+      if(state.width===lastWidth||(fill?state.height>best:state.height>=best))return false;
+      lastWidth=state.width;best=state.height;return true;
     });
   }
   function combine(a,b,kind,gap) {
@@ -9941,50 +9957,86 @@ window.BpmProcessAssets = Object.freeze({
   }
   // Pareto packing: retain only layouts that improve width OR height. Each
   // candidate uses one shared leaf width; block/department membership is fixed.
-  function layouts(node,cardWidth,cardHeight,available,forceRow=false) {
+  function layouts(node,cardWidth,cardHeight,available,forceRow=false,fill=false) {
     if(node.kind==='group') {
-      const item=categories.get(node.cell),count=cardsFor(item).length,states=[],metric=groupMetrics(node);
+      const item=categories.get(node.cell),cards=cardsFor(item),count=cards.length,states=[],metric=groupMetrics(node);
       for(let columns=1;columns<=count;columns++) {
-        const width=columns*cardWidth+(columns-1)*metric.cardGap+metric.left+metric.right;if(width>available)break;
+        const width=columns*cardWidth+(columns-1)*metric.columnGap+metric.left+metric.right;if(width>available)break;
         const rows=Math.ceil(count/columns);
-        states.push({width,height:metric.vertical*2+12+metric.labelGap+rows*cardHeight+(rows-1)*metric.cardGap,node:{...node,columns}});
+        states.push({width,height:metric.vertical*2+12+metric.labelGap+rows*cardHeight+(rows-1)*metric.rowGap,node:{...node,columns}});
       }
-      return frontier(states,available);
+      return frontier(states,available,fill);
     }
-    let states=layouts(node.children[0],cardWidth,cardHeight,available);
+    let states=layouts(node.children[0],cardWidth,cardHeight,available,false,fill);
     for(const child of node.children.slice(1)) {
-      const next=layouts(child,cardWidth,cardHeight,available);
-      const gap=forceRow?16:8;
-      states=frontier(states.flatMap(a=>next.flatMap(b=>forceRow?[combine(a,b,'row',gap)]:[combine(a,b,'row',gap),combine(a,b,'stack',gap)])),available);
+      const next=layouts(child,cardWidth,cardHeight,available,false,fill);
+      const gap=nodeGap(node);
+      states=frontier(states.flatMap(a=>next.flatMap(b=>forceRow?[combine(a,b,'row',gap)]:[combine(a,b,'row',gap),combine(a,b,'stack',gap)])),available,fill);
     }
     if(node.kind==='block'||node.kind==='department') {
-      states=frontier(states.map(state=>({width:state.width,height:state.height+(node.kind==='block'||node.cell==='A21'?39:28),node:{...node,children:[state.node]}})),available);
+      states=frontier(states.map(state=>({width:state.width,height:state.height+(isMajor(node)?24:28),node:{...node,children:[state.node]}})),available,fill);
     }
     return states;
   }
-  function fitMap(cardWidth,tier,available,budget) {
-    const floors=plan.map((node,index)=>layouts(node,cardWidth,tier.height,available,index===0));
+  function minimumMap(cardWidth,tier,available,keepFloors=true,fill=false) {
+    const floors=plan.map(node=>layouts(node,cardWidth,tier.height,available,keepFloors&&node.kind==='row'&&node.children.every(isMajor),fill));
     if(floors.some(states=>!states.length))return null;
-    const picks=floors.map(states=>states.reduce((best,state)=>state.height<best.height?state:best));
-    return picks.reduce((height,state)=>height+state.height,16)<=budget?picks.map(state=>state.node):null;
+    const picks=floors.map(states=>states.reduce((best,state)=>state.height<best.height||fill&&state.height===best.height&&state.width>best.width?state:best));
+    return {height:picks.reduce((height,state)=>height+state.height,16),plan:picks.map(state=>state.node)};
+  }
+  function fitMap(cardWidth,tier,available,budget) {
+    const minimum=minimumMap(cardWidth,tier,available);
+    return minimum&&minimum.height<=budget?minimum.plan:null;
   }
   function chooseLayout(available,budget) {
     for(const tier of tiers) {
-      let low=tier.minWidth,high=available,selected=fitMap(low,tier,available,budget);
-      if(!selected)continue;
-      // The finite column choices make the fit monotonic in shared card width.
-      for(let step=0;step<12;step++) {
-        const mid=(low+high)/2,candidate=fitMap(mid,tier,available,budget);
-        if(candidate){low=mid;selected=candidate;}else high=mid;
+      let best=null;
+      for(const variant of variants(tier)) {
+        let low=variant.minWidth,high=available,selected=fitMap(low,variant,available,budget);
+        if(!selected)continue;
+        // Every card uses the same two- or three-line height. A wider two-line
+        // option is considered only when it has room for a useful title.
+        for(let step=0;step<12;step++) {
+          const mid=(low+high)/2,candidate=fitMap(mid,variant,available,budget);
+          if(candidate){low=mid;selected=candidate;}else high=mid;
+        }
+        const candidate={tier:variant,width:Math.floor(low*100)/100,plan:selected};
+        if(!best||textRoom(candidate)>textRoom(best))best=candidate;
       }
-      return {tier,width:Math.floor(low*100)/100,plan:selected};
+      if(best)return best;
     }
     return null;
   }
+  // Width must be fluid even when vertical scrolling is necessary. Stretch the
+  // selected composition as a whole, never a last row or an individual group:
+  // every card on all three floors keeps exactly the same width and height.
+  function stretchLayout(selected,available) {
+    let low=selected.width,high=available;
+    for(let step=0;step<24;step++) {
+      const width=(low+high)/2;
+      if(selected.plan.every(node=>widthOf(node,width,spacing)<=available))low=width;
+      else high=width;
+    }
+    return {...selected,width:Math.floor(low*100)/100};
+  }
   let api,root,active=false,observer,frame,hover,hoverTrigger,hoverTimer,restoringHoverFocus=false,lastSize='';
   const filterModel=window.BpmTopKpFilters,filters={},filterSelects=[];
+  function syncHeadingTooltips() {
+    const selector='.top-kp-map h2,.top-kp-map h3,.top-kp-map h4,.top-kp-filter .internal-label,.top-kp-filter-caption';
+    root.querySelectorAll(selector).forEach(heading=>{
+      // h3 clips its block-level span; h2 clips the heading itself and its
+      // inline span has no measurable clientWidth/scrollWidth.
+      const text=heading.matches('h3')?heading.querySelector(':scope > span')||heading:heading;
+      const full=heading.dataset.headingFull||heading.getAttribute('title')||heading.textContent.trim();
+      heading.dataset.headingFull=full;
+      heading.removeAttribute('title');
+      const clipped=text.scrollWidth>text.clientWidth+.5;
+      if(clipped){heading.dataset.tooltip=full;heading.tabIndex=0;}
+      else {delete heading.dataset.tooltip;heading.removeAttribute('tabindex');}
+    });
+  }
   function applyFilters() {
-    closeHover();
+    closeHover();api.hideTooltip();
     let count=0;
     root.querySelectorAll('[data-top-kp-id]').forEach(button=>{
       const record=records.get(button.dataset.topKpId),matches=filterModel.matches(record,filters,score(record));
@@ -9999,6 +10051,7 @@ window.BpmProcessAssets = Object.freeze({
     counter.textContent=filtering?`${count} / ${records.size}`:String(records.size);
     counter.setAttribute('aria-label',filtering?`Соответствуют фильтрам ${count} из ${records.size}`:`Всего ${records.size}`);
     root.querySelector('.top-kp-filter-announcement').textContent=filtering?`Соответствуют фильтрам ${count} из ${records.size} клиентских путей. Остальные карточки недоступны.`:`Показаны все ${records.size} клиентских путей.`;
+    syncHeadingTooltips();
   }
   function code(record) {return window.BpmTopKpIdentifiers.codeFor(record);}
   // Project only prototype fields; never write invented values back to Excel data.
@@ -10009,7 +10062,7 @@ window.BpmProcessAssets = Object.freeze({
   }
   function card(item) {
     const record=records.get(item.id),value=score(record),label=`${code(record)}. ${record.title}. Эффективность ${value}%, демонстрационная оценка. Открыть карточку`;
-    return `<button type="button" class="top-kp-card" data-top-kp-id="${esc(record.id)}" data-band="${band(value)}" aria-label="${esc(label)}">${code(record)?`<span class="top-kp-card-code">${esc(code(record))}</span>`:''}<span class="top-kp-card-title">${esc(record.title)}</span></button>`;
+    return `<button type="button" class="top-kp-card" data-top-kp-id="${esc(record.id)}" data-top-kp-code="${esc(code(record))}" data-band="${band(value)}" aria-label="${esc(label)}"><span class="top-kp-card-title">${esc(record.title)}</span></button>`;
   }
   function renderNode(node,maxColumns,spacing,cardWidth) {
     // max(row widths) is piecewise linear: evaluating at 0 and 1 would choose
@@ -10019,7 +10072,7 @@ window.BpmProcessAssets = Object.freeze({
     const item=categories.get(node.cell),headingId=`top-kp-heading-${item.key}`;
     if(node.kind==='group') {
       const columns=Math.min(maxColumns,node.columns),metric=groupMetrics(node);
-      return `<section class="top-kp-group" data-source-category="${node.cell}" style="--top-columns:${columns};--top-gap:${metric.cardGap}px;--top-label-gap:${metric.labelGap}px;--top-group-left:${metric.left}px" aria-labelledby="${headingId}"><h4 class="top-kp-group-title" id="${headingId}" title="${esc(item.name)}">${esc(item.name)}</h4><div class="top-kp-cards">${cardsFor(item).map(card).join('')}</div></section>`;
+      return `<section class="top-kp-group" data-source-category="${node.cell}" style="--top-columns:${columns};--top-column-gap:${metric.columnGap}px;--top-row-gap:${metric.rowGap}px;--top-label-gap:${metric.labelGap}px;--top-group-right:${metric.right}px" aria-labelledby="${headingId}"><h4 class="top-kp-group-title" id="${headingId}" title="${esc(item.name)}">${esc(item.name)}</h4><div class="top-kp-cards">${cardsFor(item).map(card).join('')}</div></section>`;
     }
     const heading=node.kind==='block'?'h2':'h3';
     return `<section class="top-kp-${node.kind}${node.cell==='A21'?' top-kp-department--major':''}" style="${sizing}" data-source-category="${node.cell}" aria-labelledby="${headingId}"><${heading} id="${headingId}" title="${esc(item.name)}"><span>${esc(item.name)}</span></${heading}>${node.children.map(child=>renderNode(child,maxColumns,spacing,cardWidth)).join('')}</section>`;
@@ -10047,7 +10100,7 @@ window.BpmProcessAssets = Object.freeze({
   }
   function showHover(trigger) {
     cancelHoverClose();if(hoverTrigger===trigger&&hover)return;
-    closeHover();if(!trigger||trigger.disabled||document.querySelector('dialog[open]'))return;
+    closeHover();api.hideTooltip();if(!trigger||trigger.disabled||document.querySelector('dialog[open]'))return;
     const record=records.get(trigger.dataset.topKpId);if(!record)return;
     hoverTrigger=trigger;hover=document.createElement('div');hover.className='top-kp-hover';hover.id='top-kp-tooltip';
     // This tooltip has an actionable ID Counter, so expose a non-modal hover
@@ -10083,26 +10136,50 @@ window.BpmProcessAssets = Object.freeze({
     root.style.setProperty('--top-panel-height',`${panelHeight}px`);
     const heightBudget=()=>panelHeight-parseFloat(styles.paddingTop)-parseFloat(styles.paddingBottom)-heading.offsetHeight-parseFloat(getComputedStyle(heading).marginBottom)-2;
     let fitted=innerWidth>=1280?chooseLayout(available-2,heightBudget()):null;
-    if(innerWidth>=1280&&(!fitted||fitted.tier!==tiers[0])) {
+    if(innerWidth>=1280&&(!fitted||fitted.tier.name!==tiers[0].name)) {
       compactSpacing=true;root.dataset.spacing='compact';
       const compact=chooseLayout(available-2,heightBudget());
-      if(compact&&(!fitted||tiers.indexOf(compact.tier)<tiers.indexOf(fitted.tier)))fitted=compact;
+      const rank=layout=>tiers.findIndex(tier=>tier.name===layout.tier.name);
+      if(compact&&(!fitted||rank(compact)<rank(fitted)||rank(compact)===rank(fitted)&&textRoom(compact)>textRoom(fitted)))fitted=compact;
       else {compactSpacing=false;root.dataset.spacing='design';}
     }
-    root.dataset.fit=String(!!fitted);
-    if(fitted) {
-      root.style.setProperty('--top-card-width',`${fitted.width}px`);
-      root.dataset.density=fitted.tier.name;
-      map.innerHTML=fitted.plan.map(node=>renderNode(node,Infinity,spacing,fitted.width)).join('');
-    } else {
-      // Phones retain readable cards and native scroll; never scale the whole
-      // map (which would also shrink its fixed 4/16px gutters and hit targets).
-      const cardWidth=Math.max(80,Math.min(128,...plan.map(node=>(available-2-widthOf(node,0,spacing))/(widthOf(node,1,spacing)-widthOf(node,0,spacing)))));
-      const maxColumns=Math.max(1,Math.floor((available-spacing.groupPadding*2+spacing.cardGap)/(cardWidth+spacing.cardGap)));
-      root.style.setProperty('--top-card-width',`${Math.floor(cardWidth*100)/100}px`);
-      root.dataset.density='compact';
-      map.innerHTML=plan.map(node=>renderNode(node,maxColumns,spacing,cardWidth)).join('');
+    if(!fitted) {
+      // Compare the total height of the two shared line modes. Do not shorten
+      // individual cards: all 136 cards switch together at a layout change.
+      if(innerWidth>=1280){compactSpacing=true;root.dataset.spacing='compact';}
+      for(const tier of variants(tiers[2])) {
+        const minimum=minimumMap(tier.minWidth,tier,available-2,innerWidth>=1280);
+        if(!minimum)continue;
+        const candidate=stretchLayout({tier,width:tier.minWidth,plan:minimum.plan,height:minimum.height},available);
+        if(!fitted||candidate.height<fitted.height||candidate.height===fitted.height&&textRoom(candidate)>textRoom(fitted))fitted=candidate;
+      }
+      fitted||={tier:tiers[2],width:80,plan};
     }
+    let fluid=stretchLayout(fitted,available);
+    let filled=minimumMap(fluid.width,fluid.tier,available,innerWidth>=1280,true);
+    if(filled)fluid=stretchLayout({...fluid,plan:filled.plan},available);
+    // Different fixed gutters can leave an entire column unused on one floor
+    // at a packing boundary. Check nearby shared widths, not individual rows,
+    // and keep a fuller composition only if it is no taller than the first.
+    const floorSlack=layout=>Math.max(...layout.plan.map(node=>available-widthOf(node,layout.width,spacing)));
+    if(innerWidth>=1280&&filled&&floorSlack(fluid)>8) {
+      const initialWidth=fluid.width,maxHeight=filled.height;
+      for(const delta of [.25,.5,1,2,4]) {
+        const width=initialWidth-delta;if(width<fluid.tier.minWidth)break;
+        const candidate=minimumMap(width,fluid.tier,available,true,true);
+        if(!candidate||candidate.height>maxHeight)continue;
+        const stretched=stretchLayout({...fluid,width,plan:candidate.plan},available);
+        if(floorSlack(stretched)<floorSlack(fluid)-.5){fluid=stretched;filled=candidate;}
+        if(floorSlack(fluid)<=8)break;
+      }
+    }
+    root.dataset.fit=String(innerWidth>=1280&&!!filled&&filled.height<=heightBudget());
+    root.style.setProperty('--top-card-width',`${fluid.width}px`);
+    root.style.setProperty('--top-card-height',`${fluid.tier.height}px`);
+    root.style.setProperty('--top-card-lines',fluid.tier.lines);
+    root.dataset.density=fluid.tier.name;
+    root.dataset.lines=String(fluid.tier.lines);
+    map.innerHTML=fluid.plan.map(node=>renderNode(node,Infinity,spacing,fluid.width)).join('');
     applyFilters();
     root.querySelector('.top-kp-map-viewport').scrollTop=scroll;
     if(focused)root.querySelector(`[data-top-kp-id="${CSS.escape(focused)}"]`)?.focus({preventScroll:true});
@@ -10132,7 +10209,7 @@ window.BpmProcessAssets = Object.freeze({
       first.suppressFocusOpen=true;first.input.focus({preventScroll:true});first.suppressFocusOpen=false;
     });
     root.addEventListener('click',event=>{const trigger=event.target.closest('[data-top-kp-id]');if(trigger&&!trigger.disabled){closeHover();api.openDetail(records.get(trigger.dataset.topKpId),trigger);}});
-    root.addEventListener('pointerover',event=>{if(event.pointerType==='touch')return;const card=event.target.closest('[data-top-kp-id]');if(card&&!card.contains(event.relatedTarget))showHover(card);});
+    root.addEventListener('pointerover',event=>{if(event.target.closest('[data-tooltip]'))closeHover();if(event.pointerType==='touch')return;const card=event.target.closest('[data-top-kp-id]');if(card&&!card.contains(event.relatedTarget))showHover(card);});
     root.addEventListener('pointerout',event=>{if(hoverTrigger&&!withinHover(event.relatedTarget))scheduleHoverClose();});
     root.addEventListener('focusin',event=>{const card=event.target.closest('[data-top-kp-id]');if(card&&!restoringHoverFocus)showHover(card);});
     root.addEventListener('focusout',event=>{if(!withinHover(event.relatedTarget))closeHover();});
@@ -10143,7 +10220,7 @@ window.BpmProcessAssets = Object.freeze({
     document.addEventListener('scroll',()=>closeHover(),true);
     observer=new ResizeObserver(scheduleLayout);observer.observe(root);
     window.addEventListener('resize',scheduleLayout);
-    return {enter(){active=true;lastSize='';scheduleLayout();},leave(){active=false;cancelAnimationFrame(frame);closeHover();filterSelects.forEach(select=>select.close());},refresh(){lastSize='';scheduleLayout();}};
+    return {enter(){active=true;lastSize='';scheduleLayout();},leave(){active=false;cancelAnimationFrame(frame);closeHover();api.hideTooltip();filterSelects.forEach(select=>select.close());},refresh(){lastSize='';scheduleLayout();}};
   }
   window.BpmTopKp=Object.freeze({create,detailRecord,score,band});
 })();
@@ -10516,8 +10593,11 @@ window.BpmProcessAssets = Object.freeze({
     const csv='\uFEFF'+[header,...rows.map(row=>[row.entity==='paths'?'Клиентский путь':'Процесс',row.numberSimulated?row.code:row.number,row.title,row.block,row.division,row.owner,row.status,row.date?dateLabel(row.date):'',row.efficiency===null?'':String(row.efficiency).replace('.',','),row.delta])].map(row=>row.map(cell).join(';')).join('\r\n');
     const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));const link=document.createElement('a');link.href=url;link.download=`Sber-BPM-${structureMode?'structure':state.entity}-${new Date().toISOString().slice(0,10)}.csv`;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);$('export-dialog').close();toast(`Экспортировано записей: ${rows.length}`);
   });
-  let menuPreference='auto', menuPeekDismissed=false, keyboardMode=false, previousMobile=null;
+  let menuPreference='auto', topKpMenuPreference=null, menuPeekDismissed=false, keyboardMode=false, previousMobile=null;
   try {const saved=localStorage.getItem('bpm-registry-menu');if(['expanded','collapsed'].includes(saved))menuPreference=saved;} catch (_) {}
+  // ТОП-КП starts with more room for the map, without changing the saved menu
+  // preference of other sections. Manual changes last for this TOP visit only.
+  function effectiveMenuPreference() {return topKpMode ? topKpMenuPreference || 'collapsed' : menuPreference;}
   function menuIsCollapsed(width, preference) {return preference==='collapsed'||(preference!=='expanded'&&width<=1440);}
   function setMenuPeek(open) {
     const collapsed=document.body.classList.contains('menu-collapsed');
@@ -10526,20 +10606,24 @@ window.BpmProcessAssets = Object.freeze({
     $('collapse-menu').setAttribute('aria-expanded',String(innerWidth<768?document.body.classList.contains('mobile-menu-open'):!collapsed||peek));
     $('collapse-menu').setAttribute('aria-label',innerWidth<768?'Закрыть меню':peek?'Закрыть раскрытое меню':collapsed?'Раскрыть меню поверх страницы':'Свернуть меню');
     $('collapse-menu').querySelector('img').src=window.BPMEmbeddedAsset(`assets/${collapsed&&!peek&&innerWidth>=768?'menu-right':'collapse-menu'}.svg`);
-    $('pin-menu').hidden=!(peek||(innerWidth<768&&document.body.classList.contains('mobile-menu-open')&&menuPreference!=='expanded'));
+    $('pin-menu').hidden=!(peek||(innerWidth<768&&document.body.classList.contains('mobile-menu-open')&&effectiveMenuPreference()!=='expanded'));
     hideTooltip();
   }
   function setMenuPreference(value) {
-    menuPreference=value;menuPeekDismissed=value==='collapsed';
-    try {localStorage.setItem('bpm-registry-menu',value);} catch (_) {}
+    if(topKpMode)topKpMenuPreference=value;
+    else {
+      menuPreference=value;
+      try {localStorage.setItem('bpm-registry-menu',value);} catch (_) {}
+    }
+    menuPeekDismissed=value==='collapsed';
     activeSelect?.close();closeDate();closeAction();syncMenu();
   }
   function syncMenu() {
-    const mobile=innerWidth<768;
-    document.body.classList.toggle('menu-collapsed',menuIsCollapsed(innerWidth,menuPreference));
-    document.body.classList.toggle('menu-pinned',menuPreference==='expanded');
+    const mobile=innerWidth<768, preference=effectiveMenuPreference();
+    document.body.classList.toggle('menu-collapsed',menuIsCollapsed(innerWidth,preference));
+    document.body.classList.toggle('menu-pinned',preference==='expanded');
     if(!mobile)closeMobile();
-    else if(menuPreference==='expanded'&&previousMobile!==true)openMobile();
+    else if(!topKpMode&&location.hash!=='#top-kp'&&preference==='expanded'&&previousMobile!==true)openMobile();
     previousMobile=mobile;
     setMenuPeek(false);
     $('sidebar').inert=mobile&&!document.body.classList.contains('mobile-menu-open');
@@ -10549,7 +10633,7 @@ window.BpmProcessAssets = Object.freeze({
   $('mobile-menu').addEventListener('click',()=>{if(document.body.classList.contains('mobile-menu-open'))closeMobile(true);else{openMobile();$('collapse-menu').focus();}});
   $('sidebar-backdrop').addEventListener('click',()=>closeMobile(true));
   $('mobile-filters-toggle').addEventListener('click',()=>{const open=!document.body.classList.contains('mobile-filters-open');document.body.classList.toggle('mobile-filters-open',open);$('mobile-filters-toggle').setAttribute('aria-expanded',String(open));if(!open){activeSelect?.close();closeDate();}});
-  $('collapse-menu').addEventListener('click',()=>{if(innerWidth<768){if(menuPreference==='expanded')setMenuPreference('collapsed');closeMobile(true);return;}if(document.body.classList.contains('menu-collapsed')){const open=!document.body.classList.contains('menu-peek');menuPeekDismissed=!open;setMenuPeek(open);}else setMenuPreference('collapsed');});
+  $('collapse-menu').addEventListener('click',()=>{if(innerWidth<768){if(effectiveMenuPreference()==='expanded')setMenuPreference('collapsed');closeMobile(true);return;}if(document.body.classList.contains('menu-collapsed')){const open=!document.body.classList.contains('menu-peek');menuPeekDismissed=!open;setMenuPeek(open);}else setMenuPreference('collapsed');});
   $('pin-menu').addEventListener('click',()=>{setMenuPreference('expanded');if(innerWidth<768)openMobile();$('collapse-menu').focus({preventScroll:true});});
   $('sidebar').addEventListener('pointerenter',e=>{if(e.pointerType!=='touch'&&!menuPeekDismissed)setMenuPeek(true);});
   $('sidebar').addEventListener('pointerleave',()=>{menuPeekDismissed=false;if(!keyboardMode||!$('sidebar').contains(document.activeElement))setMenuPeek(false);});
@@ -10574,8 +10658,22 @@ window.BpmProcessAssets = Object.freeze({
     if(e.key==='Escape'){if(actionMenu){e.preventDefault();closeAction(true);}if(document.body.classList.contains('mobile-menu-open'))closeMobile(true);if(document.body.classList.contains('menu-peek')){menuPeekDismissed=true;setMenuPeek(false);$('collapse-menu').focus({preventScroll:true});}hideTooltip();}
     if(e.key==='Tab'&&document.body.classList.contains('mobile-menu-open')){const focusables=[...$('sidebar').querySelectorAll('button,a')].filter(el=>el.getClientRects().length);const first=focusables[0],last=focusables.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}
   });
-  function hideTooltip(){tooltip?.remove();tooltip=null;}
-  function showTooltip(target){hideTooltip();if(!target||target.closest('.sidebar')||document.querySelector('dialog[open]'))return;tooltip=document.createElement('div');tooltip.className='tooltip';tooltip.textContent=target.dataset.tooltip;document.body.append(tooltip);const r=target.getBoundingClientRect();tooltip.style.left=`${Math.max(8,Math.min(innerWidth-tooltip.offsetWidth-8,r.left+r.width/2-tooltip.offsetWidth/2))}px`;tooltip.style.top=`${r.top>tooltip.offsetHeight+12?r.top-tooltip.offsetHeight-8:r.bottom+8}px`;}
+  let tooltipTarget=null;
+  function hideTooltip(){
+    if(tooltipTarget){const descriptions=(tooltipTarget.getAttribute('aria-describedby')||'').split(/\s+/).filter(id=>id&&id!=='bpm-tooltip');if(descriptions.length)tooltipTarget.setAttribute('aria-describedby',descriptions.join(' '));else tooltipTarget.removeAttribute('aria-describedby');}
+    tooltip?.remove();tooltip=null;tooltipTarget=null;
+  }
+  function showTooltip(target){
+    hideTooltip();if(!target||target.closest('.sidebar')||document.querySelector('dialog[open]'))return;
+    tooltipTarget=target;tooltip=document.createElement('div');tooltip.className='tooltip';tooltip.id='bpm-tooltip';tooltip.setAttribute('role','tooltip');tooltip.textContent=target.dataset.tooltip;
+    if(target.hasAttribute('data-heading-full'))tooltip.classList.add('top-kp-heading-tooltip');
+    document.body.append(tooltip);
+    target.setAttribute('aria-describedby',`${target.getAttribute('aria-describedby')||''} bpm-tooltip`.trim());
+    const r=target.getBoundingClientRect(),left=Math.max(8,Math.min(innerWidth-tooltip.offsetWidth-8,r.left+r.width/2-tooltip.offsetWidth/2)),above=r.top>tooltip.offsetHeight+12;
+    tooltip.dataset.placement=above?'above':'below';tooltip.style.left=`${left}px`;
+    tooltip.style.top=`${Math.max(8,Math.min(innerHeight-tooltip.offsetHeight-8,above?r.top-tooltip.offsetHeight-8:r.bottom+8))}px`;
+    tooltip.style.setProperty('--tooltip-arrow-left',`${Math.max(12,Math.min(tooltip.offsetWidth-20,r.left+r.width/2-left-4))}px`);
+  }
   document.addEventListener('mouseover',e=>{const target=e.target.closest('[data-tooltip]');if(target&&!target.contains(e.relatedTarget))showTooltip(target);});
   document.addEventListener('mouseout',e=>{const target=e.target.closest('[data-tooltip]');if(target&&!target.contains(e.relatedTarget))hideTooltip();});
   document.addEventListener('focusin',e=>showTooltip(e.target.closest('[data-tooltip]')));
@@ -10649,7 +10747,7 @@ window.BpmProcessAssets = Object.freeze({
     isFavorite:row=>state.favorites.has(row.id),toggleFavorite:favorite,
     openTasks:()=>navigateService('tasks'),navigateRegistry,createTask
   });
-  topKp=window.BpmTopKp.create({openDetail,copyText,toast,closePopups,createSelect:(id,config)=>new BpmSelect(id,config)});
+  topKp=window.BpmTopKp.create({openDetail,copyText,toast,closePopups,hideTooltip,createSelect:(id,config)=>new BpmSelect(id,config)});
   function closePopups(){activeSelect?.close();closeDate();closeAction();hideTooltip();}
   function openTaskProcess(id,trigger){const row=allRecords.find(record=>record.entity==='processes'&&record.id===id);if(row)openDetail(row,trigger);else toast('Деталка связанного процесса пока не представлена в данных.');}
   function closeServiceDialogs(){
@@ -10696,6 +10794,11 @@ window.BpmProcessAssets = Object.freeze({
       else if(previous==='cabinet')cabinet.leave();
       else topKp.leave();
       tasksMode=service==='tasks';cabinetMode=service==='cabinet';topKpMode=service==='top-kp';
+      if(topKpMode||previous==='top-kp'){
+        topKpMenuPreference=topKpMode?'collapsed':null;
+        menuPeekDismissed=topKpMode;
+        syncMenu();
+      }
       $('registry-panel').hidden=service!=='registry';
       $('tasks-panel').hidden=!tasksMode;$('cabinet-panel').hidden=!cabinetMode;$('top-kp-panel').hidden=!topKpMode;
       document.body.classList.remove('table-view');

@@ -36,6 +36,9 @@ let fields;
 async function choose(page,key,value) {
   const label = value ? fields.find(field=>field.key===key).options.find(option=>option.value===value)?.label : 'Все';
   assert.ok(label, `Known menu value ${key}: ${value}`);
+  // Closing an option popup may uncover a card beneath the mouse. Leave
+  // that card before returning to controls behind its interactive tooltip.
+  await page.mouse.move(1,1);await page.keyboard.press('Escape');await paint(page);
   await input(page,key).click();
   await popup(page,key).waitFor({state:'visible'});
   await popup(page,key).getByRole('option',{name:label,exact:true}).click();

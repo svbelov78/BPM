@@ -14,29 +14,31 @@ const base = source.split('#')[0];
 const output = process.env.BPM_TOP_KP_OUTPUT || '/private/tmp/bpm-top-kp-qa';
 const viewports = [[320,844],[390,844],[768,1024],[1024,768],[1280,920],[1440,920],[1600,1000],[1920,920],[1920,1080],[2046,1107],[2047,1107],[2048,1107],[2560,920],[2560,1440],[3200,1800],[3840,920],[3840,2160],[3840,1920]];
 const cardTiers = {
-  compact:{height:36,font:'9px',lineHeight:'12px',code:false,textTransform:'uppercase'},
-  small:{height:48,font:'13px',lineHeight:'18px',code:false,textTransform:'none'},
-  regular:{height:60,font:'13px',lineHeight:'18px',code:true,textTransform:'none'},
-  large:{height:72,font:'17px',lineHeight:'24px',code:true,textTransform:'none'}
+  compact:{height:{2:34,3:45},minWidth:{2:100,3:80},font:'11px',lineHeight:'11px',weight:'510',tracking:'-0.66px',padding:'4px 6px',radius:'8px'},
+  regular:{height:{2:40,3:54},minWidth:{2:128,3:100},font:'13px',lineHeight:'14px',weight:'400',tracking:'-0.91px',padding:'4px 6px',radius:'8px'},
+  large:{height:{2:48,3:64},minWidth:{2:320,3:270},font:'17px',lineHeight:'16px',weight:'510',tracking:'-1.02px',padding:'6px',radius:'10px'}
 };
-const supportingGroups=new Set(['K10','L10','M10','N10','O10','P10','Q10','R10','S10']);
+const labelGap10Groups=new Set(['A2','B2','D2','G11','L10']);
+const columnGap=cell=>cell==='N10'?10:['H2','I2','J2','B22','D22','F22','G22','O10'].includes(cell)?8:4;
+const rowGap=cell=>['A11','F11','S10'].includes(cell)?10:['A2','J2','A22','C22'].includes(cell)?8:4;
 function headingStyles(root) {
-  const style=element=>{const s=getComputedStyle(element);return {font:s.fontSize,line:s.lineHeight,weight:s.fontWeight,whiteSpace:s.whiteSpace,transform:s.textTransform,background:s.backgroundImage,radius:s.borderRadius,top:s.borderTopWidth,bottom:s.borderBottomWidth,borderColor:s.borderTopColor,padding:s.padding};};
+  const style=element=>{const s=getComputedStyle(element);return {font:s.fontSize,line:s.lineHeight,weight:s.fontWeight,tracking:s.letterSpacing,whiteSpace:s.whiteSpace,transform:s.textTransform,background:s.backgroundImage,radius:s.borderRadius,top:s.borderTopWidth,bottom:s.borderBottomWidth,borderColor:s.borderTopColor,padding:s.padding,parentGap:getComputedStyle(element.parentElement).gap,nextGap:element.nextElementSibling?element.nextElementSibling.getBoundingClientRect().top-element.getBoundingClientRect().bottom:null};};
   const panel=getComputedStyle(root),heading=getComputedStyle(root.querySelector('.top-kp-heading'));
   const titleBottom=root.querySelector('.top-kp-title-row').getBoundingClientRect().bottom,toolbarBottom=root.querySelector('.top-kp-filter-toolbar').getBoundingClientRect().bottom;
   return {viewportHeight:innerHeight,spacing:root.dataset.spacing,padding:panel.padding,containerWidth:root.clientWidth-parseFloat(panel.paddingLeft)-parseFloat(panel.paddingRight),headingHeight:heading.minHeight,headingMargin:heading.marginBottom,headingGap:heading.gap,headingDirection:heading.flexDirection,filterCounts:[...root.querySelectorAll('.top-kp-filter-group')].map(group=>group.querySelectorAll('.top-kp-filter').length),fieldHeights:[...root.querySelectorAll('.top-kp-filter .field')].map(field=>getComputedStyle(field).height),legendInTitle:!!root.querySelector('.top-kp-title-row .top-kp-legend'),captionGaps:[...root.querySelectorAll('.top-kp-filter-caption')].map(caption=>({fromTitle:caption.getBoundingClientRect().top-titleBottom,toField:caption.parentElement.querySelector('.field').getBoundingClientRect().top-caption.getBoundingClientRect().bottom,top:getComputedStyle(caption).top,parentPadding:getComputedStyle(caption.parentElement).paddingTop})),filtersToMap:root.querySelector('.top-kp-map').getBoundingClientRect().top-toolbarBottom,h1:style(root.querySelector('h1')),h2:[...root.querySelectorAll('.top-kp-block>h2')].map(style),h3:[...root.querySelectorAll('.top-kp-department>h3')].map(el=>({cell:el.parentElement.dataset.sourceCategory,...style(el)})),groups:[...root.querySelectorAll('.top-kp-group')].map(el=>({cell:el.dataset.sourceCategory,gap:getComputedStyle(el).gap,padding:getComputedStyle(el).padding,title:style(el.querySelector('h4'))}))};
 }
 function assertHeadingStyles(styles,width) {
   const compact=styles.spacing==='compact';assert.ok(['compact','design'].includes(styles.spacing));if(compact)assert.ok(width>=1280,'Compact vertical padding is a desktop height fallback only');
-  const shortDesktop=width>=1280&&styles.viewportHeight<=960,expectedGap=compact?(shortDesktop?12:16):24;
+  const shortDesktop=width>=1280&&styles.viewportHeight<=960,expectedGap=compact&&shortDesktop?12:16;
   assert.equal(styles.padding,width<768?'16px 12px':compact?(shortDesktop?'16px 24px 8px':'16px 24px'):'24px');assert.equal(styles.headingHeight,'auto');assert.equal(styles.headingMargin,compact?'16px':'24px');assert.equal(styles.headingGap,`${expectedGap}px`);assert.equal(styles.headingDirection,'column');
   const smallTitle=width<768||styles.containerWidth<=450;
   assert.equal(styles.h1.font,smallTitle?'22px':'26px');assert.equal(styles.h1.line,smallTitle?'26px':'31px');assert.equal(styles.h1.weight,'700');
   assert.equal(styles.legendInTitle,true);assert.deepEqual(styles.filterCounts,[2,1,4,3]);assert.equal(styles.fieldHeights.length,10);assert.ok(styles.fieldHeights.every(height=>height==='50px'));
   assert.equal(styles.captionGaps.length,3);for(const caption of styles.captionGaps){assert.equal(caption.top,'0px');assert.equal(caption.parentPadding,'16px');assert.ok(caption.fromTitle>=expectedGap-.1,'Filter captions must not consume the title gap');assert.ok(Math.abs(caption.toField-4)<.1,'The caption retains 4px before its field');}assert.ok(styles.filtersToMap>=(compact?16:24)-.1,'Filters must retain a separate gap before the map');
-  for(const h of styles.h2){assert.equal(h.font,'26px');assert.equal(h.line,'31px');assert.equal(h.weight,'400');assert.equal(h.whiteSpace,'nowrap');}
-  for(const h of styles.h3){const major=h.cell==='A21';assert.equal(h.font,major?'26px':'13px');assert.equal(h.line,major?'31px':'18px');assert.equal(h.weight,'400');assert.equal(h.background,'none');assert.equal(h.radius,'0px');assert.equal(h.top,major?'0px':'1px');assert.equal(h.bottom,major?'0px':'1px');if(!major){assert.equal(h.borderColor,'rgba(26, 26, 26, 0.2)');assert.equal(h.padding,'4px 8px 4px 2px');}}
-  for(const group of styles.groups){const left=['L2','M2','C11','D11'].includes(group.cell);assert.equal(group.padding,compact?(left?'4px 8px':'4px 8px 4px 0px'):(left?'8px':'8px 8px 8px 0px'),group.cell);assert.equal(group.gap,compact?'4px':supportingGroups.has(group.cell)||['A2','B2','D2','G11'].includes(group.cell)?'10px':'8px',group.cell);assert.equal(group.title.font,'9px');assert.equal(group.title.line,'12px');assert.equal(group.title.weight,group.cell==='D11'?'400':'510');assert.equal(group.title.transform,'uppercase');assert.equal(group.title.whiteSpace,'nowrap');}
+  const assertMajor=h=>{assert.equal(h.font,'17px');assert.equal(h.line,'24px');assert.equal(h.weight,'590');assert.equal(h.tracking,'-0.51px');assert.equal(h.whiteSpace,'nowrap');assert.equal(h.parentGap,'0px');assert.ok(Math.abs(h.nextGap)<.1,'Major heading has no added gap before its content');};
+  for(const h of styles.h2)assertMajor(h);
+  for(const h of styles.h3){const major=h.cell==='A21';if(major)assertMajor(h);else{assert.equal(h.font,'13px');assert.equal(h.line,'18px');assert.equal(h.weight,'400');assert.equal(h.borderColor,'rgba(26, 26, 26, 0.2)');assert.equal(h.padding,'4px 8px 4px 2px');}assert.equal(h.background,'none');assert.equal(h.radius,'0px');assert.equal(h.top,major?'0px':'1px');assert.equal(h.bottom,major?'0px':'1px');}
+  for(const group of styles.groups){const vertical=compact?4:8;assert.equal(group.padding,`${vertical}px 0px`,`${group.cell}: group side padding must not add to the shared horizontal gap`);assert.equal(group.gap,compact?'4px':labelGap10Groups.has(group.cell)?'10px':'8px',group.cell);assert.equal(group.title.font,'9px');assert.equal(group.title.line,'12px');assert.equal(group.title.weight,group.cell==='D11'?'400':'510');assert.equal(group.title.transform,'uppercase');assert.equal(group.title.whiteSpace,'nowrap');}
 }
 const failures = [], measurements = [];
 const check = (name, callback) => {
@@ -52,6 +54,14 @@ const paint = page => page.evaluate(async () => {
 async function ready(page) {
   await page.waitForFunction(() => !document.querySelector('#top-kp-panel')?.hidden && document.querySelectorAll('.top-kp-card').length === 136);
   await paint(page);
+}
+async function pinSidebar(page) {
+  // Keyboard activation avoids chasing a button that moves as hover-peek opens.
+  await page.mouse.move(1,1);
+  for(let attempt=0;attempt<2&&!await page.locator('#pin-menu').isVisible();attempt++){
+    await page.locator('#collapse-menu').focus();await page.keyboard.press('Enter');await paint(page);
+  }
+  await page.locator('#pin-menu').focus();await page.keyboard.press('Enter');await paint(page);
 }
 async function route(page, hash) {
   await page.evaluate(hash => {location.hash = hash;}, hash);
@@ -81,11 +91,13 @@ async function main() {
     await ready(page);
     const sourceData = await page.evaluate(() => {
       const data = window.BPM_TOP_KP, root = document.querySelector('#top-kp-panel');
-      const leaves = [...root.querySelectorAll('.top-kp-card')].map(card => ({id:card.dataset.topKpId,title:card.querySelector('.top-kp-card-title').textContent,band:card.dataset.band,code:card.querySelector('.top-kp-card-code')?.textContent}));
+      const leaves = [...root.querySelectorAll('.top-kp-card')].map(card => ({id:card.dataset.topKpId,title:card.querySelector('.top-kp-card-title').textContent,band:card.dataset.band,code:card.dataset.topKpCode}));
       const groups=[];
       for(const block of data.blocks) {
         const el=root.querySelector(`[data-source-category="${block.sourceCell}"]`);
-        groups.push({type:'block',cell:block.sourceCell,name:block.name,visibleName:el?.querySelector('h2,h3,h4')?.textContent,count:el?.querySelectorAll('.top-kp-card').length,expected:block.departments.flatMap(d=>d.groups.flatMap(g=>g.cards)).length});
+        // A21 remains an Excel department of A9 but is a visual peer in Figma.
+        const blockCards=[...el.querySelectorAll('.top-kp-card'),...(block.sourceCell==='A9'?root.querySelectorAll('[data-source-category="A21"] .top-kp-card'):[])];
+        groups.push({type:'block',cell:block.sourceCell,name:block.name,visibleName:el?.querySelector('h2,h3,h4')?.textContent,count:blockCards.length,ids:blockCards.map(card=>card.dataset.topKpId),expectedIds:block.departments.flatMap(d=>d.groups.flatMap(g=>g.cards)).map(card=>card.id),expected:block.departments.flatMap(d=>d.groups.flatMap(g=>g.cards)).length});
         for(const department of block.departments) {
           const el=root.querySelector(`[data-source-category="${department.sourceCell}"]`);
           groups.push({type:'department',cell:department.sourceCell,name:department.name,visibleName:el?.querySelector('h2,h3,h4')?.textContent,count:el?.querySelectorAll('.top-kp-card').length,expected:department.groups.flatMap(g=>g.cards).length});
@@ -111,6 +123,7 @@ async function main() {
       for(const group of sourceData.groups) {
         assert.equal(group.visibleName,group.name,`${group.type} ${group.cell} heading`);
         assert.equal(group.count,group.expected,`${group.type} ${group.cell} membership`);
+        if(group.ids)assert.deepEqual([...group.ids].sort(),[...group.expectedIds].sort(),`${group.cell}: visual promotion preserves exact workbook membership`);
       }
     });
     check('136 unique stable demo IDs populate cards without changing workbook codes',()=>{
@@ -130,23 +143,25 @@ async function main() {
         const root=document.querySelector('#top-kp-panel'), map=root.querySelector('.top-kp-map'), viewport=root.querySelector('.top-kp-map-viewport'), rect=root.getBoundingClientRect();
         const cards=[...root.querySelectorAll('.top-kp-card')],cardWidths=cards.map(c=>c.getBoundingClientRect().width);
         const main = root.parentElement, mainStyle = getComputedStyle(main), titleStyles=getComputedStyle(cards[0].querySelector('.top-kp-card-title'));
-        const codes=cards.map(card=>({card,code:card.querySelector('.top-kp-card-code'),title:card.querySelector('.top-kp-card-title')}));
+        const cardMetrics=cards.map(card=>{const style=getComputedStyle(card),title=card.querySelector('.top-kp-card-title'),titleStyle=getComputedStyle(title);return {height:card.getBoundingClientRect().height,titleHeight:title.getBoundingClientRect().height,font:style.fontSize,lineHeight:style.lineHeight,weight:style.fontWeight,tracking:style.letterSpacing,padding:style.padding,radius:style.borderRadius,inset:parseFloat(style.paddingTop)+parseFloat(style.paddingBottom)+parseFloat(style.borderTopWidth)+parseFloat(style.borderBottomWidth),transform:titleStyle.textTransform,clamp:titleStyle.webkitLineClamp,wordBreak:titleStyle.wordBreak,whiteSpace:titleStyle.whiteSpace,variation:style.fontVariationSettings};});
         const cardGaps=[...root.querySelectorAll('.top-kp-cards')].map(grid=>({cell:grid.parentElement.dataset.sourceCategory,row:getComputedStyle(grid).rowGap,column:getComputedStyle(grid).columnGap}));
-        const groupGaps=[...root.querySelectorAll('.top-kp-row,.top-kp-stack,.top-kp-map')].filter(group=>group.children.length>1).map(group=>({gap:getComputedStyle(group).gap,topBlocks:group.classList.contains('top-kp-row')&&[...group.children].every(child=>child.classList.contains('top-kp-block'))}));
+        // Mobile may split major peers into nested row/stack wrappers; those
+        // still separate whole blocks/A21 (16px), not their inner groups (8px).
+        const groupGaps=[...root.querySelectorAll('.top-kp-row,.top-kp-stack,.top-kp-map')].filter(group=>group.children.length>1).map(group=>({gap:getComputedStyle(group).gap,topBlocks:group!==map&&!group.closest('.top-kp-block,.top-kp-department--major')&&!!group.querySelector('.top-kp-block,.top-kp-department--major')}));
         const physicalCardGaps=[];
         for(const grid of root.querySelectorAll('.top-kp-cards')) {
           const boxes=[...grid.children].map(card=>card.getBoundingClientRect());
           for(let i=1;i<boxes.length;i++) {
             const previous=boxes[i-1],current=boxes[i];
-            if(Math.abs(current.top-previous.top)<.1) physicalCardGaps.push({cell:grid.parentElement.dataset.sourceCategory,gap:current.left-previous.right});
-            else {const above=boxes.slice(0,i).reverse().find(box=>Math.abs(box.left-current.left)<.1);if(above)physicalCardGaps.push({cell:grid.parentElement.dataset.sourceCategory,gap:current.top-above.bottom});}
+            if(Math.abs(current.top-previous.top)<.1) physicalCardGaps.push({cell:grid.parentElement.dataset.sourceCategory,axis:'x',gap:current.left-previous.right});
+            else {const above=boxes.slice(0,i).filter(box=>box.top<current.top-.1);if(above.length)physicalCardGaps.push({cell:grid.parentElement.dataset.sourceCategory,axis:'y',gap:current.top-Math.max(...above.map(box=>box.bottom))});}
           }
         }
-        return {viewport:innerWidth,screenHeight:innerHeight,body:document.body.scrollWidth,document:document.documentElement.scrollWidth,panelWidth:rect.width,panelHeight:rect.height,availableWidth:main.clientWidth-parseFloat(mainStyle.paddingLeft)-parseFloat(mainStyle.paddingRight),cardMin:Math.min(...cardWidths),cardMax:Math.max(...cardWidths),cardHeight:cards[0].getBoundingClientRect().height,fontSize:titleStyles.fontSize,lineHeight:titleStyles.lineHeight,textTransform:titleStyles.textTransform,titleClamp:titleStyles.webkitLineClamp,radii:[...new Set(cards.map(card=>getComputedStyle(card).borderRadius))],cardGaps,groupGaps,physicalCardGaps,visibleCodes:codes.filter(({code})=>code&&getComputedStyle(code).display!=='none').length,codesAboveTitle:codes.filter(({code,title})=>code&&getComputedStyle(code).display!=='none'&&code.getBoundingClientRect().bottom<=title.getBoundingClientRect().top+.1).length,codeFonts:[...new Set(codes.filter(({code})=>code).map(({code})=>`${getComputedStyle(code).fontSize}/${getComputedStyle(code).lineHeight}`))],titleWidth:cards[0].querySelector('.top-kp-card-title').getBoundingClientRect().width,density:root.dataset.density,mapWidth:map.scrollWidth,mapHeight:map.scrollHeight,viewportWidth:viewport.clientWidth,viewportHeight:viewport.clientHeight,viewportScrollWidth:viewport.scrollWidth,viewportScrollHeight:viewport.scrollHeight,count:cards.length,clippedCards:cards.filter(card=>card.scrollWidth>card.clientWidth+1).length,leaves:cards.map(card=>({id:card.dataset.topKpId,title:card.querySelector('.top-kp-card-title').textContent}))};
+        return {viewport:innerWidth,screenHeight:innerHeight,body:document.body.scrollWidth,document:document.documentElement.scrollWidth,panelWidth:rect.width,panelHeight:rect.height,panelBottom:rect.bottom+scrollY,availableWidth:main.clientWidth-parseFloat(mainStyle.paddingLeft)-parseFloat(mainStyle.paddingRight),cardMin:Math.min(...cardWidths),cardMax:Math.max(...cardWidths),cardHeight:cards[0].getBoundingClientRect().height,fontSize:titleStyles.fontSize,lineHeight:titleStyles.lineHeight,textTransform:titleStyles.textTransform,titleClamp:titleStyles.webkitLineClamp,cardMetrics,cardGaps,groupGaps,physicalCardGaps,visibleCodes:root.querySelectorAll('.top-kp-card-code').length,measureSurfaces:document.querySelectorAll('.top-kp-measure').length,titleWidth:cards[0].querySelector('.top-kp-card-title').getBoundingClientRect().width,density:root.dataset.density,lines:root.dataset.lines,fit:root.dataset.fit,floors:map.children.length,mapWidth:map.scrollWidth,mapHeight:map.scrollHeight,viewportWidth:viewport.clientWidth,viewportHeight:viewport.clientHeight,viewportScrollWidth:viewport.scrollWidth,viewportScrollHeight:viewport.scrollHeight,overflowY:getComputedStyle(viewport).overflowY,scrollChaining:getComputedStyle(viewport).overscrollBehaviorY,count:cards.length,clippedCards:cards.filter(card=>card.scrollWidth>card.clientWidth+1).length,leaves:cards.map(card=>({id:card.dataset.topKpId,title:card.querySelector('.top-kp-card-title').textContent}))};
       });
       const leaves = result.leaves; delete result.leaves;
       measurements.push(result);
-      const {cardGaps,groupGaps,physicalCardGaps,...compactMeasurement}=result;
+      const {cardGaps,groupGaps,physicalCardGaps,cardMetrics,...compactMeasurement}=result;
       console.log(`MEASURE ${JSON.stringify(compactMeasurement)}`);
       check(`${width}×${height} globally uniform width and exact source completeness`,()=>{
         assert.equal(result.count,136);assert.ok(result.cardMax-result.cardMin<=.1,`${result.cardMin}–${result.cardMax}`);
@@ -156,28 +171,37 @@ async function main() {
       check(`${width}px no inner horizontal overflow`,()=>assert.ok(result.viewportScrollWidth<=result.viewportWidth+1,`${result.viewportScrollWidth} / ${result.viewportWidth}`));
       check(`${width}px panel fills available main width`,()=>assert.ok(Math.abs(result.panelWidth-result.availableWidth)<=1,`${result.panelWidth} / ${result.availableWidth}`));
       if(width<=1440)check(`${width}px compact map retains 920px height cap`,()=>assert.ok(result.panelHeight<=920.1,`height ${result.panelHeight}`));
-      if(width>=1280)check(`${width}×${height} full map fits without inner scrolling`,()=>assert.ok(result.viewportScrollHeight<=result.viewportHeight+1,`${result.viewportScrollHeight} / ${result.viewportHeight}`));
-      if(width>=1280) {
-        const fit=await page.locator('#top-kp-panel').evaluate(root=>({bottom:root.getBoundingClientRect().bottom+scrollY,floors:root.querySelector('.top-kp-map').children.length,fit:root.dataset.fit}));
-        check(`${width}×${height} all three map floors fit the desktop viewport`,()=>{assert.equal(fit.floors,3);assert.equal(fit.fit,'true');assert.ok(fit.bottom<=height+1,`${fit.bottom} / ${height}`);});
-      }
-      check(`${width}×${height} card matches its exact Figma adaptive variant`,()=>{
-        const expected=cardTiers[result.density];assert.ok(expected,`Unknown tier ${result.density}`);
-        assert.equal(result.fontSize,expected.font);assert.equal(result.lineHeight,expected.lineHeight);
-        assert.ok(Math.abs(result.cardHeight-expected.height)<.1,`${result.cardHeight} / ${expected.height}`);
-        assert.equal(result.textTransform,expected.textTransform);assert.equal(result.titleClamp,'2');
-        assert.deepEqual(result.radii,['8px']);assert.deepEqual(result.codeFonts,['9px/12px']);
-        assert.equal(result.visibleCodes,expected.code?136:0);assert.equal(result.codesAboveTitle,result.visibleCodes);
+      check(`${width}×${height} three floors either fit or retain readable native scrolling`,()=>{
+        assert.equal(result.floors,3);assert.ok(['true','false'].includes(result.fit));
+        if(width>=1280)assert.ok(result.panelBottom<=height+1,`${result.panelBottom} / ${height}`);
+        if(result.fit==='true')assert.ok(result.viewportScrollHeight<=result.viewportHeight+1,`${result.viewportScrollHeight} / ${result.viewportHeight}`);
+        else {assert.equal(result.density,'compact');assert.ok(['2','3'].includes(result.lines));assert.ok(result.cardMin>=cardTiers.compact.minWidth[result.lines]-.1,'Scrolling cards can stretch, but never fall below their shared line-mode minimum');assert.equal(result.overflowY,'auto');assert.equal(result.scrollChaining,'auto');if(width>=1280)assert.ok(result.viewportScrollHeight>result.viewportHeight+1,'Desktop fallback must represent genuine height overflow');}
       });
-      const displayedIds=await page.locator('.top-kp-card').evaluateAll(cards=>cards.map(card=>({id:card.dataset.topKpId,code:card.querySelector('.top-kp-card-code')?.textContent})));
+      check(`${width}×${height} card matches its exact Figma adaptive variant`,()=>{
+        const expected=cardTiers[result.density];assert.ok(expected,`Unknown tier ${result.density}`);assert.ok(['2','3'].includes(result.lines),'The entire map uses one shared two- or three-line mode');
+        const expectedHeight=expected.height[result.lines],maxLines=Number(result.lines);
+        assert.equal(result.fontSize,expected.font);assert.equal(result.lineHeight,expected.lineHeight);
+        assert.ok(result.cardMin>=expected.minWidth[result.lines]-.1,'Cards preserve the component minimum width for their shared line mode');
+        assert.equal(result.textTransform,'none');assert.equal(result.titleClamp,result.lines);assert.equal(result.visibleCodes,0,'Business IDs are not visible on cards');assert.equal(result.measureSurfaces,0,'Temporary measurement cards are removed');
+        for(const card of result.cardMetrics){
+          for(const key of ['font','lineHeight','weight','tracking','padding','radius'])assert.equal(card[key],expected[key],key);
+          assert.equal(card.transform,'none');assert.equal(card.clamp,result.lines);assert.equal(card.variation,'"wdth" 100');assert.equal(card.wordBreak,'break-all');assert.equal(card.whiteSpace,'normal');
+          assert.ok(Math.abs(card.height-expectedHeight)<.1,`Every card uses the same ${expectedHeight}px height`);
+          assert.ok(card.titleHeight+card.inset<=card.height+.1,`Up to ${maxLines} lines fit inside the fixed card`);
+          const lines=card.titleHeight/parseFloat(expected.lineHeight);assert.ok(lines>=.99&&lines<=maxLines+.01&&Math.abs(lines-Math.round(lines))<.01,`Title must occupy 1–${maxLines} complete lines, got ${lines}`);
+        }
+      });
+      const displayedIds=await page.locator('.top-kp-card').evaluateAll(cards=>cards.map(card=>({id:card.dataset.topKpId,code:card.dataset.topKpCode})));
       check(`${width}×${height} card IDs remain stable through adaptive reflow`,()=>assert.deepEqual(displayedIds.sort((a,b)=>a.id.localeCompare(b.id)),sourceData.records.map(record=>({id:record.id,code:record.demoCode})).sort((a,b)=>a.id.localeCompare(b.id))));
       check(`${width}×${height} updated Figma card and container spacing`,()=>{
-        assert.ok(result.cardGaps.every(gap=>gap.row==='4px'&&gap.column==='4px'));
-        assert.ok(result.physicalCardGaps.length>0);assert.ok(result.physicalCardGaps.every(({gap})=>Math.abs(gap-4)<.15),JSON.stringify(result.physicalCardGaps));
+        for(const gap of result.cardGaps){assert.equal(gap.row,`${rowGap(gap.cell)}px`,`${gap.cell}: row gap`);assert.equal(gap.column,`${columnGap(gap.cell)}px`,`${gap.cell}: column gap`);}
+        assert.ok(result.physicalCardGaps.length>0);assert.ok(result.physicalCardGaps.every(({cell,axis,gap})=>Math.abs(gap-(axis==='x'?columnGap(cell):rowGap(cell)))<.15),JSON.stringify(result.physicalCardGaps));
         assert.ok(result.groupGaps.length>0);assert.ok(result.groupGaps.every(({gap,topBlocks})=>gap===(topBlocks?'16px':'8px')),JSON.stringify(result.groupGaps));
       });
       const typography=await page.locator('#top-kp-panel').evaluate(headingStyles);
       check(`${width}×${height} updated Figma headers, dividers and panel/group padding`,()=>assertHeadingStyles(typography,width));
+      const peers=await page.locator('#top-kp-panel').evaluate(root=>{const main=root.querySelector('[data-source-category="A9"]'),corporate=root.querySelector('[data-source-category="A21"]');return {sameParent:main.parentElement===corporate.parentElement,delta:main.querySelector('h2').getBoundingClientRect().top-corporate.querySelector('h3').getBoundingClientRect().top,nested:main.contains(corporate)};});
+      check(`${width}×${height} Main and Corporate business are visual peers`,()=>{assert.equal(peers.sameParent,true);assert.equal(peers.nested,false);if(width>=1280)assert.ok(Math.abs(peers.delta)<.1,'Desktop peer headings share one line');});
       const borders=await page.locator('.top-kp-card').evaluateAll(cards=>[...new Set(cards.map(card=>{const style=getComputedStyle(card);return [style.borderTopWidth,style.borderRightWidth,style.borderBottomWidth,style.borderLeftWidth].join('/');}))]);
       check(`${width}×${height} all four card borders stay 2px`,()=>assert.deepEqual(borders,['2px/2px/2px/2px']));
       const safety=await page.locator('#top-kp-panel').evaluate(root=>{
@@ -196,8 +220,8 @@ async function main() {
       const compact=measurements.find(item=>item.viewport===1440),desktop=measurements.find(item=>item.viewport===1920&&item.screenHeight===1080),fourK=measurements.find(item=>item.viewport===3840&&item.screenHeight===2160);
       assert.ok(desktop.panelWidth>1440);assert.ok(fourK.panelWidth>desktop.panelWidth);
       assert.ok(desktop.cardMin>compact.cardMin);assert.ok(fourK.cardMin>desktop.cardMin);
-      assert.ok(fourK.titleWidth>desktop.titleWidth&&desktop.titleWidth>compact.titleWidth,'Wider cards expose more of the original two-line title');
-      assert.ok(fourK.visibleCodes>0,'Wide adaptive cards expose the ID row');
+      assert.ok(fourK.titleWidth>desktop.titleWidth&&desktop.titleWidth>compact.titleWidth,'Wider cards expose more of the original title');
+      assert.equal(fourK.visibleCodes,0,'Even wide cards keep business IDs in the tooltip/detail only');
     });
 
     for(const width of [1440,1920])for(const mode of ['expanded','collapsed']) {
@@ -206,13 +230,15 @@ async function main() {
         await menuPage.setViewportSize({width,height:920});
         await menuPage.addInitScript(mode=>localStorage.setItem('bpm-registry-menu',mode),mode);
         await menuPage.goto(`${base}#top-kp`);await ready(menuPage);
+        assert.equal(await menuPage.locator('body').evaluate(body=>body.classList.contains('menu-collapsed')),true,'TOP starts collapsed regardless of saved section preference');
+        if(mode==='expanded')await pinSidebar(menuPage);
         const fitted=await menuPage.locator('#top-kp-panel').evaluate(root=>{
           const cards=[...root.querySelectorAll('.top-kp-card')].map(card=>card.getBoundingClientRect());let overlaps=0;
           for(let a=0;a<cards.length;a++)for(let b=a+1;b<cards.length;b++)if(Math.min(cards[a].right,cards[b].right)-Math.max(cards[a].left,cards[b].left)>.1&&Math.min(cards[a].bottom,cards[b].bottom)-Math.max(cards[a].top,cards[b].top)>.1)overlaps++;
           const view=root.querySelector('.top-kp-map-viewport');
-          return {fit:root.dataset.fit,bottom:root.getBoundingClientRect().bottom+scrollY,overlaps,overflow:view.scrollHeight-view.clientHeight,collapsed:document.body.classList.contains('menu-collapsed')};
+          return {fit:root.dataset.fit,bottom:root.getBoundingClientRect().bottom+scrollY,overlaps,overflow:view.scrollHeight-view.clientHeight,collapsed:document.body.classList.contains('menu-collapsed'),floors:root.querySelector('.top-kp-map').children.length,width:cards[0].width,density:root.dataset.density,lines:root.dataset.lines,overflowY:getComputedStyle(view).overflowY};
         });
-        check(`${width}×920 ${mode} menu: three floors fit without overlapping cards`,()=>{assert.equal(fitted.collapsed,mode==='collapsed');assert.equal(fitted.fit,'true');assert.ok(fitted.bottom<=921,`map bottom ${fitted.bottom}`);assert.ok(fitted.overflow<=1,`inner overflow ${fitted.overflow}`);assert.equal(fitted.overlaps,0);});
+        check(`${width}×920 ${mode} menu: readable three-floor layout without overlapping cards`,()=>{assert.equal(fitted.collapsed,mode==='collapsed');assert.equal(fitted.floors,3);assert.ok(fitted.bottom<=921,`map bottom ${fitted.bottom}`);assert.equal(fitted.overlaps,0);assert.ok(['2','3'].includes(fitted.lines));if(fitted.fit==='true')assert.ok(fitted.overflow<=1,`inner overflow ${fitted.overflow}`);else{assert.equal(fitted.fit,'false');assert.equal(fitted.density,'compact');assert.ok(fitted.width>=cardTiers.compact.minWidth[fitted.lines]-.1);assert.equal(fitted.overflowY,'auto');assert.ok(fitted.overflow>1);}});
         const typography=await menuPage.locator('#top-kp-panel').evaluate(headingStyles);
         check(`${width}×920 ${mode} menu: new typography survives compact height fallback`,()=>assertHeadingStyles(typography,width));
         await menuPage.screenshot({path:path.join(output,`top-kp-${width}x920-${mode}.png`),fullPage:true});
@@ -268,6 +294,8 @@ async function main() {
     await page.locator('#top-paths').click();await ready(page);
     assert.equal(await page.locator('#top-paths').getAttribute('aria-current'),'page');
     assert.equal(await page.locator('#registry-panel').isVisible(),false);
+    assert.equal(await page.locator('body').evaluate(body=>body.classList.contains('menu-collapsed')),true,'Entering TOP resets its visit-scoped menu to collapsed');
+    await pinSidebar(page);
     await page.locator('#tasks-nav').click();await page.locator('#tasks-panel').waitFor({state:'visible'});
     await page.locator('#cabinet-nav').click();await page.locator('#cabinet-panel').waitFor({state:'visible'});
     await route(page,'#main');await page.waitForFunction(()=>document.body.classList.contains('structure-mode')&&!document.querySelector('#registry-panel').hidden);

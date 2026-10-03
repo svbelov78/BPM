@@ -11,23 +11,26 @@ const {chromium} = require(process.env.BPM_PLAYWRIGHT || '/Users/admin/.cache/co
 const source = path.resolve(process.argv[2] || path.join(__dirname, '..', 'Sber-BPM-Registry-Standalone.html'));
 const report = text => console.log(`PASS — ${text}`);
 const ready = (page, id = 'results') => page.waitForFunction(id => document.getElementById(id)?.getAttribute('aria-busy') === 'false', id);
-const supportingGroups=new Set(['K10','L10','M10','N10','O10','P10','Q10','R10','S10']);
+const tenPixelLabelGroups=new Set(['A2','B2','D2','G11','L10']);
+const eightPixelColumnGroups=new Set(['H2','I2','J2','B22','D22','F22','G22','O10']);
+const tenPixelRowGroups=new Set(['A11','F11','S10']);
+const eightPixelRowGroups=new Set(['A2','J2','A22','C22']);
 function headingStyles(root) {
-  const style=element=>{const s=getComputedStyle(element);return {font:s.fontSize,line:s.lineHeight,weight:s.fontWeight,whiteSpace:s.whiteSpace,transform:s.textTransform,background:s.backgroundImage,radius:s.borderRadius,top:s.borderTopWidth,bottom:s.borderBottomWidth,borderColor:s.borderTopColor,padding:s.padding};};
+  const style=element=>{const s=getComputedStyle(element);return {font:s.fontSize,line:s.lineHeight,weight:s.fontWeight,tracking:parseFloat(s.letterSpacing),parentGap:getComputedStyle(element.parentElement).gap,whiteSpace:s.whiteSpace,transform:s.textTransform,background:s.backgroundImage,radius:s.borderRadius,top:s.borderTopWidth,bottom:s.borderBottomWidth,borderColor:s.borderTopColor,padding:s.padding};};
   const title=root.querySelector('h1').getBoundingClientRect(),legend=root.querySelector('.top-kp-legend').getBoundingClientRect();
   return {spacing:root.dataset.spacing,padding:getComputedStyle(root).padding,contentWidth:root.clientWidth-parseFloat(getComputedStyle(root).paddingLeft)-parseFloat(getComputedStyle(root).paddingRight),headingGap:getComputedStyle(root.querySelector('.top-kp-heading')).gap,headingMargin:getComputedStyle(root.querySelector('.top-kp-heading')).marginBottom,footerCount:root.querySelectorAll('.top-kp-footer').length,legendBelowTitle:legend.top-title.bottom,filterGroups:[...root.querySelectorAll('.top-kp-filter-group')].map(group=>({paddingTop:getComputedStyle(group).paddingTop,captionTop:group.querySelector('.top-kp-filter-caption')?getComputedStyle(group.querySelector('.top-kp-filter-caption')).top:null})),h1:style(root.querySelector('h1')),h2:[...root.querySelectorAll('.top-kp-block>h2')].map(style),h3:[...root.querySelectorAll('.top-kp-department>h3')].map(el=>({cell:el.parentElement.dataset.sourceCategory,...style(el)})),groups:[...root.querySelectorAll('.top-kp-group')].map(el=>({cell:el.dataset.sourceCategory,gap:getComputedStyle(el).gap,padding:getComputedStyle(el).padding,title:style(el.querySelector('h4'))}))};
 }
 function assertHeadingStyles(styles,width,height) {
   const compact=styles.spacing==='compact';assert.ok(['compact','design'].includes(styles.spacing));if(compact)assert.ok(width>=1280,'Compact vertical padding is a desktop height fallback only');
   const shortDesktop=width>=1280&&height<=960;
-  assert.equal(styles.padding,width<768?'16px 12px':compact?(shortDesktop?'16px 24px 8px':'16px 24px'):'24px');assert.equal(styles.headingGap,compact?(shortDesktop?'12px':'16px'):'24px');assert.equal(styles.headingMargin,compact?'16px':'24px');
+  assert.equal(styles.padding,width<768?'16px 12px':compact?(shortDesktop?'16px 24px 8px':'16px 24px'):'24px');assert.equal(styles.headingGap,compact&&shortDesktop?'12px':'16px');assert.equal(styles.headingMargin,compact?'16px':'24px');
   for(const group of styles.filterGroups){assert.equal(group.paddingTop,'16px','Caption line has its own layout space');if(group.captionTop!==null)assert.equal(group.captionTop,'0px');}
   if(styles.contentWidth<=1000)assert.ok(styles.legendBelowTitle>=7.9,'Legend owns a separate row at container widths up to 1000px');
   const narrowTitle=width<768||styles.contentWidth<=450;assert.equal(styles.h1.font,narrowTitle?'22px':'26px');assert.equal(styles.h1.line,narrowTitle?'26px':'31px');assert.equal(styles.h1.weight,'700');
   assert.equal(styles.footerCount,0,'The removed TOP footer does not remain as hidden DOM');
-  for(const h of styles.h2){assert.equal(h.font,'26px');assert.equal(h.line,'31px');assert.equal(h.weight,'400');assert.equal(h.whiteSpace,'nowrap');}
-  for(const h of styles.h3){const major=h.cell==='A21';assert.equal(h.font,major?'26px':'13px');assert.equal(h.line,major?'31px':'18px');assert.equal(h.weight,'400');assert.equal(h.background,'none');assert.equal(h.radius,'0px');assert.equal(h.top,major?'0px':'1px');assert.equal(h.bottom,major?'0px':'1px');if(!major){assert.equal(h.borderColor,'rgba(26, 26, 26, 0.2)');assert.equal(h.padding,'4px 8px 4px 2px');}}
-  for(const group of styles.groups){const left=['L2','M2','C11','D11'].includes(group.cell);assert.equal(group.padding,compact?(left?'4px 8px':'4px 8px 4px 0px'):(left?'8px':'8px 8px 8px 0px'),group.cell);assert.equal(group.gap,compact?'4px':supportingGroups.has(group.cell)||['A2','B2','D2','G11'].includes(group.cell)?'10px':'8px',group.cell);assert.equal(group.title.font,'9px');assert.equal(group.title.line,'12px');assert.equal(group.title.weight,group.cell==='D11'?'400':'510');assert.equal(group.title.transform,'uppercase');assert.equal(group.title.whiteSpace,'nowrap');}
+  for(const h of styles.h2){assert.equal(h.font,'17px');assert.equal(h.line,'24px');assert.equal(h.weight,'590');assert.ok(Math.abs(h.tracking+.51)<.005);assert.equal(h.parentGap,'0px');assert.equal(h.whiteSpace,'nowrap');}
+  for(const h of styles.h3){const major=h.cell==='A21';assert.equal(h.font,major?'17px':'13px');assert.equal(h.line,major?'24px':'18px');assert.equal(h.weight,major?'590':'400');assert.equal(h.background,'none');assert.equal(h.radius,'0px');assert.equal(h.top,major?'0px':'1px');assert.equal(h.bottom,major?'0px':'1px');if(major){assert.ok(Math.abs(h.tracking+.51)<.005);assert.equal(h.parentGap,'0px');}else{assert.equal(h.borderColor,'rgba(26, 26, 26, 0.2)');assert.equal(h.padding,'4px 8px 4px 2px');}}
+  for(const group of styles.groups){const vertical=compact?'4px':'8px';assert.equal(group.padding,`${vertical} 0px`,`${group.cell}: group side padding must not add to the shared horizontal gap`);assert.equal(group.gap,compact?'4px':tenPixelLabelGroups.has(group.cell)?'10px':'8px',group.cell);assert.equal(group.title.font,'9px');assert.equal(group.title.line,'12px');assert.equal(group.title.weight,group.cell==='D11'?'400':'510');assert.equal(group.title.transform,'uppercase');assert.equal(group.title.whiteSpace,'nowrap');}
 }
 
 async function assets(page, label) {
@@ -84,6 +87,15 @@ async function topKp(page, url) {
   await page.waitForFunction(() => !document.querySelector('#top-kp-panel')?.hidden && document.querySelectorAll('#top-kp-panel [data-top-kp-id]').length === 136);
   assert.equal(new URL(page.url()).hash, '#top-kp');
   assert.equal(await page.locator('#top-paths').getAttribute('aria-current'), 'page');
+  assert.equal(await page.locator('body').evaluate(body=>body.classList.contains('menu-collapsed')),true,'TOP opens with the narrow menu');
+  async function expandTopMenu(target) {
+    if(!await target.locator('body').evaluate(body=>body.classList.contains('menu-collapsed')))return;
+    await target.locator('#sidebar').hover({position:{x:4,y:45}});
+    if(!await target.locator('body').evaluate(body=>body.classList.contains('menu-peek')))await target.locator('#collapse-menu').click();
+    await target.locator('#pin-menu').click();
+    await target.mouse.move((await target.viewportSize()).width-2,1);
+    await target.evaluate(async()=>{for(let frame=0;frame<5;frame++)await new Promise(requestAnimationFrame);});
+  }
   const source = await page.evaluate(() => ({
     count: window.BPM_TOP_KP.records.length,
     blocks: window.BPM_TOP_KP.blocks.map(block => block.name),
@@ -95,7 +107,7 @@ async function topKp(page, url) {
   assert.deepEqual(source.blocks, ['Каналы', 'Управление клиентским опытом', 'Корпоративное управление', 'Основной бизнес', 'Поддерживающие процессы']);
   assert.equal(source.first.title, 'Идентификация по SberID');
   assert.equal(source.missing, true, 'Synthetic display values do not overwrite missing Excel data');
-  const identifiers=await page.locator('.top-kp-card').evaluateAll(cards=>cards.map(card=>({id:card.dataset.topKpId,code:card.querySelector('.top-kp-card-code').textContent,expected:window.BpmTopKpIdentifiers.codeFor(window.BPM_TOP_KP.records.find(record=>record.id===card.dataset.topKpId))})));
+  const identifiers=await page.locator('#top-kp-panel .top-kp-card').evaluateAll(cards=>cards.map(card=>({id:card.dataset.topKpId,code:card.dataset.topKpCode,expected:window.BpmTopKpIdentifiers.codeFor(window.BPM_TOP_KP.records.find(record=>record.id===card.dataset.topKpId))})));
   assert.equal(new Set(identifiers.map(record=>record.code)).size,136,'All demo business IDs are unique');
   for(const record of identifiers){assert.match(record.code,/^КП\d{4}$/);assert.equal(record.code,record.expected,'Card ID matches the stable demo identifier adapter');}
   assert.equal(await page.locator('[data-source-category="H10"] > h3').textContent(), 'Управление багосостоянием', 'Workbook category names are preserved');
@@ -141,7 +153,8 @@ async function topKp(page, url) {
     assert.equal(await reset.isVisible(),false,'Eraser hides after resetting all filters');
     assert.deepEqual(await page.locator('.top-kp-filter .select-input').evaluateAll(inputs=>inputs.map(input=>input.title)),Array(10).fill('Все'));
     assert.equal(await page.locator('.top-kp-filter-popup').count(),0,'Reset returns focus without reopening a dropdown');
-    assert.deepEqual(await page.locator('.top-kp-card-code').allTextContents(),identifiers.map(record=>record.code),'Filtering/reset never changes demo IDs');
+    assert.deepEqual(await page.locator('#top-kp-panel .top-kp-card').evaluateAll(cards=>cards.map(card=>card.dataset.topKpCode)),identifiers.map(record=>record.code),'Filtering/reset never changes demo IDs');
+    assert.equal(await page.locator('.top-kp-card-code').count(),0,'Demo IDs live in metadata, hover and drawer, not in card titles');
   }
   await verifyTopFilters('desktop');
   await assets(page,'ТОП-КП embedded filter/legend assets');
@@ -151,7 +164,7 @@ async function topKp(page, url) {
   assert.deepEqual(departmentBackgrounds, ['none'], 'Updated Figma department headings use dividers, not the old gradient asset');
 
   const topViewports = [[320,844],[390,844],[768,1024],[1024,768],[1280,920],[1440,920],[1600,1000],[1920,920],[1920,1080],[2047,1107],[2560,920],[2560,1440],[3200,1800],[3840,920],[3840,2160],[3840,1920]];
-  const tiers={compact:{height:36,font:'9px',line:'12px',code:false},small:{height:48,font:'13px',line:'18px',code:false},regular:{height:60,font:'13px',line:'18px',code:true},large:{height:72,font:'17px',line:'24px',code:true}};
+  const tiers={compact:{minWidth:80,height:45,twoWidth:100,twoHeight:34,font:'11px',line:'11px',weight:'510',tracking:-.66,padding:'4px 6px',radius:'8px'},regular:{minWidth:100,height:54,twoWidth:128,twoHeight:40,font:'13px',line:'14px',weight:'400',tracking:-.91,padding:'4px 6px',radius:'8px'},large:{minWidth:270,height:64,twoWidth:320,twoHeight:48,font:'17px',line:'16px',weight:'510',tracking:-1.02,padding:'6px',radius:'10px'}};
   const topGeometry = [];
   for (const [width,height] of topViewports) {
     await page.setViewportSize({width, height});
@@ -162,8 +175,11 @@ async function topKp(page, url) {
       const root = document.querySelector('#top-kp-panel'), panel = root.getBoundingClientRect(), main = root.parentElement, mainStyle = getComputedStyle(main);
       const elements = [...root.querySelectorAll('.top-kp-card')], cards = elements.map(card => card.getBoundingClientRect().width), viewport = root.querySelector('.top-kp-map-viewport');
       const titles = new Map(elements.map(card => [card.dataset.topKpId, card.querySelector('.top-kp-card-title').textContent]));
-      const title=elements[0].querySelector('.top-kp-card-title'), titleStyle=getComputedStyle(title), codes=elements.map(card=>({code:card.querySelector('.top-kp-card-code'),title:card.querySelector('.top-kp-card-title')}));
-      return {cards, panel: {width: panel.width, height: panel.height}, availableWidth: main.clientWidth-parseFloat(mainStyle.paddingLeft)-parseFloat(mainStyle.paddingRight), documentWidth: document.documentElement.scrollWidth, viewportWidth: viewport.clientWidth, viewportScrollWidth: viewport.scrollWidth,viewportHeight:viewport.clientHeight,viewportScrollHeight:viewport.scrollHeight, fontSize:titleStyle.fontSize,lineHeight:titleStyle.lineHeight,titleClamp:titleStyle.webkitLineClamp,titleWidth:title.getBoundingClientRect().width,cardHeight: elements[0].getBoundingClientRect().height,radii:[...new Set(elements.map(card=>getComputedStyle(card).borderRadius))],cardGaps:[...root.querySelectorAll('.top-kp-cards')].map(grid=>({cell:grid.parentElement.dataset.sourceCategory,row:getComputedStyle(grid).rowGap,column:getComputedStyle(grid).columnGap})),groupGaps:[...root.querySelectorAll('.top-kp-row,.top-kp-stack,.top-kp-map')].filter(group=>group.children.length>1).map(group=>({gap:getComputedStyle(group).gap,topBlocks:group.classList.contains('top-kp-row')&&[...group.children].every(child=>child.classList.contains('top-kp-block'))})),visibleCodes:codes.filter(({code})=>code&&getComputedStyle(code).display!=='none').length,codesAboveTitle:codes.filter(({code,title})=>code&&getComputedStyle(code).display!=='none'&&code.getBoundingClientRect().bottom<=title.getBoundingClientRect().top+.1).length,density: root.dataset.density, exactNames: window.BPM_TOP_KP.records.every(record => titles.get(record.id) === record.title)};
+      const title=elements[0].querySelector('.top-kp-card-title');
+      const mainBusiness=root.querySelector('[data-source-category="A9"]'),corporateBusiness=root.querySelector('[data-source-category="A21"]');
+      const majorPeers={sameParent:mainBusiness.parentElement===corporateBusiness.parentElement,headingOffset:Math.abs(mainBusiness.querySelector('h2').getBoundingClientRect().top-corporateBusiness.querySelector('h3').getBoundingClientRect().top)};
+      const cardDetails=elements.map(card=>{const title=card.querySelector('.top-kp-card-title'),style=getComputedStyle(card),text=getComputedStyle(title);return {height:card.getBoundingClientRect().height,titleHeight:title.getBoundingClientRect().height,font:text.fontSize,line:text.lineHeight,weight:text.fontWeight,tracking:parseFloat(text.letterSpacing),padding:style.padding,insets:parseFloat(style.paddingTop)+parseFloat(style.paddingBottom)+parseFloat(style.borderTopWidth)+parseFloat(style.borderBottomWidth),radius:style.borderRadius,clamp:text.webkitLineClamp,transform:text.textTransform,variation:text.fontVariationSettings,code:card.dataset.topKpCode};});
+      return {cards,cardDetails,majorPeers,panel: {width: panel.width, height: panel.height,bottom:panel.bottom+scrollY}, availableWidth: main.clientWidth-parseFloat(mainStyle.paddingLeft)-parseFloat(mainStyle.paddingRight), documentWidth: document.documentElement.scrollWidth, viewportWidth: viewport.clientWidth, viewportScrollWidth: viewport.scrollWidth,viewportHeight:viewport.clientHeight,viewportScrollHeight:viewport.scrollHeight,viewportOverflow:getComputedStyle(viewport).overflowY,viewportChain:getComputedStyle(viewport).overscrollBehaviorY,fit:root.dataset.fit,mapFloors:root.querySelector('.top-kp-map').children.length,titleWidth:title.getBoundingClientRect().width,cardGaps:[...root.querySelectorAll('.top-kp-cards')].map(grid=>({cell:grid.parentElement.dataset.sourceCategory,row:getComputedStyle(grid).rowGap,column:getComputedStyle(grid).columnGap})),groupGaps:[...root.querySelectorAll('.top-kp-row,.top-kp-stack,.top-kp-map')].filter(group=>group.children.length>1).map(group=>({gap:getComputedStyle(group).gap,topBlocks:!group.classList.contains('top-kp-map')&&!group.closest('.top-kp-block,.top-kp-department--major')})),codeSpans:root.querySelectorAll('.top-kp-card-code').length,density: root.dataset.density, exactNames: window.BPM_TOP_KP.records.every(record => titles.get(record.id) === record.title)};
     });
     topGeometry.push({width,height,...geometry});
     assert.equal(geometry.cards.length, 136, `${width}px: all Excel cards remain present`);
@@ -173,19 +189,24 @@ async function topKp(page, url) {
     if (width <= 1440) assert.ok(geometry.panel.height <= 920.1, `${width}px: compact map keeps its 920px cap`);
     assert.ok(geometry.documentWidth <= width + 1, `${width}px: no horizontal page overflow`);
     assert.ok(geometry.viewportScrollWidth <= geometry.viewportWidth + 1, `${width}px: no horizontal inner overflow`);
-    if(width>=1280) assert.ok(geometry.viewportScrollHeight<=geometry.viewportHeight+1,`${width}×${height}: full map fits without inner scrolling`);
-    if(width>=1280) {
-      const fit=await page.locator('#top-kp-panel').evaluate(root=>({bottom:root.getBoundingClientRect().bottom+scrollY,floors:root.querySelector('.top-kp-map').children.length,fit:root.dataset.fit}));
-      assert.equal(fit.floors,3,`${width}×${height}: three map floors`);assert.equal(fit.fit,'true',`${width}×${height}: fitted desktop layout`);
-      assert.ok(fit.bottom<=height+1,`${width}×${height}: all three floors fit viewport (${fit.bottom}px)`);
-    }
+    if(width>=1280){assert.equal(geometry.mapFloors,3,`${width}×${height}: hierarchy retains three map floors`);assert.ok(geometry.panel.bottom<=height+1,`${width}×${height}: panel stays within viewport`);assert.equal(geometry.majorPeers.sameParent,true,'Main and corporate business remain peer sections');assert.ok(geometry.majorPeers.headingOffset<.1,'Main and corporate business headings share their top line');}
+    if(geometry.fit==='true')assert.ok(geometry.viewportScrollHeight<=geometry.viewportHeight+1,`${width}×${height}: a fitted map needs no inner scrolling`);
+    else if(geometry.viewportScrollHeight>geometry.viewportHeight+1){assert.equal(geometry.viewportOverflow,'auto',`${width}×${height}: exact minimum cards use native overflow`);assert.equal(geometry.viewportChain,'auto');}
     const tier=tiers[geometry.density];assert.ok(tier,`${width}×${height}: valid Figma tier`);
-    assert.equal(geometry.fontSize,tier.font);assert.equal(geometry.lineHeight,tier.line);assert.equal(geometry.titleClamp,'2');
-    assert.ok(Math.abs(geometry.cardHeight-tier.height)<.1,`${width}×${height}: component height`);
-    assert.deepEqual(geometry.radii,['8px'],`${width}×${height}: updated component radius`);
+    const lines=Number(await page.locator('#top-kp-panel').getAttribute('data-lines'));
+    assert.ok([2,3].includes(lines),'All cards share one adaptive line mode');
+    assert.ok(geometry.cards.every(cardWidth=>cardWidth>=(lines===2?tier.twoWidth:tier.minWidth)-.1),`${width}×${height}: minimum card width is never sacrificed to fit`);
+    for(const card of geometry.cardDetails){
+      assert.equal(card.font,tier.font);assert.equal(card.line,tier.line);assert.equal(card.weight,tier.weight);assert.ok(Math.abs(card.tracking-tier.tracking)<.005);
+      assert.equal(card.padding,tier.padding);assert.equal(card.radius,tier.radius);assert.equal(card.clamp,String(lines));assert.equal(card.transform,'none');assert.equal(card.variation,'"wdth" 100');
+      assert.ok(card.titleHeight>=parseFloat(tier.line)-.1&&card.titleHeight<=parseFloat(tier.line)*lines+.1,`${width}×${height}: title respects the shared line limit`);
+      assert.equal(card.height,lines===2?tier.twoHeight:tier.height,`${width}×${height}: every card has the same fixed height, regardless of title length`);
+      assert.ok(card.titleHeight+card.insets<=card.height+.1,`${width}×${height}: titles fit inside the fixed card`);
+    }
     assert.deepEqual(await page.locator('.top-kp-card').evaluateAll(cards=>[...new Set(cards.map(card=>getComputedStyle(card).borderTopWidth))]),['2px'],`${width}×${height}: updated component border thickness`);
-    assert.equal(geometry.visibleCodes,tier.code?136:0,`${width}×${height}: adaptive ID visibility`);assert.equal(geometry.codesAboveTitle,geometry.visibleCodes,`${width}×${height}: ID is above title`);
-    assert.ok(geometry.cardGaps.every(gap=>gap.row==='4px'&&gap.column==='4px'),`${width}×${height}: updated Figma 4px card gaps`);
+    assert.equal(geometry.codeSpans,0,`${width}×${height}: ID row stays removed at every size`);
+    assert.deepEqual(geometry.cardDetails.map(card=>card.code),identifiers.map(record=>record.code),`${width}×${height}: ID metadata remains stable`);
+    for(const gap of geometry.cardGaps){assert.equal(gap.column,gap.cell==='N10'?'10px':eightPixelColumnGroups.has(gap.cell)?'8px':'4px',`${width}×${height}: ${gap.cell} Figma column gap`);assert.equal(gap.row,tenPixelRowGroups.has(gap.cell)?'10px':eightPixelRowGroups.has(gap.cell)?'8px':'4px',`${width}×${height}: ${gap.cell} Figma row gap`);}
     assert.ok(geometry.groupGaps.every(({gap,topBlocks})=>gap===(topBlocks?'16px':'8px')),`${width}×${height}: updated Figma container gaps`);
     assertHeadingStyles(await page.locator('#top-kp-panel').evaluate(headingStyles),width,height);
     await assets(page, `ТОП-КП ${width}px`);
@@ -196,7 +217,7 @@ async function topKp(page, url) {
   assert.ok(desktop.panel.width > 1440 && fourK.panel.width > desktop.panel.width, 'Panel expands beyond the old 1440px cap');
   assert.ok(desktop.cards[0] > compact.cards[0] && fourK.cards[0] > desktop.cards[0], 'Card widths increase on wide screens');
   assert.ok(fourK.titleWidth>desktop.titleWidth&&desktop.titleWidth>compact.titleWidth,'Wider adaptive cards expose more title text');
-  assert.ok(fourK.visibleCodes>0,'Wide cards expose the ID row');
+  assert.equal(fourK.codeSpans,0,'Wide cards also reserve the whole card for the title');
 
   for(const width of [1440,1920])for(const mode of ['expanded','collapsed']) {
     const menuPage=await page.context().newPage();
@@ -205,16 +226,20 @@ async function topKp(page, url) {
       await menuPage.addInitScript(mode=>localStorage.setItem('bpm-registry-menu',mode),mode);
       await menuPage.goto(`${url}#top-kp`);
       await menuPage.waitForFunction(()=>document.querySelectorAll('.top-kp-card').length===136);
+      assert.equal(await menuPage.locator('body').evaluate(body=>body.classList.contains('menu-collapsed')),true,'Every TOP entry starts narrow regardless of the saved global preference');
+      if(mode==='expanded')await expandTopMenu(menuPage);
       await menuPage.evaluate(async()=>{await document.fonts.ready;for(let frame=0;frame<5;frame++)await new Promise(requestAnimationFrame);});
       const fitted=await menuPage.locator('#top-kp-panel').evaluate(root=>{
         const cards=[...root.querySelectorAll('.top-kp-card')].map(card=>card.getBoundingClientRect());let overlaps=0;
         for(let a=0;a<cards.length;a++)for(let b=a+1;b<cards.length;b++)if(Math.min(cards[a].right,cards[b].right)-Math.max(cards[a].left,cards[b].left)>.1&&Math.min(cards[a].bottom,cards[b].bottom)-Math.max(cards[a].top,cards[b].top)>.1)overlaps++;
         const view=root.querySelector('.top-kp-map-viewport');
-        return {fit:root.dataset.fit,bottom:root.getBoundingClientRect().bottom+scrollY,overlaps,overflow:view.scrollHeight-view.clientHeight,collapsed:document.body.classList.contains('menu-collapsed')};
+        return {fit:root.dataset.fit,bottom:root.getBoundingClientRect().bottom+scrollY,overlaps,overflow:view.scrollHeight-view.clientHeight,overflowY:getComputedStyle(view).overflowY,chain:getComputedStyle(view).overscrollBehaviorY,minCardWidth:Math.min(...cards.map(card=>card.width)),floors:root.querySelector('.top-kp-map').children.length,collapsed:document.body.classList.contains('menu-collapsed')};
       });
-      assert.equal(fitted.collapsed,mode==='collapsed');assert.equal(fitted.fit,'true',`${width}px ${mode}: fitted map`);
-      assert.ok(fitted.bottom<=921,`${width}px ${mode}: map bottom ${fitted.bottom}`);assert.ok(fitted.overflow<=1,`${width}px ${mode}: no inner vertical scroll`);assert.equal(fitted.overlaps,0,`${width}px ${mode}: no overlapping cards`);
-      report(`ТОП-КП ${width}×920 / ${mode} menu: three floors fit without overlapping cards`);
+      assert.equal(fitted.collapsed,mode==='collapsed');assert.equal(fitted.floors,3);assert.ok(fitted.minCardWidth>=79.9);
+      assert.ok(fitted.bottom<=921,`${width}px ${mode}: map panel bottom ${fitted.bottom}`);assert.equal(fitted.overlaps,0,`${width}px ${mode}: no overlapping cards`);
+      if(fitted.fit==='true')assert.ok(fitted.overflow<=1,`${width}px ${mode}: fitted map has no overflow`);
+      else if(fitted.overflow>1){assert.equal(fitted.overflowY,'auto');assert.equal(fitted.chain,'auto');}
+      report(`ТОП-КП ${width}×920 / ${mode} menu: minimum widths preserved, three floors ${fitted.fit==='true'?'fit':'scroll internally'} without overlapping cards`);
     } finally {await menuPage.close();}
   }
 
@@ -280,6 +305,7 @@ async function topKp(page, url) {
     await assets(deepLink, 'ТОП-КП direct hash navigation');
   } finally {await deepLink.close();}
   await page.setViewportSize({width: 1920, height: 1080});
+  await expandTopMenu(page);
   report('Offline ТОП-КП navigation/deep link, 136 source-backed equal-width cards, updated Figma headers/dividers/padding, responsive map through 4K, native inner scroll/fades and standard КП drawer');
 }
 

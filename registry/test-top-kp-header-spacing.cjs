@@ -52,9 +52,11 @@ async function measure(page,mode,width,height,state) {
       filtering:!root.querySelector('.top-kp-reset').hidden,
       filterCount:filters.length,captionCount:captions.length,
       count:root.querySelector('.top-kp-count').textContent,
-      spacing:root.dataset.spacing,density:root.dataset.density,fit:root.dataset.fit,
+      spacing:root.dataset.spacing,density:root.dataset.density,lines:root.dataset.lines,fit:root.dataset.fit,
+      headingGap:getComputedStyle(root.querySelector('.top-kp-heading')).gap,headingMargin:getComputedStyle(root.querySelector('.top-kp-heading')).marginBottom,
       panelBottom:panel.bottom,mapTop:rect(map).top,
       mapFloors:map.children.length,viewportOverflow:viewport.scrollHeight-viewport.clientHeight,
+      cardWidth:root.querySelector('.top-kp-card').getBoundingClientRect().width,cardFont:getComputedStyle(root.querySelector('.top-kp-card')).fontSize,cardLine:getComputedStyle(root.querySelector('.top-kp-card')).lineHeight,overflowY:getComputedStyle(viewport).overflowY,
       lastCardBottom:Math.max(...[...root.querySelectorAll('.top-kp-card')].map(card=>rect(card).bottom))
     };
   });
@@ -66,6 +68,8 @@ async function measure(page,mode,width,height,state) {
     assert.equal(value.filterCount,10);assert.equal(value.captionCount,3);
     assert.equal(value.filtering,state==='active');
     assert.equal(value.count,state==='active'?'61 / 136':'136');
+    assert.equal(value.headingGap,value.spacing==='compact'&&width>=1280&&height<=960?'12px':'16px');
+    assert.equal(value.headingMargin,value.spacing==='compact'?'16px':'24px');
     for(const key of ['titleToCaption','filtersToMap','panelPaddingTop','visibleTopInset']) {
       // At <=960px tall desktops only the title/caption gap contracts to12px;
       // the map gap and top inset retain16px so all three floors still fit.
@@ -74,11 +78,14 @@ async function measure(page,mode,width,height,state) {
       assert.ok(value[key]>=minimum-.1,`${key} must be at least ${minimum}px, got ${value[key]}px`);
     }
     if(width===1440&&height===920) {
-      assert.equal(value.fit,'true','All three desktop map floors use the fitting layout');
       assert.equal(value.mapFloors,3);
-      assert.ok(value.viewportOverflow<=1,`Map needs no internal scroll, overflow=${value.viewportOverflow}`);
       assert.ok(value.panelBottom<=height+1,`Panel remains within the screen, bottom=${value.panelBottom}`);
-      assert.ok(value.lastCardBottom<=height+1,`Last card remains visible, bottom=${value.lastCardBottom}`);
+      if(value.fit==='true'){
+        assert.ok(value.viewportOverflow<=1,`Fitted map needs no internal scroll, overflow=${value.viewportOverflow}`);
+        assert.ok(value.lastCardBottom<=height+1,`Last fitted card remains visible, bottom=${value.lastCardBottom}`);
+      }else{
+        assert.equal(value.fit,'false');assert.equal(value.density,'compact');assert.ok(['2','3'].includes(value.lines));assert.ok(value.cardWidth>=(value.lines==='2'?100:80)-.1,'Fluid scrolling cards retain their shared line-mode minimum width');assert.equal(value.cardFont,'11px');assert.equal(value.cardLine,'11px');assert.equal(value.overflowY,'auto');assert.ok(value.viewportOverflow>1,'The exact minimum variant remains readable with genuine inner scroll');
+      }
     }
     console.log(`PASS ${name}: title→caption ${value.titleToCaption}px; filters→map ${value.filtersToMap}px; top padding ${value.panelPaddingTop}px`);
   } catch(error) {
@@ -102,6 +109,8 @@ async function main() {
         page.on('requestfailed',request=>failed.push(`${request.url()}: ${request.failure()?.errorText}`));
         await page.goto(`${base}#top-kp`);
         await page.waitForFunction(()=>!document.querySelector('#top-kp-panel')?.hidden&&document.querySelectorAll('.top-kp-card').length===136);
+        assert.equal(await page.locator('body').evaluate(body=>body.classList.contains('menu-collapsed')),true,'TOP ignores saved expanded mode for its default collapsed sidebar');
+        if(mode==='expanded'){for(let attempt=0;attempt<2&&!await page.locator('#pin-menu').isVisible();attempt++)await page.locator('#collapse-menu').click();await page.locator('#pin-menu').click();await page.mouse.move(sizes[0][0]-2,1);await paint(page);}
         for(const [width,height] of sizes) {
           await page.setViewportSize({width,height});await page.mouse.move(width-2,1);await paint(page);
           const before = await measure(page,mode,width,height,'none');

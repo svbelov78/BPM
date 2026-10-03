@@ -40,7 +40,8 @@ async function verify(page,card,label){
   assert.equal(await popover.locator('.efficiency-sphere').count(),1);
   const copy=popover.locator('[data-top-copy]');
   assert.equal((await copy.innerText()).trim(),data.code);assert.equal(await copy.isDisabled(),false);
-  if(!data.sourceCode){assert.match(data.code,/^КП\d{4}$/);assert.equal(await card.locator('.top-kp-card-code').textContent(),data.code,`${label}: card and tooltip use the same demo ID`);}
+  assert.equal(await card.locator('.top-kp-card-code').count(),0,`${label}: business ID is omitted from the visible card`);
+  if(!data.sourceCode){assert.match(data.code,/^КП\d{4}$/);assert.equal(await card.getAttribute('data-top-kp-code'),data.code,`${label}: card dataset and tooltip use the same demo ID`);}
   assert.doesNotMatch(await popover.innerText(),/top-kp-sheet1-/,'Internal source keys are not shown as business IDs');
   const s=await popover.evaluate(snapshot);
   near(s.bubble.width,Math.min(363,s.viewport.width-24),`${label}: component width`);
@@ -119,7 +120,12 @@ async function drawerReady(page){await page.waitForFunction(()=>{const drawer=do
 
     // Move only a test trigger inside this isolated browser, to exercise every
     // placement edge independently of the Excel map packing and viewport size.
+    // The new exact 80px minimum may make this desktop map scrollable. Disable
+    // its clipping/mask only for these artificial edge-position fixtures; the
+    // real overflow lifecycle is tested below without these style overrides.
     const savedStyle=await card.getAttribute('style');
+    const fixtureViewport=page.locator('.top-kp-map-viewport'),savedViewportStyle=await fixtureViewport.getAttribute('style');
+    await fixtureViewport.evaluate(el=>{el.style.overflow='visible';el.style.maskImage='none';el.style.webkitMaskImage='none';});
     for(const [name,left,top] of [['above',640,500],['below',640,12],['left',12,500],['right',1328,500]]){
       await card.evaluate((el,{left,top})=>{el.style.position='fixed';el.style.left=`${left}px`;el.style.top=`${top}px`;el.style.width='100px';el.style.height='34px';el.style.zIndex='240';},{left,top});
       await page.mouse.move(1,1);await hover(page,card);const s=await verify(page,card,`${name} edge`);
@@ -129,6 +135,7 @@ async function drawerReady(page){await page.waitForFunction(()=>{const drawer=do
       await page.keyboard.press('Escape');await noTip(page,`${name} cleanup`);
     }
     await card.evaluate((el,value)=>{if(value===null)el.removeAttribute('style');else el.setAttribute('style',value);},savedStyle);
+    await fixtureViewport.evaluate((el,value)=>{if(value===null)el.removeAttribute('style');else el.setAttribute('style',value);},savedViewportStyle);
     report('Above-first placement, below fallback and left/right clamping keep the 24×8 arrow attached to its card');
 
     await page.mouse.move(1,1);await hover(page,card);await card.click();await drawerReady(page);await noTip(page,'drawer opened');
