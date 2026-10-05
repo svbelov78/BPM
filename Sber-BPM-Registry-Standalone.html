@@ -470,14 +470,18 @@ body.menu-collapsed{--sidebar:87px}.menu-collapsed .sidebar{padding-left:16px;pa
 .pd-info-caption{display:flex;gap:8px;align-items:center}
 .pd-overview-tags{display:flex;gap:8px;flex-wrap:wrap;padding-top:8px}
 .pd-efficiency-widget,.pd-dynamics-widget{align-items:center;gap:4px;overflow:hidden}
+.pd-efficiency-widget{position:relative;isolation:isolate}
+.pd-efficiency-widget>.pd-widget-heading,.pd-efficiency-widget>.pd-period{position:relative;z-index:1}
 .pd-widget-heading{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
 .pd-widget-value{font-size:36px;line-height:43px;letter-spacing:-.108px}
 .pd-dynamics-value{display:flex;gap:8px;align-items:center}
 .pd-dynamics-value>.pd-icon{margin:0 6px}
-.pd-sphere-viewport{position:relative;display:flex;align-items:flex-start;justify-content:center;width:100%;height:281px;flex-shrink:0;overflow:hidden}
+.pd-sphere-viewport{position:relative;display:flex;align-items:flex-start;justify-content:center;width:100%;height:281px;flex-shrink:0;overflow:visible}
 .pd-large-sphere{position:relative;flex-shrink:0;width:306px;height:308px}
 .pd-large-sphere>.pd-sphere-image{position:absolute;left:76px;top:77px;width:154px;height:154px;max-width:none}
-.pd-sphere-curtain{position:absolute;left:0;top:154px;width:306px;height:154px;border-top:1px solid #ffffff8a;background:linear-gradient(180deg,#fff0,#fff);-webkit-backdrop-filter:blur(12.5px);backdrop-filter:blur(12.5px)}
+/* Continue the stationary curtain past the period and widget bottom. Only the
+   rounded outer widget clips it; its original fade length stays unchanged. */
+.pd-sphere-curtain{position:absolute;left:0;top:var(--pd-curtain-top,154px);width:306px;height:calc(100% + 154px);border-top:1px solid #ffffff8a;background:linear-gradient(180deg,#fff0,#fff var(--pd-curtain-fade-height,154px));-webkit-backdrop-filter:blur(12.5px);backdrop-filter:blur(12.5px);pointer-events:none}
 .pd-period{display:flex;gap:4px;align-items:center;justify-content:space-between;min-height:24px;width:100%;margin-top:auto;white-space:nowrap}
 .pd-period-button{display:flex;align-items:center;justify-content:center;width:24px;height:24px;flex-shrink:0;border-radius:4px}
 .pd-period-button:hover{background:var(--hover)}
@@ -846,8 +850,8 @@ body.menu-collapsed{--sidebar:87px}.menu-collapsed .sidebar{padding-left:16px;pa
 @keyframes pd-dynamics-grow{from{opacity:0;transform:scaleY(0)}to{opacity:1;transform:scaleY(1)}}
 @keyframes pd-operations-grow{from{opacity:0;transform:scaleX(0)}to{opacity:1;transform:scaleX(1)}}
 @keyframes pd-efficiency-reveal{from{opacity:0}to{opacity:1}}
-@media(prefers-reduced-motion:reduce){[data-pd-motion-state] .pd-sphere-image,[data-pd-motion-state] .pd-dynamics-bar,[data-pd-motion-state] .pd-operation-chart>span,[data-pd-motion-state] .bpm-efficiency-glyph{animation:none!important;opacity:1!important;transform:none!important}}
-@media print{[data-pd-motion-state] .pd-sphere-image,[data-pd-motion-state] .pd-dynamics-bar,[data-pd-motion-state] .pd-operation-chart>span,[data-pd-motion-state] .bpm-efficiency-glyph{animation:none!important;opacity:1!important;transform:none!important}}
+@media(prefers-reduced-motion:reduce){[data-pd-motion-state] .pd-sphere-image,[data-pd-motion-state] .jd-large-blur-fallback,[data-pd-motion-state] .pd-dynamics-bar,[data-pd-motion-state] .pd-operation-chart>span,[data-pd-motion-state] .bpm-efficiency-glyph{animation:none!important;opacity:1!important;transform:none!important}}
+@media print{[data-pd-motion-state] .pd-sphere-image,[data-pd-motion-state] .jd-large-blur-fallback,[data-pd-motion-state] .pd-dynamics-bar,[data-pd-motion-state] .pd-operation-chart>span,[data-pd-motion-state] .bpm-efficiency-glyph{animation:none!important;opacity:1!important;transform:none!important}}
 
 </style>
   <style data-bpm-source="journey-details.css">
@@ -878,8 +882,15 @@ body.menu-collapsed{--sidebar:87px}.menu-collapsed .sidebar{padding-left:16px;pa
 .jd-person-copy{min-width:0}.jd-person-copy p{margin:0;overflow-wrap:break-word}.jd-person--compact .jd-person-role{font-size:13px;line-height:18px}
 .jd-widget.pd-overview-panel{height:334px;min-height:334px;gap:4px;padding:24px;overflow:hidden}
 .jd-widget .pd-sphere-viewport{height:183px;align-items:center;min-height:0}
-.jd-widget .pd-sphere-curtain{top:113.19px;height:194.81px;border-top:0;backdrop-filter:blur(12.5px);-webkit-backdrop-filter:blur(12.5px)}
+.jd-widget .pd-sphere-curtain{border-top:0}
 .jd-widget .pd-sphere-curtain:before{content:'';position:absolute;inset:0 0 auto;height:1px;background:#ffffff8a}
+.jd-large-sphere--danger{--jd-large-fill:url("data:image/svg+xml;base64,PHN2ZyBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiBvdmVyZmxvdz0idmlzaWJsZSIgc3R5bGU9ImRpc3BsYXk6IGJsb2NrOyIgd2lkdGg9IjE1NCIgaGVpZ2h0PSIxNTQiIHZpZXdCb3g9IjAgMCAxNTQgMTU0IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8Y2lyY2xlIGlkPSJTcGhlcmUgJiMxOTQ7JiMxODM7IGZpeGVkIHBvc2l0aW9uIiBjeD0iNzciIGN5PSI3NyIgcj0iNzciIGZpbGw9InVybCgjcGFpbnQwX3JhZGlhbF8wXzc1KSIvPgo8ZGVmcz4KPHJhZGlhbEdyYWRpZW50IGlkPSJwYWludDBfcmFkaWFsXzBfNzUiIGN4PSIwIiBjeT0iMCIgcj0iMSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIGdyYWRpZW50VHJhbnNmb3JtPSJ0cmFuc2xhdGUoMjYuOTk5OSAyOC41KSByb3RhdGUoNTQuMTE3OCkgc2NhbGUoMTQ1LjAyMiAyMDcuNzU2KSI+CjxzdG9wIHN0b3AtY29sb3I9IiNGRkYwQjQiLz4KPHN0b3Agb2Zmc2V0PSIwLjAwMDU4NDI2IiBzdG9wLWNvbG9yPSIjRkZGMEI0Ii8+CjxzdG9wIG9mZnNldD0iMC40MjcyNjIiIHN0b3AtY29sb3I9IiNGRjhEMjgiLz4KPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjRkYzODNDIi8+CjwvcmFkaWFsR3JhZGllbnQ+CjwvZGVmcz4KPC9zdmc+Cg==")}
+.jd-large-sphere--attention{--jd-large-fill:url("data:image/svg+xml;base64,PHN2ZyBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiBvdmVyZmxvdz0idmlzaWJsZSIgc3R5bGU9ImRpc3BsYXk6IGJsb2NrOyIgd2lkdGg9IjE1NCIgaGVpZ2h0PSIxNTQiIHZpZXdCb3g9IjAgMCAxNTQgMTU0IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8Y2lyY2xlIGlkPSJTcGhlcmUgJiMxOTQ7JiMxODM7IGZpeGVkIHBvc2l0aW9uIiBjeD0iNzciIGN5PSI3NyIgcj0iNzciIGZpbGw9InVybCgjcGFpbnQwX3JhZGlhbF8wXzY2OTYpIi8+CjxkZWZzPgo8cmFkaWFsR3JhZGllbnQgaWQ9InBhaW50MF9yYWRpYWxfMF82Njk2IiBjeD0iMCIgY3k9IjAiIHI9IjEiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiBncmFkaWVudFRyYW5zZm9ybT0idHJhbnNsYXRlKDI2Ljk5OTkgMjguNSkgcm90YXRlKDU0LjExNzgpIHNjYWxlKDE0NS4wMjIgMjA3Ljc1NikiPgo8c3RvcCBzdG9wLWNvbG9yPSIjRkZGN0Q1Ii8+CjxzdG9wIG9mZnNldD0iMC41NjEyNDkiIHN0b3AtY29sb3I9IiNGRkNDMDAiLz4KPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjRkY4RDI4Ii8+CjwvcmFkaWFsR3JhZGllbnQ+CjwvZGVmcz4KPC9zdmc+Cg==")}
+.jd-large-sphere--indigo{--jd-large-fill:radial-gradient(ellipse at 17.5% 18.5%,#e8f2e6,#accdb4 43%,#9ea3a1)}
+.jd-large-sphere--positive{--jd-large-fill:radial-gradient(ellipse at 17.5% 18.5%,#f1ffea,#73e488 43%,#2ac653)}
+.jd-large-ball{display:block;border-radius:50%;background:var(--jd-large-fill) center/contain no-repeat}
+.jd-large-sphere--unrated .jd-large-ball{border:1px solid var(--secondary);background:none}
+.jd-large-sphere--zero .pd-sphere-curtain:before{display:none}
 .jd-section.pd-section{background:var(--white);border:0;border-radius:24px;min-width:0;flex:none}
 .jd-section-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:24px 24px 16px}
 .jd-section-heading h2{margin:0;font-size:22px;line-height:26px;font-weight:590;letter-spacing:-.066px;min-width:0}
@@ -919,7 +930,7 @@ body.menu-collapsed{--sidebar:87px}.menu-collapsed .sidebar{padding-left:16px;pa
 [data-pd-motion-group="journey-process"][data-pd-motion-state="pending"] .jd-sphere-ball{opacity:0;transform:translateY(24px)}
 [data-pd-motion-group="journey-process"][data-pd-motion-state="running"] .jd-sphere-ball{animation:jd-sphere-appear .8s cubic-bezier(.16,1,.3,1) both}
 @keyframes jd-sphere-appear{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
-@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.jd-curtain,.jd-widget .pd-sphere-curtain{overflow:hidden}.jd-blur-fallback{display:block;position:absolute;width:64px;height:64px;border-radius:50%;left:31.584px;top:calc(-1 * var(--jd-curtain-top));background:var(--jd-color);filter:blur(5.195px)}.jd-efficiency--zero .jd-blur-fallback{top:22.026px}.jd-large-blur-fallback{display:block;position:absolute;left:76px;top:-36.19px;width:154px;height:154px;background:url("data:image/svg+xml;base64,PHN2ZyBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiBvdmVyZmxvdz0idmlzaWJsZSIgc3R5bGU9ImRpc3BsYXk6IGJsb2NrOyIgd2lkdGg9IjE1NCIgaGVpZ2h0PSIxNTQiIHZpZXdCb3g9IjAgMCAxNTQgMTU0IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8Y2lyY2xlIGlkPSJTcGhlcmUgJiMxOTQ7JiMxODM7IGZpeGVkIHBvc2l0aW9uIiBjeD0iNzciIGN5PSI3NyIgcj0iNzciIGZpbGw9InVybCgjcGFpbnQwX3JhZGlhbF8wXzc1KSIvPgo8ZGVmcz4KPHJhZGlhbEdyYWRpZW50IGlkPSJwYWludDBfcmFkaWFsXzBfNzUiIGN4PSIwIiBjeT0iMCIgcj0iMSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIGdyYWRpZW50VHJhbnNmb3JtPSJ0cmFuc2xhdGUoMjYuOTk5OSAyOC41KSByb3RhdGUoNTQuMTE3OCkgc2NhbGUoMTQ1LjAyMiAyMDcuNzU2KSI+CjxzdG9wIHN0b3AtY29sb3I9IiNGRkYwQjQiLz4KPHN0b3Agb2Zmc2V0PSIwLjAwMDU4NDI2IiBzdG9wLWNvbG9yPSIjRkZGMEI0Ii8+CjxzdG9wIG9mZnNldD0iMC40MjcyNjIiIHN0b3AtY29sb3I9IiNGRjhEMjgiLz4KPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjRkYzODNDIi8+CjwvcmFkaWFsR3JhZGllbnQ+CjwvZGVmcz4KPC9zdmc+Cg==") center/contain no-repeat;filter:blur(12.5px)}}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.jd-curtain,.jd-widget .pd-sphere-curtain{overflow:hidden}.jd-blur-fallback{display:block;position:absolute;width:64px;height:64px;border-radius:50%;left:31.584px;top:calc(-1 * var(--jd-curtain-top));background:var(--jd-color);filter:blur(5.195px)}.jd-efficiency--zero .jd-blur-fallback{top:22.026px}.jd-large-blur-fallback{display:block;position:absolute;left:76px;top:calc(77px - var(--pd-curtain-top));width:154px;height:154px;border-radius:50%;background:var(--jd-large-fill) center/contain no-repeat;filter:blur(12.5px)}[data-pd-motion-group="efficiency"][data-pd-motion-state="pending"] .jd-large-blur-fallback{opacity:0;transform:translateY(90px)}[data-pd-motion-group="efficiency"][data-pd-motion-state="running"] .jd-large-blur-fallback{animation:pd-sphere-rise 1100ms cubic-bezier(.16,1,.3,1) both}}
 @container process-content (max-width:1100px){.jd-overview-grid{grid-template-columns:minmax(0,1fr) 300px}.jd-process-indicators{grid-template-columns:repeat(4,minmax(0,1fr));gap:24px 16px}.jd-process-efficiency{grid-column:1/-1;max-width:360px}.jd-process-header{align-items:flex-start;flex-direction:column;gap:16px}.jd-process-header>.jd-person{max-width:100%}.jd-heading .pd-title-actions{flex-wrap:wrap}.jd-heading .pd-title-actions h1{flex-basis:100%}.jd-heading .pd-process-actions{margin-left:0}}
 @container process-content (max-width:740px){.jd-overview-grid{grid-template-columns:minmax(0,1fr)}.jd-metadata{height:auto;min-height:0}.jd-widget.pd-overview-panel{width:100%;min-width:0}.jd-technology-icons{gap:16px}.jd-section-heading{flex-wrap:wrap}.jd-process-card{padding:20px;gap:32px}.jd-heading .pd-title-actions h1{font-size:28px;line-height:34px}}
 @container process-content (max-width:450px){.jd-process-indicators{grid-template-columns:repeat(2,minmax(0,1fr))}.jd-process-efficiency{gap:12px;max-width:none}.jd-sphere-slot{width:80px}.jd-efficiency-trend{width:20px;height:20px;flex-basis:20px}.jd-section-heading{padding:20px 16px 16px}.jd-section-content{padding:0 16px 20px}.jd-process-card{padding:16px}.jd-process-title-block h3,.jd-subheading{font-size:20px;line-height:26px}.jd-person{font-size:15px;line-height:22px}.jd-observation-group{gap:8px}.jd-rating{align-items:flex-start}.jd-leader{font-size:15px;line-height:22px}.jd-heading .pd-process-actions{flex-wrap:wrap;gap:8px}.jd-heading .pd-action-button{padding:10px 16px}.jd-overview-tags{gap:8px}.jd-technology-icons{width:100%}.jd-metadata{padding:20px}}
@@ -2412,25 +2423,20 @@ body.structure-mode .structure-toolbar .structure-toggle img{width:24px;height:2
   .top-kp-panel[data-spacing=compact] { padding-bottom:8px; }
   .top-kp-panel[data-spacing=compact] .top-kp-heading { gap:12px; }
 }
-/* Interactive hover card, Products-BPM 204:2915. Reuse ID Counter and the
+/* Read-only card tooltip, Products-BPM 204:2915. Reuse the ID badge and the
  * dynamic Efficiency/Small renderer; the exported pointer keeps its native size. */
-.top-kp-hover { position:fixed; z-index:600; width:min(363px,calc(100vw - 24px)); padding-bottom:8px; color:var(--white); font-size:13px; line-height:18px; }
+.top-kp-hover { position:fixed; z-index:600; width:min(363px,calc(100vw - 24px)); padding-bottom:8px; color:var(--white); font-size:13px; line-height:18px; pointer-events:none; }
 .top-kp-hover-bubble { display:flex; flex-direction:column; align-items:stretch; gap:8px; padding:16px; border-radius:16px; background:var(--text); overflow:hidden; }
 .top-kp-hover-top { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
 .top-kp-hover .id-badge { min-width:0; max-width:calc(100% - 92px); color:var(--text); font-weight:400; }
 .top-kp-hover .id-badge>span { overflow:hidden; text-overflow:ellipsis; }
-.top-kp-hover .id-badge:disabled { opacity:1; }
-.top-kp-hover .id-badge:disabled:hover { background:var(--panel); }
-.top-kp-hover .id-badge img { width:16px; height:16px; }
 .top-kp-hover .efficiency { gap:8px; font-size:17px; line-height:24px; font-weight:400; letter-spacing:-.119px; color:var(--white); }
 .top-kp-hover .efficiency :is(.fraction,.percent) { font-size:13px; line-height:18px; letter-spacing:-.039px; }
 .top-kp-hover strong { display:block; font-size:17px; line-height:24px; font-weight:590; letter-spacing:-.51px; overflow-wrap:anywhere; }
 .top-kp-hover-path { margin:0; font-size:13px; line-height:18px; letter-spacing:-.039px; overflow-wrap:anywhere; }
 .top-kp-hover-arrow { position:absolute; left:var(--top-arrow-left); bottom:0; width:24px; height:8px; }
-.top-kp-hover::after { content:""; position:absolute; left:0; right:0; top:100%; height:4px; }
 .top-kp-hover[data-placement=below] { padding-top:8px; padding-bottom:0; }
 .top-kp-hover[data-placement=below] .top-kp-hover-arrow { top:0; bottom:auto; transform:rotate(180deg); }
-.top-kp-hover[data-placement=below]::after { top:auto; bottom:100%; }
 @media(max-width:767px) {
   .top-kp-panel { padding:16px 12px; border-radius:24px; }
   .top-kp-heading h1 { font-size:22px; line-height:26px; }
@@ -4497,6 +4503,15 @@ window.BpmProcessAssets = Object.freeze({
     const top=percent===0?-32:64*percent/100;
     return `<span class="jd-efficiency-glyph jd-efficiency--${tone}${percent===0?' jd-efficiency--zero':''}" data-efficiency-percent="${percent}" style="--jd-curtain-top:${top}px;--jd-curtain-height:${96-top}px" aria-hidden="true"><span class="jd-sphere-ball"></span>${percent<100?`<span class="jd-curtain"><span class="jd-blur-fallback"></span></span>`:''}</span>`;
   }
+  function renderLargeSphere(value) {
+    if(value===null||value===undefined||!Number.isFinite(Number(value)))return '<div class="pd-large-sphere jd-large-sphere--unrated" aria-hidden="true"><span class="pd-sphere-image jd-large-ball"></span></div>';
+    const percent=Math.max(0,Math.min(100,Number(value)));
+    const tone=percent>=85?'positive':percent>=65?'indigo':percent>=45?'attention':'danger';
+    // The 154px ball rises independently behind a stationary glass layer.
+    // At zero, lift the glass above the entire ball so the blur isn't cut off.
+    const top=percent===0?0:77+154*percent/100;
+    return `<div class="pd-large-sphere jd-large-sphere--${tone}${percent===0?' jd-large-sphere--zero':''}" data-efficiency-percent="${percent}" style="--pd-curtain-top:${top}px;--pd-curtain-fade-height:${308-top}px" aria-hidden="true"><span class="pd-sphere-image jd-large-ball"></span>${percent<100?'<div class="pd-sphere-curtain"><span class="jd-large-blur-fallback"></span></div>':''}</div>`;
+  }
   function render(row,u) {
     const {esc,icon,tag}=u;
     const topSource=row.source==='top-kp';
@@ -4514,9 +4529,7 @@ window.BpmProcessAssets = Object.freeze({
     const overviewValue=topSource?row.efficiency:23.5;
     const overviewLabel=overviewValue==null?'—':String(overviewValue).replace('.',',');
     const overviewText=overviewValue==null?'—':`${overviewLabel}%`;
-    const overviewSphere=topSource
-      ? `<div class="pd-large-sphere"><div class="pd-sphere-image"><div style="width:64px;height:64px;transform:scale(2.40625);transform-origin:top left">${renderSphere(overviewValue)}</div></div></div>`
-      : '<div class="pd-large-sphere"><img class="pd-sphere-image" src="data:image/svg+xml;base64,PHN2ZyBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiBvdmVyZmxvdz0idmlzaWJsZSIgc3R5bGU9ImRpc3BsYXk6IGJsb2NrOyIgd2lkdGg9IjE1NCIgaGVpZ2h0PSIxNTQiIHZpZXdCb3g9IjAgMCAxNTQgMTU0IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8Y2lyY2xlIGlkPSJTcGhlcmUgJiMxOTQ7JiMxODM7IGZpeGVkIHBvc2l0aW9uIiBjeD0iNzciIGN5PSI3NyIgcj0iNzciIGZpbGw9InVybCgjcGFpbnQwX3JhZGlhbF8wXzc1KSIvPgo8ZGVmcz4KPHJhZGlhbEdyYWRpZW50IGlkPSJwYWludDBfcmFkaWFsXzBfNzUiIGN4PSIwIiBjeT0iMCIgcj0iMSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIGdyYWRpZW50VHJhbnNmb3JtPSJ0cmFuc2xhdGUoMjYuOTk5OSAyOC41KSByb3RhdGUoNTQuMTE3OCkgc2NhbGUoMTQ1LjAyMiAyMDcuNzU2KSI+CjxzdG9wIHN0b3AtY29sb3I9IiNGRkYwQjQiLz4KPHN0b3Agb2Zmc2V0PSIwLjAwMDU4NDI2IiBzdG9wLWNvbG9yPSIjRkZGMEI0Ii8+CjxzdG9wIG9mZnNldD0iMC40MjcyNjIiIHN0b3AtY29sb3I9IiNGRjhEMjgiLz4KPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjRkYzODNDIi8+CjwvcmFkaWFsR3JhZGllbnQ+CjwvZGVmcz4KPC9zdmc+Cg==" width="154" height="154" alt=""><div class="pd-sphere-curtain"><span class="jd-large-blur-fallback"></span></div></div>';
+    const overviewSphere=renderLargeSphere(overviewValue);
     const widget=`<article class="pd-overview-panel pd-efficiency-widget jd-widget" data-pd-motion-group="efficiency"><div class="pd-widget-heading"><p>Эффективность</p><p class="pd-widget-value"><span${overviewValue==null?'':` data-pd-motion-number="${esc(overviewText)}"`}>${esc(overviewText)}</span></p></div><div class="pd-sphere-viewport" role="img" aria-label="${overviewValue==null?'Эффективность не посчитана':`Демонстрационная эффективность ${esc(overviewLabel)} процента`}">${overviewSphere}</div><div class="pd-period"><button type="button" class="pd-period-button" data-pd-action="period-prev" aria-label="Предыдущий месяц">${icon('imgChevronLeft','pd-chevron-left')}</button><span>${topSource?'Демонстрационная оценка':'Сентябрь, 2026'}</span><button type="button" class="pd-period-button" data-pd-action="period-next" aria-label="Следующий месяц">${icon('imgChevronRight','pd-chevron-right')}</button></div></article>`;
     const processes=getProcesses(row);
     const processCards=processes.map((process,index)=>{
@@ -10019,7 +10032,7 @@ window.BpmProcessAssets = Object.freeze({
     }
     return {...selected,width:Math.floor(low*100)/100};
   }
-  let api,root,active=false,observer,frame,hover,hoverTrigger,hoverTimer,restoringHoverFocus=false,lastSize='';
+  let api,root,active=false,observer,frame,hover,hoverTrigger,lastSize='';
   const filterModel=window.BpmTopKpFilters,filters={},filterSelects=[];
   function syncHeadingTooltips() {
     const selector='.top-kp-map h2,.top-kp-map h3,.top-kp-map h4,.top-kp-filter .internal-label,.top-kp-filter-caption';
@@ -10077,18 +10090,16 @@ window.BpmProcessAssets = Object.freeze({
     const heading=node.kind==='block'?'h2':'h3';
     return `<section class="top-kp-${node.kind}${node.cell==='A21'?' top-kp-department--major':''}" style="${sizing}" data-source-category="${node.cell}" aria-labelledby="${headingId}"><${heading} id="${headingId}" title="${esc(item.name)}"><span>${esc(item.name)}</span></${heading}>${node.children.map(child=>renderNode(child,maxColumns,spacing,cardWidth)).join('')}</section>`;
   }
-  function cancelHoverClose() {clearTimeout(hoverTimer);}
-  function closeHover(restoreFocus=false) {
-    cancelHoverClose();const trigger=hoverTrigger,popup=hover;
-    // Removing a focused copy button fires focusout synchronously. Clear the
-    // shared references first so that nested dismissal is harmless.
+  function closeHover() {
+    const trigger=hoverTrigger,popup=hover;
     hover=null;hoverTrigger=null;
-    trigger?.removeAttribute('aria-controls');trigger?.removeAttribute('aria-expanded');
+    if(trigger&&popup){
+      const descriptions=(trigger.getAttribute('aria-describedby')||'').split(/\s+/).filter(id=>id&&id!==popup.id);
+      if(descriptions.length)trigger.setAttribute('aria-describedby',descriptions.join(' '));
+      else trigger.removeAttribute('aria-describedby');
+    }
     popup?.remove();
-    if(restoreFocus===true&&trigger?.isConnected){restoringHoverFocus=true;trigger.focus({preventScroll:true});restoringHoverFocus=false;}
   }
-  function scheduleHoverClose() {cancelHoverClose();hoverTimer=setTimeout(()=>{if(!withinHover(document.activeElement))closeHover();},180);}
-  function withinHover(target) {return target instanceof Node&&(hover?.contains(target)||hoverTrigger?.contains(target));}
   function positionHover() {
     const r=hoverTrigger.getBoundingClientRect(),b=hover.getBoundingClientRect(),margin=12,gap=2;
     const left=Math.max(margin,Math.min(innerWidth-b.width-margin,r.left+(r.width-b.width)/2));
@@ -10099,29 +10110,18 @@ window.BpmProcessAssets = Object.freeze({
     hover.style.setProperty('--top-arrow-left',`${Math.max(16,Math.min(b.width-40,r.left+r.width/2-left-12))}px`);
   }
   function showHover(trigger) {
-    cancelHoverClose();if(hoverTrigger===trigger&&hover)return;
+    if(hoverTrigger===trigger&&hover)return;
     closeHover();api.hideTooltip();if(!trigger||trigger.disabled||document.querySelector('dialog[open]'))return;
     const record=records.get(trigger.dataset.topKpId);if(!record)return;
     hoverTrigger=trigger;hover=document.createElement('div');hover.className='top-kp-hover';hover.id='top-kp-tooltip';
-    // This tooltip has an actionable ID Counter, so expose a non-modal hover
-    // card rather than putting an interactive control inside ARIA role=tooltip.
-    hover.setAttribute('role','dialog');hover.setAttribute('aria-modal','false');
+    hover.setAttribute('role','tooltip');
     hover.setAttribute('aria-labelledby','top-kp-tooltip-title');hover.setAttribute('aria-describedby','top-kp-tooltip-path');
     const hierarchy=[record.block,record.division,record.group].filter(Boolean).join(' / ');
-    hover.innerHTML=`<div class="top-kp-hover-bubble"><div class="top-kp-hover-top"><button type="button" class="id-badge" data-top-copy aria-label="Скопировать ID ${esc(code(record))}"><span>${esc(code(record))}</span><img src="data:image/svg+xml;base64,PHN2ZyBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiBvdmVyZmxvdz0idmlzaWJsZSIgc3R5bGU9ImRpc3BsYXk6IGJsb2NrOyIgd2lkdGg9IjE2IiBoZWlnaHQ9IjE2IiB2aWV3Qm94PSIwIDAgMTYgMTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxnIGlkPSJJY29uLzE2L0NvcHkiIGNsaXAtcGF0aD0idXJsKCNjbGlwMF8wXzM3KSI+CjxnIGlkPSJJY29uQ29weTE2Ij4KPC9nPgo8cGF0aCBpZD0iUmVjdGFuZ2xlIDMyIiBkPSJNMTIgMi41SDhDNi44OTU0MyAyLjUgNiAzLjM5NTQzIDYgNC41VjcuNUM2IDguNjA0NTcgNi44OTU0MyA5LjUgOCA5LjVIMTJDMTMuMTA0NiA5LjUgMTQgOC42MDQ1NyAxNCA3LjVWNC41QzE0IDMuMzk1NDMgMTMuMTA0NiAyLjUgMTIgMi41WiIgc3Ryb2tlPSIjN0Y3RjdGIiBzdHJva2Utd2lkdGg9IjIiLz4KPHBhdGggaWQ9IlJlY3RhbmdsZSAzMl8yIiBkPSJNMTAgOS41VjExLjVDMTAgMTIuNjA0NiA5LjEwNDU3IDEzLjUgOCAxMy41SDRDMi44OTU0MyAxMy41IDIgMTIuNjA0NiAyIDExLjVWOEMyIDYuODk1NDMgMi44OTU0MyA2IDQgNkg1LjUiIHN0cm9rZT0iIzdGN0Y3RiIgc3Ryb2tlLXdpZHRoPSIyIi8+CjwvZz4KPGRlZnM+CjxjbGlwUGF0aCBpZD0iY2xpcDBfMF8zNyI+CjxyZWN0IHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgZmlsbD0id2hpdGUiLz4KPC9jbGlwUGF0aD4KPC9kZWZzPgo8L3N2Zz4K" width="16" height="16" alt=""></button>${window.BpmCardVisuals.efficiency({efficiency:score(record)})}</div><strong id="top-kp-tooltip-title">${esc(record.title)}</strong><p class="top-kp-hover-path" id="top-kp-tooltip-path">${esc(hierarchy)}</p></div><img class="top-kp-hover-arrow" src="data:image/svg+xml;base64,PHN2ZyBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiBvdmVyZmxvdz0idmlzaWJsZSIgc3R5bGU9ImRpc3BsYXk6IGJsb2NrOyIgd2lkdGg9IjI0IiBoZWlnaHQ9IjgiIHZpZXdCb3g9IjAgMCAyNCA4IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8ZyBpZD0iQXJyb3ciPgo8cGF0aCBpZD0iUm91bmRlZCB0aXAgLyA0IHB4IiBkPSJNMCAwQzQuODg5NjEgMCA2LjMzODQzIDQuNjEyNDEgMTAuMjgzIDcuNTAxODNDMTAuNzEyOSA3LjgxNjcgMTEuMjY5OCA4IDEyIDhDMTIuNzMwMiA4IDEzLjI4NzEgNy44MTY3IDEzLjcxNyA3LjUwMTgzQzE3LjY2MTYgNC42MTI0MSAxOS4xMTA0IDAgMjQgMEgwWiIgZmlsbD0iIzFBMUExQSIvPgo8L2c+Cjwvc3ZnPgo=" width="24" height="8" alt="" aria-hidden="true">`;
+    hover.innerHTML=`<div class="top-kp-hover-bubble"><div class="top-kp-hover-top"><span class="id-badge"><span>${esc(code(record))}</span></span>${window.BpmCardVisuals.efficiency({efficiency:score(record)})}</div><strong id="top-kp-tooltip-title">${esc(record.title)}</strong><p class="top-kp-hover-path" id="top-kp-tooltip-path">${esc(hierarchy)}</p></div><img class="top-kp-hover-arrow" src="data:image/svg+xml;base64,PHN2ZyBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJub25lIiBvdmVyZmxvdz0idmlzaWJsZSIgc3R5bGU9ImRpc3BsYXk6IGJsb2NrOyIgd2lkdGg9IjI0IiBoZWlnaHQ9IjgiIHZpZXdCb3g9IjAgMCAyNCA4IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8ZyBpZD0iQXJyb3ciPgo8cGF0aCBpZD0iUm91bmRlZCB0aXAgLyA0IHB4IiBkPSJNMCAwQzQuODg5NjEgMCA2LjMzODQzIDQuNjEyNDEgMTAuMjgzIDcuNTAxODNDMTAuNzEyOSA3LjgxNjcgMTEuMjY5OCA4IDEyIDhDMTIuNzMwMiA4IDEzLjI4NzEgNy44MTY3IDEzLjcxNyA3LjUwMTgzQzE3LjY2MTYgNC42MTI0MSAxOS4xMTA0IDAgMjQgMEgwWiIgZmlsbD0iIzFBMUExQSIvPgo8L2c+Cjwvc3ZnPgo=" width="24" height="8" alt="" aria-hidden="true">`;
     document.body.append(hover);
-    trigger.setAttribute('aria-controls',hover.id);trigger.setAttribute('aria-expanded','true');
+    const descriptions=(trigger.getAttribute('aria-describedby')||'').split(/\s+/).filter(Boolean);
+    trigger.setAttribute('aria-describedby',[...new Set([...descriptions,hover.id])].join(' '));
     positionHover();
-    hover.addEventListener('pointerenter',cancelHoverClose);
-    hover.addEventListener('pointerleave',event=>{if(!withinHover(event.relatedTarget))scheduleHoverClose();});
-    hover.addEventListener('focusin',cancelHoverClose);
-    hover.addEventListener('focusout',event=>{if(!withinHover(event.relatedTarget))closeHover();});
-    hover.addEventListener('click',event=>{if(event.target.closest('[data-top-copy]'))api.copyText(code(record));});
-    hover.addEventListener('keydown',event=>{
-      if(event.key!=='Tab')return;
-      if(event.shiftKey){event.preventDefault();hoverTrigger.focus({preventScroll:true});}
-      else {closeHover(true);/* Native Tab then continues from the original card. */}
-    });
   }
   function layout() {
     if(!active||root.hidden)return;
@@ -10210,13 +10210,10 @@ window.BpmProcessAssets = Object.freeze({
     });
     root.addEventListener('click',event=>{const trigger=event.target.closest('[data-top-kp-id]');if(trigger&&!trigger.disabled){closeHover();api.openDetail(records.get(trigger.dataset.topKpId),trigger);}});
     root.addEventListener('pointerover',event=>{if(event.target.closest('[data-tooltip]'))closeHover();if(event.pointerType==='touch')return;const card=event.target.closest('[data-top-kp-id]');if(card&&!card.contains(event.relatedTarget))showHover(card);});
-    root.addEventListener('pointerout',event=>{if(hoverTrigger&&!withinHover(event.relatedTarget))scheduleHoverClose();});
-    root.addEventListener('focusin',event=>{const card=event.target.closest('[data-top-kp-id]');if(card&&!restoringHoverFocus)showHover(card);});
-    root.addEventListener('focusout',event=>{if(!withinHover(event.relatedTarget))closeHover();});
-    root.addEventListener('keydown',event=>{
-      if(event.key==='Tab'&&!event.shiftKey&&event.target===hoverTrigger){const copy=hover?.querySelector('[data-top-copy]:not(:disabled)');if(copy){event.preventDefault();copy.focus();}}
-    });
-    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&hover){event.preventDefault();event.stopPropagation();closeHover(true);}},true);
+    root.addEventListener('pointerout',event=>{const card=event.target.closest('[data-top-kp-id]');if(card&&card===hoverTrigger&&!card.contains(event.relatedTarget))closeHover();});
+    root.addEventListener('focusin',event=>{const card=event.target.closest('[data-top-kp-id]');if(card)showHover(card);});
+    root.addEventListener('focusout',event=>{if(hoverTrigger&&!hoverTrigger.contains(event.relatedTarget))closeHover();});
+    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&hover){event.preventDefault();event.stopPropagation();closeHover();}},true);
     document.addEventListener('scroll',()=>closeHover(),true);
     observer=new ResizeObserver(scheduleLayout);observer.observe(root);
     window.addEventListener('resize',scheduleLayout);

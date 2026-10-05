@@ -17,5 +17,5 @@
 @keyframes pd-dynamics-grow{from{opacity:0;transform:scaleY(0)}to{opacity:1;transform:scaleY(1)}}
 @keyframes pd-operations-grow{from{opacity:0;transform:scaleX(0)}to{opacity:1;transform:scaleX(1)}}
 @keyframes pd-efficiency-reveal{from{opacity:0}to{opacity:1}}
-@media(prefers-reduced-motion:reduce){[data-pd-motion-state] .pd-sphere-image,[data-pd-motion-state] .pd-dynamics-bar,[data-pd-motion-state] .pd-operation-chart>span,[data-pd-motion-state] .bpm-efficiency-glyph{animation:none!important;opacity:1!important;transform:none!important}}
-@media print{[data-pd-motion-state] .pd-sphere-image,[data-pd-motion-state] .pd-dynamics-bar,[data-pd-motion-state] .pd-operation-chart>span,[data-pd-motion-state] .bpm-efficiency-glyph{animation:none!important;opacity:1!important;transform:none!important}}
+@media(prefers-reduced-motion:reduce){[data-pd-motion-state] .pd-sphere-image,[data-pd-motion-state] .jd-large-blur-fallback,[data-pd-motion-state] .pd-dynamics-bar,[data-pd-motion-state] .pd-operation-chart>span,[data-pd-motion-state] .bpm-efficiency-glyph{animation:none!important;opacity:1!important;transform:none!important}}
+@media print{[data-pd-motion-state] .pd-sphere-image,[data-pd-motion-state] .jd-large-blur-fallback,[data-pd-motion-state] .pd-dynamics-bar,[data-pd-motion-state] .pd-operation-chart>span,[data-pd-motion-state] .bpm-efficiency-glyph{animation:none!important;opacity:1!important;transform:none!important}}

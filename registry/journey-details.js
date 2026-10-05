@@ -28,6 +28,15 @@
     const top=percent===0?-32:64*percent/100;
     return `<span class="jd-efficiency-glyph jd-efficiency--${tone}${percent===0?' jd-efficiency--zero':''}" data-efficiency-percent="${percent}" style="--jd-curtain-top:${top}px;--jd-curtain-height:${96-top}px" aria-hidden="true"><span class="jd-sphere-ball"></span>${percent<100?`<span class="jd-curtain"><span class="jd-blur-fallback"></span></span>`:''}</span>`;
   }
+  function renderLargeSphere(value) {
+    if(value===null||value===undefined||!Number.isFinite(Number(value)))return '<div class="pd-large-sphere jd-large-sphere--unrated" aria-hidden="true"><span class="pd-sphere-image jd-large-ball"></span></div>';
+    const percent=Math.max(0,Math.min(100,Number(value)));
+    const tone=percent>=85?'positive':percent>=65?'indigo':percent>=45?'attention':'danger';
+    // The 154px ball rises independently behind a stationary glass layer.
+    // At zero, lift the glass above the entire ball so the blur isn't cut off.
+    const top=percent===0?0:77+154*percent/100;
+    return `<div class="pd-large-sphere jd-large-sphere--${tone}${percent===0?' jd-large-sphere--zero':''}" data-efficiency-percent="${percent}" style="--pd-curtain-top:${top}px;--pd-curtain-fade-height:${308-top}px" aria-hidden="true"><span class="pd-sphere-image jd-large-ball"></span>${percent<100?'<div class="pd-sphere-curtain"><span class="jd-large-blur-fallback"></span></div>':''}</div>`;
+  }
   function render(row,u) {
     const {esc,icon,tag}=u;
     const topSource=row.source==='top-kp';
@@ -45,9 +54,7 @@
     const overviewValue=topSource?row.efficiency:23.5;
     const overviewLabel=overviewValue==null?'—':String(overviewValue).replace('.',',');
     const overviewText=overviewValue==null?'—':`${overviewLabel}%`;
-    const overviewSphere=topSource
-      ? `<div class="pd-large-sphere"><div class="pd-sphere-image"><div style="width:64px;height:64px;transform:scale(2.40625);transform-origin:top left">${renderSphere(overviewValue)}</div></div></div>`
-      : '<div class="pd-large-sphere"><img class="pd-sphere-image" src="assets/journey-details/large-sphere-23.5.svg" width="154" height="154" alt=""><div class="pd-sphere-curtain"><span class="jd-large-blur-fallback"></span></div></div>';
+    const overviewSphere=renderLargeSphere(overviewValue);
     const widget=`<article class="pd-overview-panel pd-efficiency-widget jd-widget" data-pd-motion-group="efficiency"><div class="pd-widget-heading"><p>Эффективность</p><p class="pd-widget-value"><span${overviewValue==null?'':` data-pd-motion-number="${esc(overviewText)}"`}>${esc(overviewText)}</span></p></div><div class="pd-sphere-viewport" role="img" aria-label="${overviewValue==null?'Эффективность не посчитана':`Демонстрационная эффективность ${esc(overviewLabel)} процента`}">${overviewSphere}</div><div class="pd-period"><button type="button" class="pd-period-button" data-pd-action="period-prev" aria-label="Предыдущий месяц">${icon('imgChevronLeft','pd-chevron-left')}</button><span>${topSource?'Демонстрационная оценка':'Сентябрь, 2026'}</span><button type="button" class="pd-period-button" data-pd-action="period-next" aria-label="Следующий месяц">${icon('imgChevronRight','pd-chevron-right')}</button></div></article>`;
     const processes=getProcesses(row);
     const processCards=processes.map((process,index)=>{

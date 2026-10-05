@@ -135,7 +135,7 @@
     }
     return {...selected,width:Math.floor(low*100)/100};
   }
-  let api,root,active=false,observer,frame,hover,hoverTrigger,hoverTimer,restoringHoverFocus=false,lastSize='';
+  let api,root,active=false,observer,frame,hover,hoverTrigger,lastSize='';
   const filterModel=window.BpmTopKpFilters,filters={},filterSelects=[];
   function syncHeadingTooltips() {
     const selector='.top-kp-map h2,.top-kp-map h3,.top-kp-map h4,.top-kp-filter .internal-label,.top-kp-filter-caption';
@@ -193,18 +193,16 @@
     const heading=node.kind==='block'?'h2':'h3';
     return `<section class="top-kp-${node.kind}${node.cell==='A21'?' top-kp-department--major':''}" style="${sizing}" data-source-category="${node.cell}" aria-labelledby="${headingId}"><${heading} id="${headingId}" title="${esc(item.name)}"><span>${esc(item.name)}</span></${heading}>${node.children.map(child=>renderNode(child,maxColumns,spacing,cardWidth)).join('')}</section>`;
   }
-  function cancelHoverClose() {clearTimeout(hoverTimer);}
-  function closeHover(restoreFocus=false) {
-    cancelHoverClose();const trigger=hoverTrigger,popup=hover;
-    // Removing a focused copy button fires focusout synchronously. Clear the
-    // shared references first so that nested dismissal is harmless.
+  function closeHover() {
+    const trigger=hoverTrigger,popup=hover;
     hover=null;hoverTrigger=null;
-    trigger?.removeAttribute('aria-controls');trigger?.removeAttribute('aria-expanded');
+    if(trigger&&popup){
+      const descriptions=(trigger.getAttribute('aria-describedby')||'').split(/\s+/).filter(id=>id&&id!==popup.id);
+      if(descriptions.length)trigger.setAttribute('aria-describedby',descriptions.join(' '));
+      else trigger.removeAttribute('aria-describedby');
+    }
     popup?.remove();
-    if(restoreFocus===true&&trigger?.isConnected){restoringHoverFocus=true;trigger.focus({preventScroll:true});restoringHoverFocus=false;}
   }
-  function scheduleHoverClose() {cancelHoverClose();hoverTimer=setTimeout(()=>{if(!withinHover(document.activeElement))closeHover();},180);}
-  function withinHover(target) {return target instanceof Node&&(hover?.contains(target)||hoverTrigger?.contains(target));}
   function positionHover() {
     const r=hoverTrigger.getBoundingClientRect(),b=hover.getBoundingClientRect(),margin=12,gap=2;
     const left=Math.max(margin,Math.min(innerWidth-b.width-margin,r.left+(r.width-b.width)/2));
@@ -215,29 +213,18 @@
     hover.style.setProperty('--top-arrow-left',`${Math.max(16,Math.min(b.width-40,r.left+r.width/2-left-12))}px`);
   }
   function showHover(trigger) {
-    cancelHoverClose();if(hoverTrigger===trigger&&hover)return;
+    if(hoverTrigger===trigger&&hover)return;
     closeHover();api.hideTooltip();if(!trigger||trigger.disabled||document.querySelector('dialog[open]'))return;
     const record=records.get(trigger.dataset.topKpId);if(!record)return;
     hoverTrigger=trigger;hover=document.createElement('div');hover.className='top-kp-hover';hover.id='top-kp-tooltip';
-    // This tooltip has an actionable ID Counter, so expose a non-modal hover
-    // card rather than putting an interactive control inside ARIA role=tooltip.
-    hover.setAttribute('role','dialog');hover.setAttribute('aria-modal','false');
+    hover.setAttribute('role','tooltip');
     hover.setAttribute('aria-labelledby','top-kp-tooltip-title');hover.setAttribute('aria-describedby','top-kp-tooltip-path');
     const hierarchy=[record.block,record.division,record.group].filter(Boolean).join(' / ');
-    hover.innerHTML=`<div class="top-kp-hover-bubble"><div class="top-kp-hover-top"><button type="button" class="id-badge" data-top-copy aria-label="Скопировать ID ${esc(code(record))}"><span>${esc(code(record))}</span><img src="assets/top-kp/tooltip-copy.svg" width="16" height="16" alt=""></button>${window.BpmCardVisuals.efficiency({efficiency:score(record)})}</div><strong id="top-kp-tooltip-title">${esc(record.title)}</strong><p class="top-kp-hover-path" id="top-kp-tooltip-path">${esc(hierarchy)}</p></div><img class="top-kp-hover-arrow" src="assets/top-kp/tooltip-arrow.svg" width="24" height="8" alt="" aria-hidden="true">`;
+    hover.innerHTML=`<div class="top-kp-hover-bubble"><div class="top-kp-hover-top"><span class="id-badge"><span>${esc(code(record))}</span></span>${window.BpmCardVisuals.efficiency({efficiency:score(record)})}</div><strong id="top-kp-tooltip-title">${esc(record.title)}</strong><p class="top-kp-hover-path" id="top-kp-tooltip-path">${esc(hierarchy)}</p></div><img class="top-kp-hover-arrow" src="assets/top-kp/tooltip-arrow.svg" width="24" height="8" alt="" aria-hidden="true">`;
     document.body.append(hover);
-    trigger.setAttribute('aria-controls',hover.id);trigger.setAttribute('aria-expanded','true');
+    const descriptions=(trigger.getAttribute('aria-describedby')||'').split(/\s+/).filter(Boolean);
+    trigger.setAttribute('aria-describedby',[...new Set([...descriptions,hover.id])].join(' '));
     positionHover();
-    hover.addEventListener('pointerenter',cancelHoverClose);
-    hover.addEventListener('pointerleave',event=>{if(!withinHover(event.relatedTarget))scheduleHoverClose();});
-    hover.addEventListener('focusin',cancelHoverClose);
-    hover.addEventListener('focusout',event=>{if(!withinHover(event.relatedTarget))closeHover();});
-    hover.addEventListener('click',event=>{if(event.target.closest('[data-top-copy]'))api.copyText(code(record));});
-    hover.addEventListener('keydown',event=>{
-      if(event.key!=='Tab')return;
-      if(event.shiftKey){event.preventDefault();hoverTrigger.focus({preventScroll:true});}
-      else {closeHover(true);/* Native Tab then continues from the original card. */}
-    });
   }
   function layout() {
     if(!active||root.hidden)return;
@@ -326,13 +313,10 @@
     });
     root.addEventListener('click',event=>{const trigger=event.target.closest('[data-top-kp-id]');if(trigger&&!trigger.disabled){closeHover();api.openDetail(records.get(trigger.dataset.topKpId),trigger);}});
     root.addEventListener('pointerover',event=>{if(event.target.closest('[data-tooltip]'))closeHover();if(event.pointerType==='touch')return;const card=event.target.closest('[data-top-kp-id]');if(card&&!card.contains(event.relatedTarget))showHover(card);});
-    root.addEventListener('pointerout',event=>{if(hoverTrigger&&!withinHover(event.relatedTarget))scheduleHoverClose();});
-    root.addEventListener('focusin',event=>{const card=event.target.closest('[data-top-kp-id]');if(card&&!restoringHoverFocus)showHover(card);});
-    root.addEventListener('focusout',event=>{if(!withinHover(event.relatedTarget))closeHover();});
-    root.addEventListener('keydown',event=>{
-      if(event.key==='Tab'&&!event.shiftKey&&event.target===hoverTrigger){const copy=hover?.querySelector('[data-top-copy]:not(:disabled)');if(copy){event.preventDefault();copy.focus();}}
-    });
-    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&hover){event.preventDefault();event.stopPropagation();closeHover(true);}},true);
+    root.addEventListener('pointerout',event=>{const card=event.target.closest('[data-top-kp-id]');if(card&&card===hoverTrigger&&!card.contains(event.relatedTarget))closeHover();});
+    root.addEventListener('focusin',event=>{const card=event.target.closest('[data-top-kp-id]');if(card)showHover(card);});
+    root.addEventListener('focusout',event=>{if(hoverTrigger&&!hoverTrigger.contains(event.relatedTarget))closeHover();});
+    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&hover){event.preventDefault();event.stopPropagation();closeHover();}},true);
     document.addEventListener('scroll',()=>closeHover(),true);
     observer=new ResizeObserver(scheduleLayout);observer.observe(root);
     window.addEventListener('resize',scheduleLayout);

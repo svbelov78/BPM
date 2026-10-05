@@ -97,25 +97,20 @@
   .top-kp-panel[data-spacing=compact] { padding-bottom:8px; }
   .top-kp-panel[data-spacing=compact] .top-kp-heading { gap:12px; }
 }
-/* Interactive hover card, Products-BPM 204:2915. Reuse ID Counter and the
+/* Read-only card tooltip, Products-BPM 204:2915. Reuse the ID badge and the
  * dynamic Efficiency/Small renderer; the exported pointer keeps its native size. */
-.top-kp-hover { position:fixed; z-index:600; width:min(363px,calc(100vw - 24px)); padding-bottom:8px; color:var(--white); font-size:13px; line-height:18px; }
+.top-kp-hover { position:fixed; z-index:600; width:min(363px,calc(100vw - 24px)); padding-bottom:8px; color:var(--white); font-size:13px; line-height:18px; pointer-events:none; }
 .top-kp-hover-bubble { display:flex; flex-direction:column; align-items:stretch; gap:8px; padding:16px; border-radius:16px; background:var(--text); overflow:hidden; }
 .top-kp-hover-top { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
 .top-kp-hover .id-badge { min-width:0; max-width:calc(100% - 92px); color:var(--text); font-weight:400; }
 .top-kp-hover .id-badge>span { overflow:hidden; text-overflow:ellipsis; }
-.top-kp-hover .id-badge:disabled { opacity:1; }
-.top-kp-hover .id-badge:disabled:hover { background:var(--panel); }
-.top-kp-hover .id-badge img { width:16px; height:16px; }
 .top-kp-hover .efficiency { gap:8px; font-size:17px; line-height:24px; font-weight:400; letter-spacing:-.119px; color:var(--white); }
 .top-kp-hover .efficiency :is(.fraction,.percent) { font-size:13px; line-height:18px; letter-spacing:-.039px; }
 .top-kp-hover strong { display:block; font-size:17px; line-height:24px; font-weight:590; letter-spacing:-.51px; overflow-wrap:anywhere; }
 .top-kp-hover-path { margin:0; font-size:13px; line-height:18px; letter-spacing:-.039px; overflow-wrap:anywhere; }
 .top-kp-hover-arrow { position:absolute; left:var(--top-arrow-left); bottom:0; width:24px; height:8px; }
-.top-kp-hover::after { content:""; position:absolute; left:0; right:0; top:100%; height:4px; }
 .top-kp-hover[data-placement=below] { padding-top:8px; padding-bottom:0; }
 .top-kp-hover[data-placement=below] .top-kp-hover-arrow { top:0; bottom:auto; transform:rotate(180deg); }
-.top-kp-hover[data-placement=below]::after { top:auto; bottom:100%; }
 @media(max-width:767px) {
   .top-kp-panel { padding:16px 12px; border-radius:24px; }
   .top-kp-heading h1 { font-size:22px; line-height:26px; }

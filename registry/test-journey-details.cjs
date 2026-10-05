@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const {pathToFileURL} = require('node:url');
 const {chromium} = require(process.env.BPM_PLAYWRIGHT || '/Users/admin/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
-const url = pathToFileURL(path.join(__dirname, 'index.html')).href;
+const url = `${pathToFileURL(path.join(__dirname, 'index.html')).href}#main`;
 const report = message => console.log(`PASS — ${message}`);
 const near = (actual, expected, label, tolerance = 0.15) => assert.ok(Math.abs(actual - expected) <= tolerance, `${label}: ${actual} vs ${expected}`);
 
@@ -17,7 +17,7 @@ async function loadedDrawer(page) {
 }
 
 async function loadedRegistry(page, view = 'cards') {
-  await page.locator(view === 'cards' ? '.entity-card:not(.skeleton-card)' : '.registry-table tr[data-record]').first().waitFor();
+  await page.locator(view === 'cards' ? '#results .entity-card:not(.skeleton-card)' : '#results .registry-table tr[data-record]').first().waitFor();
 }
 
 async function openFrom(page, target, entity, checkLoading = false) {
@@ -150,7 +150,7 @@ async function mainFlow(browser) {
     await page.goto(url);
     await loadedRegistry(page);
     assert.equal(await page.locator('#paths-tab').getAttribute('aria-pressed'), 'true');
-    const card = page.locator('.entity-card:not(.skeleton-card)').first(), trigger = card.locator('[data-detail]');
+    const card = page.locator('#results .entity-card:not(.skeleton-card)').first(), trigger = card.locator('[data-detail]');
     const pathId = await card.getAttribute('data-record'), title = await trigger.innerText();
     const source = await sourceData(page);
     const demo = await page.evaluate(id => window.BpmJourneyDetails.getProcesses(window.BPM_DATA.find(row => row.id === id)).map(record => ({id: record.id, title: record.title})), pathId);
@@ -196,13 +196,13 @@ async function mainFlow(browser) {
     report('included process detail, return to journey with expansion/focus preserved, Escape returns focus to the registry');
 
     await page.locator('#table-view').click(); await loadedRegistry(page, 'table');
-    const tableRow = page.locator('.registry-table tr[data-record]').first(), tableTrigger = tableRow.locator('[data-detail]');
+    const tableRow = page.locator('#results .registry-table tr[data-record]').first(), tableTrigger = tableRow.locator('[data-detail]');
     const tableTitle = await tableTrigger.innerText();
     drawer = await openFrom(page, tableRow.locator('.card-description'), 'paths');
     assert.equal(await drawer.locator('#pd-title').innerText(), tableTitle);
     await closeByEscape(page, tableTrigger);
     await page.locator('#processes-tab').click(); await loadedRegistry(page, 'table');
-    const processRow = page.locator('.registry-table tr[data-record]').first(), regularProcessTrigger = processRow.locator('[data-detail]');
+    const processRow = page.locator('#results .registry-table tr[data-record]').first(), regularProcessTrigger = processRow.locator('[data-detail]');
     const processTitle = await regularProcessTrigger.innerText();
     drawer = await openFrom(page, regularProcessTrigger, 'processes');
     assert.equal(await drawer.locator('#pd-title').innerText(), processTitle);

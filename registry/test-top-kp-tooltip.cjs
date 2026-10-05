@@ -1,4 +1,4 @@
-/* Figma 204:2915: interactive TOP-КП hover card and pointer/keyboard lifecycle.
+/* Figma 204:2915: read-only TOP-КП tooltip and pointer/keyboard lifecycle.
  * node test-top-kp-tooltip.cjs [absolute/standalone.html]
  * An optional standalone is copied alone, renamed and tested without network. */
 'use strict';
@@ -18,28 +18,31 @@ const report=label=>console.log(`PASS — ${label}`);
 const tip=page=>page.locator('#top-kp-tooltip');
 const paint=page=>page.evaluate(async()=>{await document.fonts.ready;for(let i=0;i<5;i++)await new Promise(requestAnimationFrame);});
 async function ready(page){await page.waitForFunction(()=>!document.querySelector('#top-kp-panel')?.hidden&&document.querySelectorAll('.top-kp-card').length===136);await paint(page);}
-async function noTip(page,label){await tip(page).waitFor({state:'hidden'});assert.equal(await page.locator('.top-kp-card[aria-controls="top-kp-tooltip"]').count(),0,`${label}: stale aria-controls removed`);}
+async function noTip(page,label){await tip(page).waitFor({state:'hidden'});assert.equal(await page.locator('.top-kp-card[aria-describedby~="top-kp-tooltip"]').count(),0,`${label}: stale aria-describedby removed`);}
 async function hover(page,card){await page.mouse.move(1,1);await card.scrollIntoViewIfNeeded();await paint(page);await card.hover();await tip(page).waitFor();await paint(page);}
 async function recordFor(page,card){const id=await card.getAttribute('data-top-kp-id');return page.evaluate(id=>{const row=window.BPM_TOP_KP.records.find(row=>row.id===id);return {id,title:row.title,path:[row.block,row.division,row.group].filter(Boolean).join(' / '),code:window.BpmTopKpIdentifiers.codeFor(row),sourceCode:row.code||null,score:window.BpmTopKp.score(row),band:window.BpmTopKp.band(window.BpmTopKp.score(row))};},id);}
 function snapshot(root){
   const box=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height,right:r.right,bottom:r.bottom};};
   const style=el=>{const s=getComputedStyle(el);return {font:s.fontSize,line:s.lineHeight,weight:s.fontWeight,color:s.color,padding:s.padding,radius:s.borderRadius,background:s.backgroundColor,gap:s.gap,overflow:s.overflow,textOverflow:s.textOverflow,clamp:s.webkitLineClamp};};
-  const bubble=root.querySelector('.top-kp-hover-bubble'),title=root.querySelector('strong'),hierarchy=root.querySelector('.top-kp-hover-path'),badge=root.querySelector('[data-top-copy]'),arrow=root.querySelector('.top-kp-hover-arrow'),glyph=root.querySelector('.efficiency-glyph');
-  const trigger=document.querySelector('.top-kp-card[aria-controls="top-kp-tooltip"]');
-  return {root:box(root),bubble:box(bubble),bubbleStyle:style(bubble),title:style(title),titleHeight:title.clientHeight,titleScrollHeight:title.scrollHeight,path:style(hierarchy),pathHeight:hierarchy.clientHeight,pathScrollHeight:hierarchy.scrollHeight,badge:box(badge),badgeStyle:style(badge),copyIcon:box(badge.querySelector('img')),arrow:box(arrow),arrowNatural:{width:arrow.naturalWidth,height:arrow.naturalHeight},glyph:box(glyph),number:style(root.querySelector('.efficiency-number')),percent:style(root.querySelector('.percent')),trigger:box(trigger),placement:root.dataset.placement,viewport:{width:innerWidth,height:innerHeight}};
+  const bubble=root.querySelector('.top-kp-hover-bubble'),title=root.querySelector('strong'),hierarchy=root.querySelector('.top-kp-hover-path'),badge=root.querySelector('.id-badge'),arrow=root.querySelector('.top-kp-hover-arrow'),glyph=root.querySelector('.efficiency-glyph');
+  const trigger=document.querySelector('.top-kp-card[aria-describedby~="top-kp-tooltip"]');
+  return {root:box(root),bubble:box(bubble),bubbleStyle:style(bubble),title:style(title),titleHeight:title.clientHeight,titleScrollHeight:title.scrollHeight,path:style(hierarchy),pathHeight:hierarchy.clientHeight,pathScrollHeight:hierarchy.scrollHeight,badge:box(badge),badgeStyle:style(badge),arrow:box(arrow),arrowNatural:{width:arrow.naturalWidth,height:arrow.naturalHeight},glyph:box(glyph),number:style(root.querySelector('.efficiency-number')),percent:style(root.querySelector('.percent')),trigger:box(trigger),placement:root.dataset.placement,viewport:{width:innerWidth,height:innerHeight}};
 }
 async function verify(page,card,label){
   const data=await recordFor(page,card),popover=tip(page);
-  assert.equal(await popover.getAttribute('role'),'dialog');assert.equal(await popover.getAttribute('aria-modal'),'false');
+  assert.equal(await popover.getAttribute('role'),'tooltip');assert.equal(await popover.getAttribute('aria-modal'),null);
   assert.equal(await popover.getAttribute('aria-labelledby'),'top-kp-tooltip-title');assert.equal(await popover.getAttribute('aria-describedby'),'top-kp-tooltip-path');
-  assert.equal(await card.getAttribute('aria-controls'),'top-kp-tooltip');
+  assert.ok((await card.getAttribute('aria-describedby')||'').split(/\s+/).includes('top-kp-tooltip'));
+  assert.equal(await card.getAttribute('aria-controls'),null);assert.equal(await card.getAttribute('aria-expanded'),null);
   assert.equal(await popover.locator('strong').textContent(),data.title,`${label}: complete source title`);
   assert.equal(await popover.locator('.top-kp-hover-path').textContent(),data.path,`${label}: complete source hierarchy`);
   assert.equal(Number(await popover.locator('.efficiency').getAttribute('data-efficiency-percent')),data.score,`${label}: stable authorized demo efficiency`);
   assert.equal(Number(await popover.locator('.bpm-efficiency-glyph').getAttribute('data-efficiency')),data.score,`${label}: shared sphere matches score`);
   assert.equal(await popover.locator('.efficiency-sphere').count(),1);
-  const copy=popover.locator('[data-top-copy]');
-  assert.equal((await copy.innerText()).trim(),data.code);assert.equal(await copy.isDisabled(),false);
+  const badge=popover.locator('.id-badge');
+  assert.equal((await badge.innerText()).trim(),data.code);assert.equal(await badge.evaluate(el=>el.tagName),'SPAN');
+  assert.equal(await popover.locator('button,a,input,[tabindex],[data-top-copy],.id-badge img').count(),0,`${label}: ID is plain text with no copy icon or focusable action`);
+  assert.equal(await popover.evaluate(el=>getComputedStyle(el).pointerEvents),'none',`${label}: tooltip never catches the cursor`);
   assert.equal(await card.locator('.top-kp-card-code').count(),0,`${label}: business ID is omitted from the visible card`);
   if(!data.sourceCode){assert.match(data.code,/^КП\d{4}$/);assert.equal(await card.getAttribute('data-top-kp-code'),data.code,`${label}: card dataset and tooltip use the same demo ID`);}
   assert.doesNotMatch(await popover.innerText(),/top-kp-sheet1-/,'Internal source keys are not shown as business IDs');
@@ -48,7 +51,7 @@ async function verify(page,card,label){
   assert.equal(s.bubbleStyle.background,'rgb(26, 26, 26)');assert.equal(s.bubbleStyle.padding,'16px');assert.equal(s.bubbleStyle.radius,'16px');assert.equal(s.bubbleStyle.gap,'8px');
   assert.equal(s.title.font,'17px');assert.equal(s.title.line,'24px');assert.equal(s.title.weight,'590');assert.equal(s.title.color,'rgb(255, 255, 255)');assert.ok(s.titleScrollHeight<=s.titleHeight+1,`${label}: source title is never truncated`);
   assert.equal(s.path.font,'13px');assert.equal(s.path.line,'18px');assert.equal(s.path.color,'rgb(255, 255, 255)');assert.ok(s.pathScrollHeight<=s.pathHeight+1,`${label}: hierarchy is never truncated`);
-  near(s.badge.height,24,`${label}: ID badge height`);assert.equal(s.badgeStyle.font,'13px');near(s.copyIcon.width,16,`${label}: copy icon width`);near(s.copyIcon.height,16,`${label}: copy icon height`);
+  near(s.badge.height,24,`${label}: ID badge height`);assert.equal(s.badgeStyle.font,'13px');
   near(s.glyph.width,24,`${label}: sphere width`);near(s.glyph.height,24,`${label}: sphere height`);assert.equal(s.number.font,'17px');assert.equal(s.percent.font,'13px');assert.equal(s.number.weight,'400');assert.equal(s.percent.weight,'400');assert.equal(s.number.color,'rgb(255, 255, 255)');
   near(s.arrow.width,24,`${label}: arrow width`);near(s.arrow.height,8,`${label}: arrow height`);assert.deepEqual(s.arrowNatural,{width:24,height:8});
   assert.ok(s.root.x>=11.8&&s.root.right<=s.viewport.width-11.8,`${label}: horizontal viewport clamping`);
@@ -87,10 +90,12 @@ async function drawerReady(page){await page.waitForFunction(()=>{const drawer=do
     for(const band of ['red','yellow','gray','green']){
       const card=page.locator(`.top-kp-card[data-band="${band}"]`).first();await hover(page,card);await verify(page,card,`${band} band`);
       const classes=await tip(page).locator('.bpm-efficiency-glyph').getAttribute('class');assert.match(classes,new RegExp(`efficiency-${band==='gray'?'blue':band}(?: |$)`));
-      await tip(page).locator('.top-kp-hover-bubble').hover();await page.waitForTimeout(500);assert.equal(await tip(page).count(),1,'Pointer can move from card onto hover bubble');
+      const oldTooltip=await tip(page).elementHandle(),bubble=await tip(page).locator('.top-kp-hover-bubble').boundingBox();
+      await page.mouse.move(bubble.x+bubble.width/2,bubble.y+bubble.height/2);
+      assert.equal(await oldTooltip.evaluate(el=>el.isConnected),false,'Moving from card toward tooltip removes the old bubble immediately');
       await page.mouse.move(1,1);await noTip(page,'band pointer exit');
     }
-    report('All four color bands keep their score; moving onto the interactive bubble does not dismiss it');
+    report('All four color bands keep their score; moving toward the non-interactive tooltip dismisses it immediately');
 
     let card=page.locator('.top-kp-card').first();
     await card.focus();await tip(page).waitFor();await verify(page,card,'keyboard focus');
@@ -100,23 +105,22 @@ async function drawerReady(page){await page.waitForFunction(()=>{const drawer=do
 
     const id=await card.getAttribute('data-top-kp-id');
     const demo=await recordFor(page,card);assert.match(demo.code,/^КП\d{4}$/);
-    await page.evaluate(()=>{window.__tooltipDemoCopies=[];Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>window.__tooltipDemoCopies.push(value)}});});
-    await hover(page,card);await tip(page).locator('[data-top-copy]').click();
-    assert.deepEqual(await page.evaluate(()=>window.__tooltipDemoCopies),[demo.code]);assert.equal(await page.locator('#process-drawer[open]').count(),0);
-    await page.screenshot({path:path.join(output,'tooltip-demo-id-copy.png')});
-    await page.mouse.move(1,1);await page.keyboard.press('Escape');await noTip(page,'demo ID copy cleanup');
+    await hover(page,card);await verify(page,card,'stable demo ID');
+    const immediatelyHidden=await card.evaluate(el=>{el.dispatchEvent(new PointerEvent('pointerout',{bubbles:true,pointerType:'mouse',relatedTarget:document.body}));return !document.querySelector('#top-kp-tooltip');});
+    assert.equal(immediatelyHidden,true,'Pointer-out removes tooltip synchronously, without a delayed hover bridge');await noTip(page,'immediate pointer-out');
     await page.evaluate(id=>{const row=window.BPM_TOP_KP.records.find(row=>row.id===id);window.__tooltipOriginalCode={present:Object.hasOwn(row,'code'),value:row.code,efficiency:row.efficiency};row.code='КП-ТЕСТ-0123';row.efficiency=86.1;window.__tooltipCopies=[];Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>window.__tooltipCopies.push(value)}});},id);
     await hover(page,card);await verify(page,card,'explicit ID fixture');
     assert.deepEqual(await tip(page).locator('.fraction').evaluate(el=>({font:getComputedStyle(el).fontSize,line:getComputedStyle(el).lineHeight,weight:getComputedStyle(el).fontWeight,text:el.textContent})),{font:'13px',line:'18px',weight:'400',text:',1'});
     await page.screenshot({path:path.join(output,'tooltip-real-id-86-1.png')});
-    const copy=tip(page).locator('[data-top-copy]');await copy.hover();await page.waitForTimeout(500);await copy.click();
-    assert.deepEqual(await page.evaluate(()=>window.__tooltipCopies),['КП-ТЕСТ-0123']);assert.equal(await page.locator('#process-drawer[open]').count(),0,'Copy does not open drawer');
-    await card.focus();await page.keyboard.press('Tab');assert.equal(await copy.evaluate(el=>el===document.activeElement),true,'Tab reaches real ID copy action');
-    await page.keyboard.press('Shift+Tab');assert.equal(await card.evaluate(el=>el===document.activeElement),true,'Shift+Tab returns to trigger');
-    await page.keyboard.press('Tab');await page.keyboard.press('Escape');await noTip(page,'Escape from copy');assert.equal(await card.evaluate(el=>el===document.activeElement),true);
+    assert.deepEqual(await page.evaluate(()=>window.__tooltipCopies),[],'Read-only tooltip never writes to clipboard');
+    await card.focus();await page.keyboard.press('Tab');
+    assert.equal(await page.evaluate(()=>document.activeElement?.closest('#top-kp-tooltip')!==null),false,'Tab never enters the tooltip');
+    assert.notEqual(await page.evaluate(()=>document.activeElement?.dataset.topKpId),id,'Native Tab continues beyond the trigger');
+    await page.keyboard.press('Shift+Tab');assert.equal(await card.evaluate(el=>el===document.activeElement),true,'Native Shift+Tab returns to trigger');
+    await page.keyboard.press('Escape');await noTip(page,'Escape from trigger');assert.equal(await card.evaluate(el=>el===document.activeElement),true);
     await page.evaluate(id=>{const row=window.BPM_TOP_KP.records.find(row=>row.id===id),saved=window.__tooltipOriginalCode;if(saved.present)row.code=saved.value;else delete row.code;row.efficiency=saved.efficiency;},id);
     assert.equal(await page.evaluate(()=>JSON.stringify(window.BPM_TOP_KP.records)),original,'Synthetic test code does not persist and source records are unchanged');
-    report('Keyboard, copy for stable demo IDs and overriding explicit IDs, Escape and trigger-focus restoration');
+    report('Stable demo/explicit IDs stay readable, tooltip never copies or captures Tab; keyboard focus and Escape work');
 
     // Move only a test trigger inside this isolated browser, to exercise every
     // placement edge independently of the Excel map packing and viewport size.
@@ -142,7 +146,7 @@ async function drawerReady(page){await page.waitForFunction(()=>{const drawer=do
     const expected=await recordFor(page,card);assert.equal(await page.locator('#pd-title').textContent(),expected.title);
     const drawerCopy=page.locator('#process-drawer .pd-heading-labels [data-pd-action="copy"]');
     assert.equal((await drawerCopy.innerText()).trim(),expected.code);assert.equal(await drawerCopy.getAttribute('data-pd-copy'),expected.code);
-    await drawerCopy.click();assert.deepEqual(await page.evaluate(()=>window.__tooltipCopies),['КП-ТЕСТ-0123',expected.code]);
+    await drawerCopy.click();assert.deepEqual(await page.evaluate(()=>window.__tooltipCopies),[expected.code]);
     await page.screenshot({path:path.join(output,'tooltip-demo-id-drawer.png')});
     assert.equal(Number((await page.locator('#process-drawer .jd-widget .pd-widget-value').innerText()).replace('%','').replace(',','.').trim()),expected.score);
     // dialog.close() clears `open` before its queued close event restores the

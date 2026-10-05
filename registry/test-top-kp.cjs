@@ -250,11 +250,10 @@ async function main() {
     await first.hover();await page.locator('.top-kp-hover').waitFor();
     check('Hover exposes the full source title',()=>{});
     assert.equal(await page.locator('.top-kp-hover strong').textContent(),firstTitle);
-    assert.equal((await page.locator('.top-kp-hover [data-top-copy]').innerText()).trim(),firstRecord.demoCode);
+    assert.equal((await page.locator('.top-kp-hover .id-badge').innerText()).trim(),firstRecord.demoCode);
+    assert.equal(await page.locator('.top-kp-hover').getAttribute('role'),'tooltip');
+    assert.equal(await page.locator('.top-kp-hover button,.top-kp-hover .id-badge img').count(),0,'Tooltip ID has no copy action or icon');
     await page.evaluate(()=>{window.__topIdCopies=[];Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>window.__topIdCopies.push(value)}});});
-    await page.locator('.top-kp-hover [data-top-copy]').click();
-    assert.deepEqual(await page.evaluate(()=>window.__topIdCopies),[firstRecord.demoCode]);
-    assert.equal(await page.locator('#process-drawer[open]').count(),0,'Copying a demo ID does not open the drawer');
     await page.screenshot({path:path.join(output,'top-kp-demo-id-tooltip.png')});
     await page.mouse.move(1900,1);await first.focus();await page.keyboard.press('Enter');
     await loadedDrawer(page);
@@ -268,7 +267,7 @@ async function main() {
     assert.equal(await drawerCopy.count(),1,'The authorized demo ID can be copied');
     assert.equal((await drawerCopy.innerText()).trim(),firstRecord.demoCode);
     assert.equal(await drawerCopy.getAttribute('data-pd-copy'),firstRecord.demoCode);
-    await drawerCopy.click();assert.deepEqual(await page.evaluate(()=>window.__topIdCopies),[firstRecord.demoCode,firstRecord.demoCode]);
+    await drawerCopy.click();assert.deepEqual(await page.evaluate(()=>window.__topIdCopies),[firstRecord.demoCode]);
     await page.screenshot({path:path.join(output,'top-kp-demo-id-drawer.png')});
     for(const anchor of ['about','assessment','benchmark','additional']) {
       assert.equal(await drawer.locator(`#pd-${anchor}`).count(),1);
