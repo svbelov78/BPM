@@ -83,6 +83,16 @@ async function choose(page, key, value, prefix='stf') {
   assert.ok(await page.locator('#special-task-flow').evaluate(node => node.open), `${key}: closing popup preserves form`);
 }
 const record = (page,id) => page.evaluate(id=>window.BpmTaskStore.get(id),id);
+async function reviewForm(page, nested=false) {
+  const selector=nested?'#special-task-flow .stf-sheet-content':'#special-task-flow .tf-content';
+  await page.locator(selector).evaluate(node=>{node.scrollTop=node.scrollHeight;node.dispatchEvent(new Event('scroll'));});
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+}
+async function clickAction(page,name) {
+  if(["save","sheet-save"].includes(name)||name.startsWith('lifecycle:'))await reviewForm(page,name.startsWith('sheet-'));
+  await action(page,name).click();
+}
+
 const lifecycle = (page,id) => action(page,`lifecycle:${id}`);
 async function choice(page,key,value,prefix='stf') {
   const input=page.locator(`#special-task-flow input[name="${prefix}-${key}"][value="${value}"]`);
@@ -131,19 +141,20 @@ async function addItem(page,key,title='Новый вариант результ�
     await page.locator('#sts-title').fill(title);
     for(const name of ['channel','service','segment','businessDescription'])await choose(page,name,undefined,'sts');
   }
-  await action(page,'sheet-save').click();
+  await clickAction(page,'sheet-save');
   await page.waitForFunction(()=>!document.querySelector('#special-task-flow .tf-sheet'));
 }
 async function finish(page,id,{comment='Комментарий независимой QA',required=false,double=false}={}) {
-  await lifecycle(page,id).click();
+  await clickAction(page,`lifecycle:${id}`);
   if(await page.locator('#special-task-flow .tf-sheet').count()) {
     if(required) {
-      await action(page,'sheet-save').click();
+      await clickAction(page,'sheet-save');
       assert.equal(await page.locator('#sts-comment').getAttribute('aria-invalid'),'true',`${id}: comment is required`);
     }
     await page.locator('#sts-comment').fill(comment);
+    await reviewForm(page,true);
     if(double)await action(page,'sheet-save').evaluate(button=>{button.click();button.click();});
-    else await action(page,'sheet-save').click();
+    else await clickAction(page,'sheet-save');
     await page.waitForFunction(()=>!document.querySelector('#special-task-flow .tf-sheet'));
   }
   await mode(page,'view');
@@ -210,7 +221,7 @@ async function businessAndChecklist(page) {
     const item=await submitCreated(page,'business-description-update');await openRecord(page,item.id);
     if(negative)await choice(page,'businessOutcome','not-updated');
     else {
-      await lifecycle(page,'submit').click();
+      await clickAction(page,`lifecycle:${'submit'}`);
       assert.equal(await page.locator('#stf-registrationNumber').getAttribute('aria-invalid'),'true','Positive outcome requires SberDocs registration');
       assert.equal(await page.locator('#special-task-flow .tf-sheet').count(),0);
       await page.locator('#stf-registrationNumber').fill('SBERDOCS-QA-2026');
@@ -230,7 +241,7 @@ async function businessAndChecklist(page) {
     await create(page,'business-description-checklist');await prepare(page,'business-description-checklist');
     const item=await submitCreated(page,'business-description-checklist');await openRecord(page,item.id);
     assert.equal(await page.locator('#stf-answers input[type="checkbox"]').count(),8,'Checklist includes all eight PDF questions');
-    await lifecycle(page,'complete-checklist').click();
+    await clickAction(page,`lifecycle:${'complete-checklist'}`);
     assert.equal(await page.locator('#special-task-flow .tf-sheet').count(),0,'Checklist needs explicit decision');
     await choice(page,'answers','1');await choice(page,'decision',decision);
     const count=await page.evaluate(()=>window.BpmTaskStore.list().length);
@@ -277,18 +288,18 @@ async function metricPeriodsAndRejection(page) {
   const indefinite=page.locator('input[name="sts-indefinite"]');
   if(await indefinite.isChecked())await indefinite.locator('..').click();
   await page.locator('#sts-periodFrom').fill('31.02.2026');await page.locator('#sts-periodTo').fill('01.03.2026');
-  await action(page,'sheet-save').click();
+  await clickAction(page,'sheet-save');
   assert.equal(await page.locator('#sts-periodFrom').getAttribute('aria-invalid'),'true','Invalid calendar dates cannot be saved');
   await page.locator('#sts-periodFrom').fill('20.10.2026');await page.locator('#sts-periodTo').fill('19.10.2026');
-  await action(page,'sheet-save').click();
+  await clickAction(page,'sheet-save');
   assert.equal(await page.locator('#sts-periodTo').getAttribute('aria-invalid'),'true','End before start cannot be saved');
-  await page.locator('#sts-periodTo').fill('21.10.2026');await action(page,'sheet-save').click();
+  await page.locator('#sts-periodTo').fill('21.10.2026');await clickAction(page,'sheet-save');
   await page.waitForFunction(()=>!document.querySelector('#special-task-flow .tf-sheet'));
   const item=await submitCreated(page,'metric-inapplicability');
   assert.equal(item.flowData.metrics[0].periodFrom,'2026-10-20');assert.equal(item.flowData.metrics[0].periodTo,'2026-10-21');
   await openRecord(page,item.id);
   const approval=page.locator('#stf-metrics [data-stfc-decision]');await approval.locator('..').click();
-  await lifecycle(page,'approve').click();
+  await clickAction(page,`lifecycle:${'approve'}`);
   assert.equal(await page.locator('#special-task-flow .tf-sheet').count(),0,'Approval with no chosen metrics is blocked');
   assert.equal((await record(page,item.id)).status,'Создана');
   await finish(page,'reject',{required:true,double:true});
@@ -309,7 +320,7 @@ async function insightAndSheetEscape(page) {
   for(const decision of ['complete','reject']) {
     await create(page,'insight');await prepare(page,'insight');
     const item=await submitCreated(page,'insight');await openRecord(page,item.id);
-    await lifecycle(page,decision).click();await page.locator('#special-task-flow .tf-sheet').waitFor();
+    await clickAction(page,`lifecycle:${decision}`);await page.locator('#special-task-flow .tf-sheet').waitFor();
     const before=await record(page,item.id);
     assert.equal(await page.locator('#special-task-flow .tf-shell').evaluate(node=>node.inert),true,'Underlying task is inert while sheet is open');
     await page.keyboard.press('Escape');
@@ -334,7 +345,7 @@ async function insightAndSheetEscape(page) {
 async function concurrentDecision(page) {
   await fresh(page);await create(page,'extended-access');await prepare(page,'extended-access');
   const item=await submitCreated(page,'extended-access');await openRecord(page,item.id);
-  await lifecycle(page,'approve').click();await page.locator('#sts-comment').fill('Устаревшее решение');
+  await clickAction(page,`lifecycle:${'approve'}`);await page.locator('#sts-comment').fill('Устаревшее решение');
   const other=await page.context().newPage();
   try {
     await other.goto(`${base.split('#')[0]}#tasks`);await ready(other);
@@ -343,7 +354,7 @@ async function concurrentDecision(page) {
       store.update(id,{status:'Отозвана',withdrawnAt:now,comments:[{author:store.currentUser,text:'Отозвана в другой вкладке',created:now,kind:'withdraw'}]});
     },item.id);
     await page.waitForFunction(id=>window.BpmTaskStore.get(id)?.status==='Отозвана',item.id);
-    await action(page,'sheet-save').click();
+    await clickAction(page,'sheet-save');
     await page.waitForFunction(()=>!document.querySelector('#special-task-flow .tf-sheet'));
     const latest=await record(page,item.id);
     assert.equal(latest.status,'Отозвана');assert.equal(latest.comments.length,1);
@@ -387,7 +398,7 @@ async function collectionEditors(page) {
   await page.locator('#sts-title').fill('Не сохранять');await action(page,'sheet-cancel').first().click();
   assert.equal(await page.locator('#stf-proposedVariants .stf-variant h3').first().textContent(),'Новый вариант результата QA');
   await menu().locator('summary').click();await menu().locator('[data-stf-action="item-edit"]').click();
-  await page.locator('#sts-title').fill('Отредактированный вариант');await action(page,'sheet-save').click();
+  await page.locator('#sts-title').fill('Отредактированный вариант');await clickAction(page,'sheet-save');
   assert.equal(await page.locator('#stf-proposedVariants .stf-variant h3').first().textContent(),'Отредактированный вариант');
   await addItem(page,'proposedVariants','Второй вариант');
   await menu().locator('summary').click();await menu().locator('[data-stfc-delete]').click();
@@ -425,7 +436,7 @@ async function cabinetIntegration(page) {
   await action(page,'edit').click();await mode(page,'edit');
   assert.equal(await footer(page,'save').isDisabled(),true,'An unchanged specialised edit cannot save');
   await page.locator('#stf-title').fill('Обновлённая специализированная задача из кабинета');
-  await footer(page,'save').click();await mode(page,'view');
+  await clickAction(page,'save');await mode(page,'view');
   const updated=await record(page,item.id);
   assert.equal(updated.title,'Обновлённая специализированная задача из кабинета');
   assert.equal(updated.insightId,item.insightId);assert.deepEqual(updated.flowData,item.flowData);
@@ -462,10 +473,11 @@ async function openRecord(page, id) {
   await mode(page, 'view');
 }
 async function submitCreated(page, type, duplicate = false) {
+  await reviewForm(page);
   const previous = await page.evaluate(() => window.BpmTaskStore.list().map(record => record.id));
   assert.equal((await footer(page, 'save').textContent()).trim(), 'Создать', `${type}: short Create label`);
   if (duplicate) await footer(page, 'save').evaluate(button => {button.click();button.click();});
-  else await footer(page, 'save').click();
+  else await clickAction(page,'save');
   await page.waitForFunction(() => !document.getElementById('special-task-flow')?.open && !document.body.classList.contains('task-drawer-open'));
   await ready(page);
   const added = await page.evaluate(previous => window.BpmTaskStore.list().filter(record => !previous.includes(record.id)), previous);
@@ -495,7 +507,7 @@ async function chooserAndDrafts(page) {
     await create(page, type);
     assert.equal(await (await draftProbe(page)).count(), 1, `${type}: form is rendered`);
     const before = await page.evaluate(() => window.BpmTaskStore.list().length);
-    await footer(page, 'save').click();
+    await clickAction(page,'save');
     assert.equal(await page.evaluate(() => window.BpmTaskStore.list().length), before, `${type}: incomplete form cannot save`);
     assert.ok(await page.locator('#special-task-flow').evaluate(node => node.open), `${type}: validation keeps form open`);
     await (await draftProbe(page)).fill(`Черновик ${type} <без HTML>`);

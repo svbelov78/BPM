@@ -62,11 +62,22 @@ async function ownedDraft(page,title) {
   await choose(page,'tf-assignees',user);
 }
 async function row(page,id) {return page.evaluate(id=>window.BpmTaskStore.get(id),id);}
+async function reviewForm(page, nested=false) {
+  const selector=nested?'#task-flow .tf-sheet-content':'#task-flow .tf-content';
+  await page.locator(selector).evaluate(node=>{node.scrollTop=node.scrollHeight;node.dispatchEvent(new Event('scroll'));});
+  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+}
+async function clickAction(page,name) {
+  if(["save","complete","sheet-submit"].includes(name)||name.startsWith('lifecycle:'))await reviewForm(page,name.startsWith('sheet-'));
+  await action(page,name).click();
+}
+
 async function saveCreated(page,{repeat=false}={}) {
+  await reviewForm(page);
   const previous=await page.evaluate(()=>window.BpmTaskStore.list().map(task=>task.id));
   assert.equal((await action(page,'save').textContent()).trim(),'Создать','Create uses the short button label');
   if(repeat)await action(page,'save').evaluate(button=>{button.click();button.click();});
-  else await action(page,'save').click();
+  else await clickAction(page,'save');
   await page.waitForFunction(()=>!document.getElementById('task-flow')?.open&&!document.getElementById('task-drawer')?.open);
   await ready(page);
   const added=await page.evaluate(previous=>window.BpmTaskStore.list().filter(task=>!previous.includes(task.id)),previous);
@@ -131,14 +142,14 @@ async function closeFooter(page,{terminal=false}={}) {
 
 async function validationAndDraft(page) {
   await fresh(page);await create(page);
-  await action(page,'save').click();
+  await clickAction(page,'save');
   assert.equal(await page.locator('#tf-title').getAttribute('aria-invalid'),'true');
   assert.equal(await page.locator('#tf-assignees-input').getAttribute('aria-invalid'),'true');
   assert.equal(await page.evaluate(()=>window.BpmTaskStore.list().length),14);
   await ownedDraft(page,'Черновик типовой задачи');
   await page.locator('#tf-description').fill('Описание черновика');
   await page.locator('#tf-deadline').fill('31.02.2026');
-  await action(page,'save').click();
+  await clickAction(page,'save');
   assert.equal(await page.locator('#tf-deadline').getAttribute('aria-invalid'),'true');
   await page.locator('#tf-deadline').fill('20.09.2026');
   await action(page,'calendar').click();
@@ -187,14 +198,14 @@ async function createEditComplete(page) {
   assert.equal((await row(page,id)).title,title);
   await page.locator('[data-tf-edit="description"]').click();await mode(page,'edit');
   await page.locator('#tf-title').fill('Сохранённая типовая задача');
-  await page.locator('#tf-description').fill('Обновлённое описание');await action(page,'save').click();await mode(page,'view');
+  await page.locator('#tf-description').fill('Обновлённое описание');await clickAction(page,'save');await mode(page,'view');
   assert.equal((await row(page,id)).description,'Обновлённое описание');
-  await action(page,'complete').click();await page.locator('.tf-sheet').waitFor();
+  await clickAction(page,'complete');await page.locator('.tf-sheet').waitFor();
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('.tf-sheet').count(),0);assert.equal((await row(page,id)).status,'Создана');
   assert.ok(await action(page,'complete').evaluate(element=>element===document.activeElement));
-  await action(page,'complete').click();await page.locator('#tf-comment').fill('Работа выполнена');
-  await action(page,'sheet-submit').click();
+  await clickAction(page,'complete');await page.locator('#tf-comment').fill('Работа выполнена');
+  await clickAction(page,'sheet-submit');
   const completed=await row(page,id);assert.equal(completed.status,'Завершено');assert.equal(completed.progress,100);
   assert.equal(completed.comments.at(-1).text,'Работа выполнена');assert.equal(completed.executor,completed.initiator);
   await closeFooter(page,{terminal:true});
@@ -219,14 +230,14 @@ async function rejectionAndOwnership(page) {
   await fresh(page);await create(page);await ownedDraft(page,'Задача для отклонения');
   const id=await saveCreated(page);
   await openCreated(page,id);
-  await action(page,'reject').click();await action(page,'sheet-submit').click();
+  await action(page,'reject').click();await clickAction(page,'sheet-submit');
   assert.equal(await page.locator('#tf-comment').getAttribute('aria-invalid'),'true');
   assert.equal((await row(page,id)).status,'Создана');
   await page.locator('#tf-comment').fill('Нет необходимых исходных данных');
   await action(page,'sheet-cancel').first().click();
   assert.equal((await row(page,id)).status,'Создана','Cancel rejection preserves state');
   await action(page,'reject').click();await page.locator('#tf-comment').fill('Нет необходимых исходных данных');
-  await action(page,'sheet-submit').click();
+  await clickAction(page,'sheet-submit');
   assert.equal((await row(page,id)).status,'Отклонена');
   assert.equal((await row(page,id)).rejectionReason,'Нет необходимых исходных данных');
   await closeFooter(page,{terminal:true});
@@ -252,7 +263,7 @@ async function responsive(page) {
     const id=await saveCreated(page);await openCreated(page,id);await geometry(page,width,'view');
     await action(page,'reject').click();await geometry(page,width,'reject');
     await action(page,'sheet-cancel').first().click();
-    await action(page,'complete').click();await geometry(page,width,'complete');
+    await clickAction(page,'complete');await geometry(page,width,'complete');
     await action(page,'sheet-cancel').first().click();await close(page);
     assert.equal((await row(page,id)).status,'Создана');
   }
@@ -329,6 +340,7 @@ async function relativeDeadlineAndClose(page) {
   const id=await saveCreated(page);await openCreated(page,id);
   assert.equal((await note().textContent()).trim(),expected(17));
   assert.equal(await footerAction(page,'close').count(),0,'An assigned active task retains Reject and Complete');
+  await reviewForm(page);
   assert.equal(await action(page,'reject').isEnabled(),true);assert.equal(await action(page,'complete').isEnabled(),true);
   for(const date of dates) {
     await page.locator('[data-tf-edit="deadline"]').click();await mode(page,'edit');
@@ -339,7 +351,7 @@ async function relativeDeadlineAndClose(page) {
     assert.equal((await action(page,'reset').textContent()).trim(),'Сбросить');
     assert.equal(await action(page,'reset').getAttribute('aria-label'),'Сбросить');
     assert.equal(await action(page,'reset').getAttribute('title'),'Сбросить');
-    await action(page,'save').click();await mode(page,'view');
+    await clickAction(page,'save');await mode(page,'view');
     assert.equal((await note().textContent()).trim(),expected(date.offset),`View deadline at ${date.offset} days`);
   }
   await close(page);
@@ -410,7 +422,7 @@ async function filteredRegistryCreation(page) {
     assert.equal(await page.locator('#tf-title').inputValue(),'','Reopening create does not restore the saved title');
     assert.equal(await page.locator('#tf-assignees-input').inputValue(),'','Reopening create does not restore saved assignees');
     assert.equal(await action(page,'reset').isVisible(),false);
-    await action(page,'save').click();
+    await clickAction(page,'save');
     assert.equal(await page.locator('#tf-title').getAttribute('aria-invalid'),'true');
     assert.equal(await page.evaluate(()=>window.BpmTaskStore.list().length),15,'Duplicate clicks and an empty reopened form cannot create extra rows');
     await close(page);
@@ -434,7 +446,7 @@ async function cabinetIntegration(page) {
   assert.match(await page.locator('.tf-task-title').textContent(),/Типовая задача из кабинета/);
   await page.locator('[data-tf-edit="title"]').click();await mode(page,'edit');
   await page.locator('#tf-title').fill('Обновлённая задача из кабинета');
-  await action(page,'save').click();await mode(page,'view');
+  await clickAction(page,'save');await mode(page,'view');
   await close(page,'escape',`#cabinet-panel button[data-cabinet-open="${id}"]`);
   await page.locator('#cabinet-tab-outgoing').click();assert.equal(await card.count(),1,'Created task also appears in outgoing');
   await page.locator('#tasks-nav').click();await ready(page);
@@ -455,7 +467,7 @@ async function concurrentTaskUpdate(page) {
       store.update(id,{status:'Завершено',completedAt:now,executor:store.currentUser,comments:[{author:store.currentUser,text:'Завершена в другой вкладке',created:now,kind:'complete'}]});
     },id);
     await page.waitForFunction(id=>window.BpmTaskStore.get(id)?.status==='Завершено',id);
-    await action(page,'save').click();await mode(page,'view');
+    await clickAction(page,'save');await mode(page,'view');
     const updated=await row(page,id);
     assert.equal(updated.title,'Название после внешнего завершения');
     assert.equal(updated.status,'Завершено','Saving an older edit preserves the newer lifecycle state');

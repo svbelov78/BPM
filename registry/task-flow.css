@@ -199,6 +199,9 @@
 }
 .tf-sheet::-webkit-scrollbar { display: none; }
 .tf-sheet > * { flex-shrink: 0; }
+.tf-sheet:has(> .tf-sheet-content),.tf-sheet:has(> .stf-sheet-content) { overflow:hidden; }
+.tf-sheet > .tf-sheet-content { display:flex;flex-direction:column;gap:24px;min-height:0;flex:1 1 auto;overflow:auto;overscroll-behavior:contain;scrollbar-width:none; }
+.tf-sheet-content > * { flex-shrink:0; }
 .tf-sheet-heading { display: flex; align-items: flex-start; gap: 16px; width: 100%; min-width: 0; }
 .tf-sheet-heading > h2,
 .tf-sheet-heading > h3 { flex: 1; min-width: 0; margin: 0; font-size: 22px; line-height: 26px; font-weight: 590; letter-spacing: -.066px; overflow-wrap: anywhere; }

@@ -1,0 +1,12 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Icon/24/Ringer" clip-path="url(#clip0_0_1672)">
+<g id="IconRinger24">
+</g>
+<path id="Subtract" fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM12 12V6.5C12 5.94772 11.5523 5.5 11 5.5C10.4477 5.5 10 5.94772 10 6.5V13C10 13.5523 10.4477 14 11 14H17C17.5523 14 18 13.5523 18 13C18 12.4477 17.5523 12 17 12H12Z" fill="#7F7F7F"/>
+</g>
+<defs>
+<clipPath id="clip0_0_1672">
+<rect width="24" height="24" fill="white"/>
+</clipPath>
+</defs>
+</svg>

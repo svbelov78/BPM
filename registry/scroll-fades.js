@@ -3,7 +3,7 @@
 (() => {
   'use strict';
 
-  const selector = '.cabinet-feed,.cabinet-entity-grid,.navigation,.pd-main,.task-drawer-content,.tf-content,.top-kp-map-viewport';
+  const selector = '.cabinet-feed,.cabinet-entity-grid,.navigation,.pd-main,.task-drawer-content,.tf-content,.top-kp-map-viewport,.ic-scroll,.ic-matches-list,.ia-scroll,.id-detail-scroll';
   const surfaces = new Set();
   const measured = new Set();
   let frame = 0;

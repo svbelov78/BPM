@@ -1,0 +1,15 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Approval / Status">
+<circle id="Status / Danger" cx="12" cy="12" r="12" fill="#FF383C"/>
+<g id="Icon / Exit" clip-path="url(#clip0_0_519)">
+<g id="IconExit24">
+</g>
+<path id="Vector 9" fill-rule="evenodd" clip-rule="evenodd" d="M18.3729 5.6271C17.8701 5.12428 17.0549 5.12429 16.552 5.6271L12 10.1792L7.44792 5.6271C6.94512 5.1243 6.1299 5.12429 5.6271 5.6271C5.12428 6.12991 5.12429 6.94513 5.6271 7.44793L10.1792 12L5.6271 16.5521C5.12428 17.0549 5.12427 17.8701 5.62708 18.3729C6.1299 18.8757 6.9451 18.8757 7.44792 18.3729L12 13.8209L16.552 18.3729C17.0549 18.8757 17.8701 18.8757 18.3729 18.3729C18.8757 17.8701 18.8757 17.0549 18.3729 16.5521L13.8208 12L18.3729 7.44793C18.8757 6.94512 18.8757 6.12991 18.3729 5.6271Z" fill="white"/>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_0_519">
+<rect width="18" height="18" fill="white" transform="translate(3 3)"/>
+</clipPath>
+</defs>
+</svg>

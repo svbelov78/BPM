@@ -26,6 +26,8 @@
   const badge = id => `<button type="button" class="task-id-badge" data-tf-copy="${esc(id)}" aria-label="Скопировать ID ${esc(id)}"><span>${esc(id)}</span>${img('copy',16)}</button>`;
   let api={}, dialog, task=null, draft=null, initial=null, creationDraft=null;
   let mode='create', trigger=null, calendar=null, selects=[], sheet=null, sheetTrigger=null, closeTimer=null, closing=false, restoreOnClose=true;
+  const scrollGate=window.BpmDrawerScroll.create(), sheetScrollGate=window.BpmDrawerScroll.create();
+  let scrollMode=null;
   function configure(configuration){api={...api,...configuration};}
   function processList(){
     const unique=new Map();
@@ -69,6 +71,7 @@
     trigger=configuration.trigger||document.activeElement;restoreOnClose=true;mode=configuration.mode||'create';
     task=mode==='create'?null:store().get(configuration.taskId);
     if(mode!=='create'&&!task){api.toast?.('Задача не найдена.');return;}
+    scrollGate.begin();scrollMode=mode;
     draft=mode==='create'?clone(creationDraft||emptyDraft()):model(task);initial=mode==='create'?emptyDraft():clone(draft);
     // A linked process can be above an existing task view. Re-enter the native
     // top layer so the new form is above that process, not hidden underneath it.
@@ -80,6 +83,7 @@
   }
   function cleanup(){
     if(dialog.open)return;
+    scrollGate.end();sheetScrollGate.end();scrollMode=null;
     clearTimeout(closeTimer);hidePopups();sheet=null;dialog.inert=false;closing=false;
     dialog.classList.remove('is-closing','has-entered');
     if(!document.querySelector('.task-drawer[open]'))document.body.classList.remove('task-drawer-open');
@@ -104,11 +108,16 @@
     dialog.inert=true;dialog.classList.add('is-closing');closeTimer=setTimeout(()=>dialog.close(),260);
   }
   function render(){
+    if(scrollMode!==mode){scrollGate.begin();scrollMode=mode;}
+    sheetScrollGate.end();
     hidePopups();selects=[];sheet=null;
     const form=mode==='create'||mode==='edit';
     dialog.dataset.mode=mode;
     dialog.innerHTML=`<div class="tf-shell">${header()}<div class="tf-content">${form?formMarkup():viewMarkup()}</div>${footer()}</div><div class="sr-only tf-live" role="status" aria-live="polite"></div>`;
     if(form)bindForm();
+    // Selects contribute to the actual form height; measure only once their
+    // controls exist, including when an already-open drawer enters edit mode.
+    scrollGate.bind({root:dialog,scroll:dialog.querySelector('.tf-content'),buttons:[...dialog.querySelectorAll('.tf-footer [data-tf-action="save"],.tf-footer [data-tf-action="complete"]')],form:dialog.querySelector('#tf-form')});
   }
   function header(){
     const closeButton=`<button type="button" class="task-drawer-close" data-tf-action="close" aria-label="Закрыть задачу" title="Закрыть (Esc)">${img('close')}</button>`;
@@ -191,7 +200,7 @@
   function updateButtons(){
     const dirty=JSON.stringify(draft)!==JSON.stringify(initial);
     const reset=dialog.querySelector('[data-tf-action="reset"]');if(reset)reset.hidden=!dirty;
-    const saveButton=dialog.querySelector('[data-tf-action="save"]');if(saveButton)saveButton.disabled=mode==='edit'&&!dirty;
+    const saveButton=dialog.querySelector('[data-tf-action="save"]');if(saveButton)scrollGate.setDisabled(saveButton,mode==='edit'&&!dirty);
   }
   function error(key,message){
     const output=$(`tf-${key}-error`);if(output){output.textContent=message;output.hidden=false;}
@@ -200,7 +209,7 @@
   }
   function clearError(key){const output=$(`tf-${key}-error`);if(output)output.hidden=true;const input=$(`tf-${key}`)?.matches('input,textarea')?$(`tf-${key}`):$(`tf-${key}`)?.querySelector('input');input?.removeAttribute('aria-invalid');input?.removeAttribute('aria-describedby');}
   function save(){
-    if(closing||!['create','edit'].includes(mode))return;
+    if(closing||!['create','edit'].includes(mode)||!scrollGate.allow())return;
     const errors=[];
     if(!draft.title.trim()){error('title','Введите название задачи.');errors.push('title');}
     if($('tf-deadline').value&&!parseDate($('tf-deadline').value)){error('deadline','Укажите существующую дату в формате ДД.ММ.ГГГГ.');errors.push('deadline');}
@@ -237,19 +246,21 @@
   }
   function openSheet(kind,source){
     if(terminal(task))return;
+    sheetScrollGate.begin();
     hidePopups();sheetTrigger=source;
     const rejecting=kind==='reject';
     const title=rejecting?'Отклонение задачи':'Завершение задачи';
     const copy=rejecting?'Вы отклоняете задачу,\nвнесите обоснование по отклонению задачи.':'Вы завершаете задачу\nПри необходимости, внесите финальный комментарий по задаче.';
     const overlay=document.createElement('div');overlay.className='tf-sheet-overlay';
-    overlay.innerHTML=`<section class="tf-sheet" role="dialog" aria-modal="true" aria-labelledby="tf-sheet-title" aria-describedby="tf-sheet-copy" data-kind="${kind}"><div class="tf-sheet-heading"><h2 id="tf-sheet-title">${title}</h2><button type="button" class="task-drawer-close" data-tf-action="sheet-cancel" aria-label="Закрыть ${rejecting?'отклонение':'завершение'} задачи">${img('close')}</button></div><p class="tf-sheet-copy" id="tf-sheet-copy">${copy}</p>${field('comment',rejecting?'Обоснование':'Комментарий','','Введите текст комментария',true)}<div class="tf-sheet-actions">${button('sheet-cancel','Отменить')}<span class="tf-spacer"></span>${button('sheet-submit',rejecting?'Отклонить':'Завершить задачу','is-primary',rejecting?'exit':'tick')}</div></section>`;
+    overlay.innerHTML=`<section class="tf-sheet" role="dialog" aria-modal="true" aria-labelledby="tf-sheet-title" aria-describedby="tf-sheet-copy" data-kind="${kind}"><div class="tf-sheet-heading"><h2 id="tf-sheet-title">${title}</h2><button type="button" class="task-drawer-close" data-tf-action="sheet-cancel" aria-label="Закрыть ${rejecting?'отклонение':'завершение'} задачи">${img('close')}</button></div><div class="tf-sheet-content"><p class="tf-sheet-copy" id="tf-sheet-copy">${copy}</p>${field('comment',rejecting?'Обоснование':'Комментарий','','Введите текст комментария',true)}</div><div class="tf-sheet-actions">${button('sheet-cancel','Отменить')}<span class="tf-spacer"></span>${button('sheet-submit',rejecting?'Отклонить':'Завершить задачу','is-primary',rejecting?'exit':'tick')}</div></section>`;
     dialog.querySelector('.tf-shell').inert=true;dialog.append(overlay);sheet=overlay.querySelector('.tf-sheet');
+    sheetScrollGate.bind({root:sheet,scroll:sheet.querySelector('.tf-sheet-content'),buttons:[sheet.querySelector('[data-tf-action="sheet-submit"]')]});
     overlay.addEventListener('click',event=>{if(event.target===overlay)closeSheet();});
     $('tf-comment').addEventListener('input',()=>clearError('comment'));$('tf-comment').focus({preventScroll:true});
   }
-  function closeSheet(){if(!sheet)return;sheet.closest('.tf-sheet-overlay').remove();sheet=null;dialog.querySelector('.tf-shell').inert=false;sheetTrigger?.focus({preventScroll:true});sheetTrigger=null;}
+  function closeSheet(){if(!sheet)return;sheetScrollGate.end();sheet.closest('.tf-sheet-overlay').remove();sheet=null;dialog.querySelector('.tf-shell').inert=false;sheetTrigger?.focus({preventScroll:true});sheetTrigger=null;}
   function submitSheet(){
-    if(!sheet)return;
+    if(!sheet||!sheetScrollGate.allow())return;
     const latest=store().get(task.id);
     if(!latest||terminal(latest)){closeSheet();if(latest){task=latest;mode='view';render();}return;}
     task=latest;
@@ -270,7 +281,7 @@
       if(calendar){hidePopups();return;}
       hidePopups();calendar=window.BpmCalendar.open({anchor:source,mode:'single',from:draft.deadline,onApply:({from})=>{draft.deadline=from;$('tf-deadline').value=from?V.date(from):'';clearError('deadline');$('tf-deadline-note').innerHTML=deadlineMarkup(draft);changed();},onClose:()=>{calendar=null;}});return;
     }
-    if(action==='reject'||action==='complete'){openSheet(action,source);return;}
+    if(action==='reject'||action==='complete'){if(action==='complete'&&!scrollGate.allow())return;openSheet(action,source);return;}
     if(action==='sheet-cancel'){closeSheet();return;}
     if(action==='sheet-submit'){submitSheet();return;}
     if(action==='withdraw'){

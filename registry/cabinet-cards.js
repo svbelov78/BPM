@@ -57,9 +57,11 @@
   }
   function insight(row) {
     const rating = `${row.previousRating != null ? `${number(row.previousRating)} → ` : ''}${number(row.rating)}`;
+    const related = Array.isArray(row.related) ? row.related : [];
+    const relations = related.length ? `${image('direction-related', 'task-direction')}<button type="button" class="count-badge cabinet-related-more" data-cabinet-related="${escape(row.id)}" aria-haspopup="dialog" aria-expanded="false" aria-label="Связанные процессы: ${related.length}">...</button>` : '';
     return `<article class="entity-card cabinet-card cabinet-insight-card${highlight(row)}" ${open(row)} data-cabinet-kind="insights" aria-label="${escape(row.title)}">
-      ${more(row)}<div class="card-header">${status(row, 'insight')}<div class="card-tags cabinet-insight-tags"><span class="tag cabinet-source-tag">${escape(row.source || 'SberBPM')}</span>${idBadge(row.code || row.id)}${image('direction-related', 'task-direction')}<button type="button" class="count-badge cabinet-related-more" data-cabinet-related="${escape(row.id)}" aria-label="Связанные элементы">...</button></div></div>
-      ${body(row)}<div class="card-footer">${owner(row)}<div class="cabinet-feedback"><span class="cabinet-feedback-item" title="Оценка ${escape(rating)}">${image(row.ratingActive === false ? 'rating-outline' : 'rating')}<span>${escape(rating)}</span></span><span class="cabinet-feedback-item" title="Комментарии: ${escape(row.comments ?? 0)}">${image('comments')}<span>${escape(row.comments ?? 0)}</span></span></div></div>
+      ${more(row)}<div class="card-header"><span class="cabinet-status">${window.BpmInsightPresentation.status(row,true)}</span><div class="card-tags cabinet-insight-tags">${window.BpmInsightPresentation.sourceBadge(row,'tag cabinet-source-tag')}${idBadge(row.code || row.id)}${relations}</div></div>
+      ${body(row)}<div class="card-footer">${owner({...row,owner:row.owner || 'Не назначен'})}<div class="cabinet-feedback"><span class="cabinet-feedback-item" title="Оценка ${escape(rating)}">${image(row.ratingActive === false ? 'rating-outline' : 'rating')}<span>${escape(rating)}</span></span><span class="cabinet-feedback-item" title="Комментарии: ${escape(row.comments ?? 0)}">${image('comments')}<span>${escape(row.comments ?? 0)}</span></span></div></div>
     </article>`;
   }
   function participants(row) {

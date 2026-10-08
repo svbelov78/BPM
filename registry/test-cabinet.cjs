@@ -78,7 +78,7 @@ async function loadingAndContent(page) {
   assert.equal(await page.locator('#cabinet-nav').getAttribute('aria-current'),'page');
   assert.equal(await page.locator('#registry-panel').isVisible(),false);
   assert.equal(await page.locator('#tasks-panel').isVisible(),false);
-  for (const [key, n] of [['insights',10],['tasks',4],['paths',4],['processes',3]]) await count(page,key,n);
+  for (const [key, n] of [['insights',await page.evaluate(() => window.BpmInsightStore.list().length)],['tasks',4],['paths',4],['processes',3]]) await count(page,key,n);
   assert.match(await page.locator('#cabinet-tab-incoming').textContent(),/Входящие 4/);
   assert.match(await page.locator('#cabinet-tab-outgoing').textContent(),/Исходящие 1/);
   const counters = await page.locator('#cabinet-panel .efficiency[data-efficiency-percent]').evaluateAll(elements => elements.map(element => ({counting:element.dataset.counting, value:Number(element.querySelector('[data-counter-number]').textContent.replace(',','.')), target:Number(element.dataset.efficiencyPercent)})));
@@ -93,11 +93,12 @@ async function loadingAndContent(page) {
   assert.equal(await section(page,'research').locator('.cabinet-empty').count(),1);
   assert.equal(await section(page,'gemba').locator('.cabinet-empty').count(),1);
   await assets(page,'Initial home');
-  report('default home, two-second shimmer, animated percentages, 10 insights, 4/1 tasks, 4 paths, 3 processes and placeholders');
+  report('default home, two-second shimmer, animated percentages, shared insights, 4/1 tasks, 4 paths, 3 processes and placeholders');
 }
 
 async function filtersAndKeyboard(page) {
   await fresh(page);
+  const insights = await page.evaluate(() => window.BpmInsightStore.list());
   await page.locator('#cabinet-filter-insights').click();
   const first = await page.evaluate(() => document.activeElement.textContent);
   await page.keyboard.press('ArrowDown');
@@ -107,10 +108,9 @@ async function filtersAndKeyboard(page) {
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('.cabinet-menu').count(),0);
   assert.ok(await page.locator('#cabinet-filter-insights').evaluate(element => element === document.activeElement),'Escape restores trigger focus');
-  await filter(page,'insights','В работе');await count(page,'insights',0);
-  assert.match(await section(page,'insights').innerText(),/ничего не найдено/);
-  await section(page,'insights').locator('[data-cabinet-reset]').click();await count(page,'insights',10);
-  await filter(page,'insights','SberBPM');await count(page,'insights',10);await resetFilter(page,'insights');
+  await filter(page,'insights','В работе');await count(page,'insights',insights.filter(row => row.status === 'В работе').length);
+  await resetFilter(page,'insights');await count(page,'insights',insights.length);
+  await filter(page,'insights','SberBPM ЦА');await count(page,'insights',insights.filter(row => row.source === 'SberBPM ЦА').length);await resetFilter(page,'insights');
   await filter(page,'tasks','Комплаенс');await count(page,'tasks',2);await resetFilter(page,'tasks');await count(page,'tasks',4);
   await filter(page,'paths','Приостановлен');await count(page,'paths',1);await resetFilter(page,'paths');
   await filter(page,'processes','Не на мониторинге');await count(page,'processes',1);await resetFilter(page,'processes');
@@ -128,7 +128,7 @@ async function filtersAndKeyboard(page) {
   await page.waitForFunction(() => !document.querySelector('[data-cabinet-kind]'));
   assert.equal(await page.locator('#cabinet-panel [data-cabinet-reset]').count(),4);
   await section(page,'insights').locator('[data-cabinet-reset]').click();
-  assert.equal(await page.locator('#cabinet-search').inputValue(),'');await count(page,'insights',10);
+  assert.equal(await page.locator('#cabinet-search').inputValue(),'');await count(page,'insights',insights.length);
   await page.locator('#cabinet-search-history').click();
   await page.locator('.cabinet-history').getByRole('menuitem',{name:'INS-000042',exact:true}).click();
   await count(page,'insights',1);
@@ -153,7 +153,7 @@ async function favoritesAndNavigation(page) {
   await page.locator(`[data-cabinet-menu="${id}"]`).click();
   assert.equal((await page.locator('.cabinet-context').innerText()).includes('Удалить'),!initial,'Favorite survives page reload');
   await page.locator('.cabinet-context [role="menuitem"]').click();
-  for (const itemId of ['cabinet-insight-1','К-2026-0002']) {
+  for (const itemId of ['INS-000078','К-2026-0002']) {
     const trigger = page.locator(`.cabinet-card-more[data-cabinet-menu="${itemId}"]`);
     await trigger.click();
     const wasFavorite = (await page.locator('.cabinet-context').innerText()).includes('Удалить');
@@ -181,7 +181,7 @@ async function drawers(page) {
   await fresh(page);
   await page.locator('#cabinet-create-tasks').click();
   await page.waitForFunction(() => document.querySelector('#task-drawer')?.open && document.querySelector('#task-drawer').classList.contains('has-entered'));
-  assert.equal(await page.locator('#task-drawer [data-task-type]').count(),8);
+  assert.equal(await page.locator('#task-drawer [data-task-type]').count(),9);
   assert.equal(await page.locator('#task-drawer input,#task-drawer textarea,#task-drawer select').count(),0,'Creation has only the type choice');
   await page.locator('#task-drawer [data-task-type="standard"]').click();
   await page.locator('#task-flow[open][data-mode="create"]').waitFor();
@@ -250,8 +250,16 @@ async function relatedAndEfficiency(page) {
   const favorites = await page.evaluate(() => localStorage.getItem('bpm-cabinet-item-favorites'));
   await page.locator('.cabinet-related-more').first().click();
   assert.equal(await page.locator('.cabinet-context').count(),0,'Related items do not open a favorite menu');
-  assert.match(await page.locator('#toast').innerText(),/Связанные элементы инсайта/);
+  const related = await page.evaluate(() => window.BpmInsightStore.list()[0].related);
+  assert.equal(await page.locator('.cabinet-relations [data-insight-process]').count(),related.length,'The relation dialog shows actual linked processes');
+  assert.equal(await page.locator('.cabinet-relations [data-insight-process]').first().getAttribute('data-insight-process'),related[0].id);
   assert.equal(await page.evaluate(() => localStorage.getItem('bpm-cabinet-item-favorites')),favorites,'Related items do not change favorites');
+  await page.locator('.cabinet-relations [data-insight-process]').first().click();
+  await page.waitForFunction(() => document.querySelector('#process-drawer')?.open && !document.querySelector('#process-drawer').classList.contains('pd-is-loading'));
+  assert.equal(await page.locator('#process-drawer').getAttribute('data-pd-entity'),'processes');
+  await page.keyboard.press('Escape');
+  await page.locator('#process-drawer[open]').waitFor({state:'hidden'});
+  assert.ok(await page.locator('.cabinet-related-more').first().evaluate(element => element === document.activeElement),'Linked process drawer restores the relation trigger');
   const trigger = page.locator('[data-cabinet-efficiency="cabinet-path-1"]');
   await trigger.focus();await trigger.press('Enter');
   const detailButton = page.locator('#cabinet-efficiency-tip button');
@@ -273,7 +281,56 @@ async function relatedAndEfficiency(page) {
   assert.equal(await page.locator('#process-drawer').getAttribute('data-pd-entity'),'paths');
   await page.keyboard.press('Escape');await page.locator('#process-drawer[open]').waitFor({state:'hidden'});
   await assets(page,'Related items and efficiency interaction');
-  report('related-item notice, keyboard/click efficiency activation, Escape focus and keyboard detail navigation');
+  report('linked-process dialog, keyboard/click efficiency activation, Escape focus and keyboard detail navigation');
+}
+
+async function insightSynchronization(page) {
+  await fresh(page);
+  const snapshot = await page.evaluate(() => localStorage.getItem('bpm-insight-store:v1'));
+  try {
+    const result = await page.evaluate(() => {
+      const store = window.BpmInsightStore,rows = store.list(),row = rows[3];
+      const feed = document.querySelector('#cabinet-feed-insights');
+      const trigger = feed.querySelector(`button.card-title[data-cabinet-open="${row.id}"]`);
+      const tasks = document.querySelector('#cabinet-feed-tasks');
+      trigger.focus({preventScroll:true});feed.scrollTop = 240;tasks.scrollTop = 90;
+      const scroll = feed.scrollTop,taskScroll = tasks.scrollTop;
+      store.update(row.id,{title:'Актуальное название инсайта',status:'Отклонено',source:'ТБ',bank:'Тестовый банк',rating:2.7,comments:19,related:row.related.slice(0,1)});
+      const card = feed.querySelector(`article[data-cabinet-open="${row.id}"]`);
+      const afterUpdate = {focus:document.activeElement === trigger,connected:trigger.isConnected,scroll:feed.scrollTop,taskScroll:tasks.scrollTop,
+        title:trigger.textContent,status:card.querySelector('[data-insight-status]').dataset.insightStatus,
+        color:getComputedStyle(card.querySelector('.insight-status-dot')).backgroundColor,source:card.querySelector('.insight-source-badge').textContent,
+        rating:card.querySelector('.cabinet-feedback-item').textContent,comments:card.querySelectorAll('.cabinet-feedback-item')[1].textContent,
+        related:card.querySelector('[data-cabinet-related]').getAttribute('aria-label')};
+      store.create({title:'Новый инсайт из общего хранилища',source:'Новый источник'});
+      return {afterUpdate,scroll,taskScroll,count:feed.querySelectorAll('[data-cabinet-kind="insights"]').length,expected:store.list().length,
+        counter:document.querySelector('#cabinet-heading-insights .cabinet-count').textContent,
+        afterCreate:{focus:document.activeElement === trigger,connected:trigger.isConnected,scroll:feed.scrollTop},id:row.id};
+    });
+    assert.equal(result.afterUpdate.focus,true,'Updating an insight preserves keyboard focus');
+    assert.equal(result.afterUpdate.connected,true,'Drawer origin remains the same connected button');
+    assert.equal(result.afterUpdate.scroll,result.scroll,'Updating an insight preserves feed scroll');
+    assert.equal(result.afterUpdate.taskScroll,result.taskScroll,'Insight updates preserve the task feed');
+    assert.equal(result.afterUpdate.title,'Актуальное название инсайта');
+    assert.equal(result.afterUpdate.status,'Отклонено');
+    assert.equal(result.afterUpdate.color,'rgb(255, 56, 60)');
+    assert.equal(result.afterUpdate.source,'ТБ · Тестовый банк');
+    assert.match(result.afterUpdate.rating,/2,7/);
+    assert.equal(result.afterUpdate.comments,'19');
+    assert.equal(result.afterUpdate.related,'Связанные процессы: 1');
+    assert.equal(result.count,result.expected);assert.equal(Number(result.counter),result.expected);
+    assert.equal(result.afterCreate.focus,true);assert.equal(result.afterCreate.connected,true);assert.equal(result.afterCreate.scroll,result.scroll);
+    await page.locator('#cabinet-filter-insights').click();
+    assert.equal(await page.locator('.cabinet-menu').getByRole('menuitemradio',{name:'Новый источник',exact:true}).count(),1,'Sources reflect new store records');
+    await page.keyboard.press('Escape');
+    await page.locator('#registry-nav').click();
+    await page.evaluate(id => window.BpmInsightStore.update(id,{title:'Изменён в другом разделе'}),result.id);
+    await page.locator('#cabinet-nav').click();await ready(page);
+    assert.equal(await page.locator(`.card-title[data-cabinet-open="${result.id}"]`).textContent(),'Изменён в другом разделе','Entering Cabinet reads the current store');
+    report('shared insight statuses, source, rating, comments, relations and counters; store sync preserves scroll, focus and drawer origins');
+  } finally {
+    await page.evaluate(value => {if(value === null)localStorage.removeItem('bpm-insight-store:v1');else localStorage.setItem('bpm-insight-store:v1',value);window.dispatchEvent(new StorageEvent('storage',{key:'bpm-insight-store:v1',newValue:value}));},snapshot);
+  }
 }
 
 (async () => {
@@ -286,7 +343,7 @@ async function relatedAndEfficiency(page) {
     page.on('pageerror',error => errors.push(error.stack || error.message));
     page.on('requestfailed',request => requests.push(`${request.url().slice(0,150)}: ${request.failure()?.errorText}`));
     page.on('response',response => {if(response.status() >= 400) requests.push(`${response.status()} ${response.url()}`);});
-    const tests = [loadingAndContent,filtersAndKeyboard,favoritesAndNavigation,drawers,widgetsAndResponsive,relatedAndEfficiency];
+    const tests = [loadingAndContent,filtersAndKeyboard,favoritesAndNavigation,drawers,widgetsAndResponsive,relatedAndEfficiency,insightSynchronization];
     const names = process.argv.slice(2);
     assert.ok(names.every(name => tests.some(test => test.name === name)),'Every requested test group exists');
     for (const test of tests.filter(test => !names.length || names.includes(test.name))) {

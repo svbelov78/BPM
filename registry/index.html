@@ -32,8 +32,15 @@
   <link rel="stylesheet" href="tasks.css">
   <link rel="stylesheet" href="cabinet-cards.css">
   <link rel="stylesheet" href="cabinet.css">
+  <link rel="stylesheet" href="insights.css">
+  <link rel="stylesheet" href="insight-tabs-dock.css">
+  <link rel="stylesheet" href="insight-detail.css">
+  <link rel="stylesheet" href="insight-create.css">
+  <link rel="stylesheet" href="insight-workflow.css">
+  <link rel="stylesheet" href="insight-approval.css">
   <link rel="stylesheet" href="top-kp.css">
   <link rel="stylesheet" href="scroll-fades.css">
+  <link rel="stylesheet" href="drawer-scroll-cta.css">
   <script src="demo-data.js" defer></script>
   <script src="structure-source.js" defer></script>
   <script src="structure-data.js" defer></script>
@@ -41,6 +48,7 @@
   <script src="card-visuals.js" defer></script>
   <script src="card-grid.js" defer></script>
   <script src="scroll-fades.js" defer></script>
+  <script src="drawer-scroll-cta.js" defer></script>
   <script src="loading.js" defer></script>
   <script src="process-assets.js" defer></script>
   <script src="dynamics.js" defer></script>
@@ -71,6 +79,15 @@
   <script src="tasks.js" defer></script>
   <script src="cabinet-data.js" defer></script>
   <script src="cabinet-cards.js" defer></script>
+  <script src="insight-workflow.js" defer></script>
+  <script src="insight-data.js" defer></script>
+  <script src="insight-store.js" defer></script>
+  <script src="insight-presentation.js" defer></script>
+  <script src="insight-detail.js" defer></script>
+  <script src="insight-create.js" defer></script>
+  <script src="insight-approval.js" defer></script>
+  <script src="insights.js" defer></script>
+  <script src="insight-tabs-dock.js" defer></script>
   <script src="cabinet.js" defer></script>
   <script src="top-kp-data.js" defer></script>
   <script src="top-kp-identifiers.js" defer></script>
@@ -99,7 +116,7 @@
         <a href="#main" id="registry-nav" class="subitem current" aria-current="page">Реестр КП и П</a>
         <a href="#top-kp" class="subitem" id="top-paths">ТОП-КП</a>
         <a href="#tasks" id="tasks-nav" class="subitem">Задачи</a>
-        <button class="subitem" data-service="Инсайты">Инсайты</button>
+        <a href="#insights" id="insights-nav" class="subitem">Инсайты</a>
         <button class="subitem" data-service="Редизайны">Редизайны</button>
       </div>
       <div class="nav-divider"></div>
@@ -160,6 +177,7 @@
       <p class="demo-note">Демонстрационные данные · Sber BPM</p>
     </section>
     <section id="tasks-panel" class="tasks-panel" aria-labelledby="tasks-title" hidden></section>
+    <section id="insights-panel" class="insights-panel" aria-labelledby="insights-title" hidden></section>
     <section id="cabinet-panel" class="cabinet-panel" aria-labelledby="cabinet-title" hidden></section>
     <section id="top-kp-panel" class="top-kp-panel" aria-labelledby="top-kp-title" hidden></section>
   </main>

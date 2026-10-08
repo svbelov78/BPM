@@ -12,13 +12,17 @@
   const commonKeys=['title','description','deadline','processId','processCode','processTitle','block','division','assignees','insightId','insightCode','insightTitle','initiator','resultVariant'];
   const bindingTargets=new Map();
   let api={},dialog,definition,task,draft,initial,trigger,mode='create',selects=[],calendar,sheet,closing=false,closeTimer,returnFocus=true;
+  const scrollGate=window.BpmDrawerScroll.create(), sheetScrollGate=window.BpmDrawerScroll.create();
+  let scrollMode=null;
   const drafts=new Map();
   function context(){
     const unique=new Map();
     [...(window.BPM_DATA||[]),...(window.BPM_STRUCTURE?.records||[])].filter(r=>r.entity==='processes').forEach(r=>unique.set(r.id,{...r,code:r.code||(r.number?`П${r.number}`:r.id)}));
     const processes=[...unique.values()];
     const people=[...new Set([store().currentUser,...store().list().flatMap(t=>[t.initiator,...t.assignees]),...processes.map(p=>p.owner)].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));
-    return {processes,people,insights:window.BPM_CABINET_DATA?.insights||[],currentUser:store().currentUser,task,mode,draft};
+    const insights=new Map((window.BPM_CABINET_DATA?.insights||[]).map(row=>[row.id,row]));
+    (window.BpmInsightStore?.list()||[]).forEach(row=>insights.set(row.id,{...row,processId:row.related?.[0]?.id||'',processIds:(row.related||[]).map(item=>item.id),resultVariant:row.related?.[0]?.variants?.[0]||''}));
+    return {processes,people,insights:[...insights.values()],currentUser:store().currentUser,task,mode,draft};
   }
   function empty(){return {title:'',description:'',deadline:'',processId:'',processCode:'',processTitle:'',block:'',division:'',assignees:[],insightId:'',insightCode:'',insightTitle:'',initiator:store().currentUser,...definition.initial?.(context())};}
   function fromTask(record){return {...empty(),...clone(record),...clone(record.flowData||{})};}
@@ -50,8 +54,20 @@
     mode=options.mode||'create';task=mode==='create'?null:store().get(options.taskId);
     definition=window.BpmTaskTypes?.[options.typeId||task?.flowType];
     if(!definition||mode!=='create'&&!task){api.toast?.('Задача не найдена.');return;}
+    scrollGate.begin();scrollMode=mode;
     initial=mode==='create'?empty():fromTask(task);
     draft=mode==='create'?clone(drafts.get(definition.id)||initial):clone(initial);
+    if(mode==='create'&&definition.id==='insight'&&options.insightId){
+      const insight=context().insights.find(row=>row.id===options.insightId);
+      if(insight){
+        // Explicitly creating a task from another insight must not inherit a
+        // different insight's previously saved draft/context.
+        if(draft.insightId!==insight.id)draft=empty();
+        Object.assign(draft,{insightId:insight.id,insightCode:insight.code,insightTitle:insight.title});
+        if(insight.processId)setProcess(insight.processId);
+        initial=clone(draft);
+      }
+    }
     if(mode==='create'&&options.processId&&!draft.processId){setProcess(options.processId);initial=clone(draft);}
     if(dialog.open)dialog.close();
     dialog.inert=false;dialog.classList.remove('is-closing','has-entered');render();dialog.showModal();document.body.classList.add('task-drawer-open');
@@ -59,6 +75,7 @@
   }
   function cleanup(){
     if(dialog.open)return;
+    scrollGate.end();sheetScrollGate.end();scrollMode=null;
     clearTimeout(closeTimer);hidePopups();sheet=null;closing=false;dialog.inert=false;dialog.classList.remove('is-closing','has-entered');
     if(!document.querySelector('.task-drawer[open]'))document.body.classList.remove('task-drawer-open');
     if(returnFocus){
@@ -87,6 +104,8 @@
   }
   function fields(){return (mode==='view'?(definition.viewFields||definition.fields):definition.fields)(draft,context()).filter(Boolean);}
   function render(preserve=false){
+    if(scrollMode!==mode){scrollGate.begin();scrollMode=mode;}
+    sheetScrollGate.end();
     const scroll=preserve?dialog.querySelector('.tf-content')?.scrollTop||0:0;
     hidePopups();selects=[];bindingTargets.clear();sheet=null;dialog.dataset.mode=mode;dialog.dataset.type=definition.id;
     const list=fields();
@@ -94,7 +113,9 @@
     bindFields(list,draft,'stf',mode!=='view');
     list.filter(f=>['metrics','variants'].includes(f.kind)).forEach(f=>window.BpmTaskCollections.bind(f,draft,'stf',collectionContext()));
     $('stf-form').addEventListener('submit',event=>{event.preventDefault();if(mode!=='view')save();});
-    dialog.querySelector('.tf-content').scrollTop=scroll;updateButtons();
+    dialog.querySelector('.tf-content').scrollTop=scroll;
+    scrollGate.bind({root:dialog,scroll:dialog.querySelector('.tf-content'),buttons:[...dialog.querySelectorAll('.tf-footer [data-stf-action="save"],.tf-footer .is-primary[data-stf-action^="lifecycle:"]')],form:mode!=='view'?$('stf-form'):null});
+    updateButtons();
   }
   function fieldValue(field,data){return field.value!==undefined?field.value:data[field.key];}
   function renderFields(list,data,prefix,editing){
@@ -192,7 +213,7 @@
   function updateButtons(){
     if(!dialog?.open&& !dialog?.innerHTML)return;
     const dirty=JSON.stringify(draft)!==JSON.stringify(initial),reset=dialog.querySelector('[data-stf-action="reset"]'),save=dialog.querySelector('[data-stf-action="save"]');
-    if(reset)reset.hidden=!dirty;if(save)save.disabled=mode==='edit'&&!dirty;
+    if(reset)reset.hidden=!dirty;if(save)scrollGate.setDisabled(save,mode==='edit'&&!dirty);
   }
   function actions(){return definition.actions?.(task,{...context(),draft})||[];}
   function footer(){
@@ -228,7 +249,7 @@
     return {...fields,title:String(fields.title||'').trim(),description:String(fields.description||'').trim(),flowType:definition.id,flowData:extras,overdue:Boolean(fields.deadline&&fields.deadline<dateISO())};
   }
   function save(){
-    if(closing||mode==='view')return;
+    if(closing||mode==='view'||!scrollGate.allow())return;
     const createPatch=mode==='create'?definition.onCreate?.(draft,context())||{}:{};
     const errors={...validate(fields(),draft),...definition.validate?.(draft,context())};if(!(createPatch.title||draft.title)?.trim())errors.title='Введите название задачи.';
     if(showErrors(errors))return;
@@ -241,6 +262,7 @@
     }catch(error){api.toast?.(error.message);dialog.querySelector('.stf-live').textContent=error.message;}
   }
   function openSheet(config){
+    sheetScrollGate.begin();
     hidePopups();const overlay=document.createElement('div');overlay.className='tf-sheet-overlay';
     overlay.innerHTML=`<section class="tf-sheet stf-sheet" role="dialog" aria-modal="true" aria-labelledby="stf-sheet-title"><div class="tf-sheet-heading"><h2 id="stf-sheet-title">${esc(config.title)}</h2><button type="button" class="task-drawer-close" data-stf-action="sheet-cancel" aria-label="Закрыть окно">${img('close')}</button></div><div class="stf-sheet-content"></div><div class="tf-sheet-actions">${button('sheet-cancel','Отменить')}<span class="tf-spacer"></span>${config.delete?button('item-delete','Удалить'):''}${button('sheet-save',config.confirmLabel||'Сохранить','primary',config.icon||'tick')}</div></section>`;
     sheet={...config,element:overlay.querySelector('section'),trigger:document.activeElement};dialog.querySelector('.tf-shell').inert=true;dialog.append(overlay);overlay.addEventListener('click',event=>{if(event.target===overlay)closeSheet();});renderSheetBody();sheet.element.querySelector('input,textarea,button')?.focus({preventScroll:true});
@@ -249,8 +271,9 @@
     const list=typeof sheet.fields==='function'?sheet.fields(sheet.data):sheet.fields;
     sheet.element.querySelector('.stf-sheet-content').innerHTML=`${sheet.copy?`<p class="tf-sheet-copy">${esc(sheet.copy)}</p>`:''}<div class="tf-form">${renderFields(list,sheet.data,'sts',true)}</div>`;
     bindFields(list,sheet.data,'sts',true);
+    sheetScrollGate.bind({root:sheet.element,scroll:sheet.element.querySelector('.stf-sheet-content'),buttons:[sheet.element.querySelector('[data-stf-action="sheet-save"]')]});
   }
-  function closeSheet(){if(!sheet)return;hidePopups();const focus=sheet.trigger;sheet.element.closest('.tf-sheet-overlay').remove();sheet=null;dialog.querySelector('.tf-shell').inert=false;focus?.isConnected&&focus.focus({preventScroll:true});}
+  function closeSheet(){if(!sheet)return;sheetScrollGate.end();hidePopups();const focus=sheet.trigger;sheet.element.closest('.tf-sheet-overlay').remove();sheet=null;dialog.querySelector('.tf-shell').inert=false;focus?.isConnected&&focus.focus({preventScroll:true});}
   function itemSheet(f,index){
     const existing=index!==undefined?(draft[f.key]||[])[index]:null;
     const metric=f.kind==='metrics';
@@ -292,7 +315,7 @@
     if(action.startsWith('existing:')){const [,key,i]=action.split(':'),f=fields().find(f=>f.key===key);draft[key]=[clone(f.existing[Number(i)])];changed();render(true);return;}
     if(action==='item-delete'){draft[sheet.field.key]=(draft[sheet.field.key]||[]).filter((_,i)=>i!==sheet.index);closeSheet();changed();render(true);return;}
     if(action==='sheet-save'){
-      if(!sheet||sheet.busy)return;
+      if(!sheet||sheet.busy||!sheetScrollGate.allow())return;
       const list=typeof sheet.fields==='function'?sheet.fields(sheet.data):sheet.fields,errors=validate(list,sheet.data,'sts');
       if(sheet.data.periodFrom&&sheet.data.periodTo&&sheet.data.periodFrom>sheet.data.periodTo)errors.periodTo='Окончание периода не может быть раньше начала.';
       if(showErrors(errors,'sts'))return;
@@ -300,7 +323,7 @@
       else {sheet.save(sheet.data);closeSheet();changed();render(true);}return;
     }
     if(action.startsWith('lifecycle:')){
-      const a=actions().find(a=>a.id===action.slice(10));if(!a||a.disabled||showErrors(a.validate?.(draft,context())||{}))return;
+      const a=actions().find(a=>a.id===action.slice(10));if(!a||a.disabled||a.kind==='primary'&&!scrollGate.allow()||showErrors(a.validate?.(draft,context())||{}))return;
       if(a.immediate){transition(a);return;}
       openSheet({title:a.sheetTitle||a.label,copy:a.copy||'При необходимости добавьте комментарий.',action:a,data:{comment:''},confirmLabel:a.confirmLabel||a.label,icon:a.icon,fields:[{key:'comment',kind:'textarea',label:a.commentLabel||(a.commentRequired?'Обоснование':'Комментарий'),required:Boolean(a.commentRequired)}]});
     }

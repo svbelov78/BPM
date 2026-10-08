@@ -1,0 +1,15 @@
+{
+  "date": "2026-10-09",
+  "source": "https://www.figma.com/design/tOFCfQUjfFvAB0Pgqxb9xQ/Products-BPM?node-id=241-27313",
+  "component": "Button / Blue / 50 / Disabled",
+  "assets": [
+    {
+      "file": "assets/drawer-scroll-loading.svg",
+      "component": "Icon/24/Loading",
+      "url": "https://www.figma.com/api/mcp/asset/7488a700-37e8-46d8-945f-2df016ff4130.svg",
+      "note": "Adapted for the requested determinate scroll indicator: closed circle, preserving the Nordic 24px size, 2.5px stroke and primary blue. A 2px arc is visible at twelve o'clock from zero progress; CSS extends it with scrolling. The indeterminate approval-stage loader is unchanged."
+    }
+  ],
+  "disabledBackground": "#b2d5f9",
+  "behavior": "Scroll progress, not elapsed time. First reach of the form bottom unlocks the action until the form session ends; validation remains independent."
+}

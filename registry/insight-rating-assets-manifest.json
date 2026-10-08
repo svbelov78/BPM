@@ -1,0 +1,10 @@
+{
+  "date": "2026-10-09",
+  "source": "https://www.figma.com/design/tOFCfQUjfFvAB0Pgqxb9xQ/Products-BPM?node-id=312-47966",
+  "directory": "assets/insight-detail",
+  "assets": [
+    {"file":"imgIcon24StarOn.svg","component":"Icon/24/Star On","nodeId":"312:47970","url":"https://www.figma.com/api/mcp/asset/5a744485-21c2-4618-9f9f-94cff3889a52.svg","size":"24 × 24","color":"Color/Indigo #6155F5"},
+    {"file":"imgIcon24StarOff.svg","component":"Icon/24/Star Off","nodeId":"37:3441","url":"https://www.figma.com/api/mcp/asset/4148a98d-db5b-4318-a212-d29b7829cff8.svg","size":"24 × 24","color":"#7F7F7F"}
+  ],
+  "note": "Unmodified Figma exports at native dimensions. Selected and persisted values fill stars 1 through N; remaining stars use the outlined variant. No CSS color filter or selected blue background."
+}

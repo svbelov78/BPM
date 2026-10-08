@@ -68,7 +68,7 @@
 .jd-efficiency-unrated{width:64px;height:64px;display:grid;place-items:center;color:var(--secondary);font-size:26px}
 .jd-section-footer{display:flex;justify-content:flex-end}
 .jd-more-link{display:inline-flex;align-items:center;justify-content:center;gap:4px;min-height:34px;color:var(--blue);font-size:17px;line-height:24px;border-radius:8px}
-.jd-more-link:hover{background:var(--hover)}.jd-more-link[aria-expanded=true]>.pd-icon{transform:rotate(180deg)}
+.jd-more-link:is(:hover,:focus-visible)>.pd-icon{background:var(--hover);border-radius:4px}.jd-more-link[aria-expanded=true]>.pd-icon{transform:rotate(180deg)}
 .jd-process-card[hidden],.jd-synthesis[hidden]{display:none}
 [data-pd-motion-group="journey-process"][data-pd-motion-state="pending"] .jd-sphere-ball{opacity:0;transform:translateY(24px)}
 [data-pd-motion-group="journey-process"][data-pd-motion-state="running"] .jd-sphere-ball{animation:jd-sphere-appear .8s cubic-bezier(.16,1,.3,1) both}

@@ -5,6 +5,8 @@
 .navigation>.nav-item,.submenu,.nav-divider{flex-shrink:0}
 .nav-item{min-height:56.288528px;padding:8.144264px 12px 8.144264px 8px}
 .nav-item .menu-label{flex:1}
+.nav-item:has(.nav-chevron):not(.current):hover{background:transparent}
+.nav-item:is(:hover,:focus-visible)>.nav-chevron{background:var(--hover);border-radius:4px}
 .nav-tile{background:linear-gradient(90deg,#eed9ff,#ceeaff)}
 .nav-item.current{background:var(--blue);color:var(--white)}
 .nav-item.current .nav-tile{background:transparent}

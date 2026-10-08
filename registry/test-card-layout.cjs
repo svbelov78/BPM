@@ -254,11 +254,13 @@ async function conditionalScroll(page) {
       const style=getComputedStyle(element),widget=element.closest('[data-cabinet-section]'),cards=[...element.children].filter(child=>child.matches('.cabinet-card')),cardRows=[];
       for(const card of cards){const r=card.getBoundingClientRect();let row=cardRows.find(row=>Math.abs(row.top-r.top)<1);if(!row){row={top:r.top,height:0};cardRows.push(row);}row.height=Math.max(row.height,r.height);}
       const fade=(style.maskImage||style.webkitMaskImage)!=='none';
-      return {key:widget.dataset.cabinetSection,rows:cardRows.length,reportedRows:Number(element.dataset.cabinetRows),scroll:element.dataset.cabinetScroll,overflow:style.overflowY,maxHeight:style.maxHeight,twoRowHeight:parseFloat(style.getPropertyValue('--cabinet-two-row-height'))||0,expectedHeight:cardRows.slice(0,2).reduce((sum,row)=>sum+row.height,0)+Math.max(0,Math.min(cardRows.length,2)-1)*(parseFloat(style.rowGap)||0)+parseFloat(style.paddingTop)+parseFloat(style.paddingBottom),clientHeight:element.clientHeight,scrollHeight:element.scrollHeight,scrollTop:element.scrollTop,fade};
+      const columns=style.display==='grid'?style.gridTemplateColumns.trim().split(/\s+/).length:1;
+      return {key:widget.dataset.cabinetSection,cards:cards.length,columns,rows:cardRows.length,reportedRows:Number(element.dataset.cabinetRows),scroll:element.dataset.cabinetScroll,overflow:style.overflowY,maxHeight:style.maxHeight,twoRowHeight:parseFloat(style.getPropertyValue('--cabinet-two-row-height'))||0,expectedHeight:cardRows.slice(0,2).reduce((sum,row)=>sum+row.height,0)+Math.max(0,Math.min(cardRows.length,2)-1)*(parseFloat(style.rowGap)||0)+parseFloat(style.paddingTop)+parseFloat(style.paddingBottom),clientHeight:element.clientHeight,scrollHeight:element.scrollHeight,scrollTop:element.scrollTop,fade};
     }));
     samples.push({label,rows});
     for(const row of rows){
       const shouldScroll=row.rows>2,tag=`${label}/${row.key} (${row.rows} rows)`;
+      check(row.rows===Math.ceil(row.cards/row.columns),`${tag}: row count matches ${row.cards} cards in ${row.columns} columns`);
       check(row.reportedRows===row.rows,`${tag}: reported row count matches rendered rows`);
       check(row.scroll===String(shouldScroll),`${tag}: internal scrolling is enabled only beyond two rows`);
       if(shouldScroll){
@@ -303,20 +305,26 @@ async function conditionalScroll(page) {
     await expand(['insights','tasks']);await inspect(`${width}px/both expanded`);
     await page.locator('#cabinet-filter-insights').click();await page.locator('.cabinet-menu').getByRole('menuitemradio',{name:'В работе',exact:true}).click();await page.keyboard.press('Escape');
     await expansion(['insights','tasks'],`${width}px/filter`);
-    const filtered=await inspect(`${width}px/no-result Insights`);check(filtered.find(row=>row.key==='insights').rows===0,`${width}px: filter removes all insight rows`);
+    const filtered=await inspect(`${width}px/in-work Insights`),filteredInsights=filtered.find(row=>row.key==='insights');
+    const inWorkCount=await page.evaluate(()=>window.BpmInsightStore.list().filter(row=>row.status==='В работе').length);
+    check(filteredInsights.cards===inWorkCount,`${width}px: filter shows all ${inWorkCount} in-work insights from the shared store`);
     await page.locator('#cabinet-filter-insights').click();await page.locator('.cabinet-menu [data-clear]').click();await page.keyboard.press('Escape');
     await expansion(['insights','tasks'],`${width}px/filter reset`);await inspect(`${width}px/Insights restored`);
     if(width===1920){
-      const before=await inspect('1920px/resize start');check(before.find(row=>row.key==='insights').rows===3,'Expanded Insights starts with three rows');
-      await viewport(page,2560);const resized=await inspect('2560px/two-row resize');check(resized.find(row=>row.key==='insights').rows===2,'Wider layout reduces expanded Insights to two rows');
-      await wheel('insights',false,'2560px/two-row Insights');
-      await viewport(page,1920);const restored=await inspect('1920px/three-row resize restored');check(restored.find(row=>row.key==='insights').rows===3,'Narrowing restores three-row internal scrolling');
-      await wheel('insights',true,'1920px/three-row Insights');
+      const before=(await inspect('1920px/resize start')).find(row=>row.key==='insights');
+      const total=await page.evaluate(()=>window.BpmInsightStore.list().length);
+      check(before.cards===total,`Expanded Insights starts with all ${total} records from the shared store`);
+      await viewport(page,2560);const resized=(await inspect('2560px/wider resize')).find(row=>row.key==='insights');
+      check(resized.cards===total&&resized.columns>before.columns&&resized.rows<=before.rows,'Wider layout adds columns and retains all insight records');
+      await wheel('insights',Math.ceil(resized.cards/resized.columns)>2,'2560px/expanded Insights');
+      await viewport(page,1920);const restored=(await inspect('1920px/resize restored')).find(row=>row.key==='insights');
+      check(restored.cards===before.cards&&restored.columns===before.columns&&restored.rows===before.rows,'Narrowing restores the original insight columns and rows');
+      await wheel('insights',Math.ceil(restored.cards/restored.columns)>2,'1920px/expanded Insights');
     }
     await expand([]);await inspect(`${width}px/collapsed restored`);
   }
   fs.writeFileSync(path.join(output,'scroll-measurements.json'),JSON.stringify(samples,null,2));
-  console.log('CHECKED — 0/1/2/3+ rows, conditional internal scrolling, wheel routing, resize, filters/tabs and expansion persistence at 1920/600/390px');
+  console.log('CHECKED — shared-store card counts and rows by column count, conditional scrolling, wheel routing, resize, filters/tabs and expansion persistence at 1920/600/390px');
 }
 async function registry(page) {
   await load(page,'main','results');

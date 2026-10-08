@@ -71,7 +71,7 @@
 .stf-accordion{border:1px solid var(--border);border-radius:16px;min-width:0;overflow:hidden}
 .stf-accordion summary{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:56px;padding:16px;cursor:pointer;font-size:17px;line-height:24px;list-style:none}
 .stf-accordion summary::-webkit-details-marker{display:none}
-.stf-accordion summary:hover{background:var(--hover)}
+.stf-accordion>summary:is(:hover,:focus-visible)>img{background:var(--hover);border-radius:4px}
 .stf-accordion[open]>summary img{transform:rotate(180deg)}
 .stf-accordion>div{padding:0 16px 16px;font-size:17px;line-height:24px;color:var(--secondary);white-space:pre-wrap}
 .stf-card{display:flex;flex-direction:column;gap:16px;padding:16px;border-radius:16px;background:var(--white);min-width:0;overflow-wrap:anywhere}
@@ -133,7 +133,7 @@
 .special-task-flow .tf-footer--form>[data-stf-action="reset"]{grid-column:2;grid-row:1;justify-self:center}
 .special-task-flow .tf-footer--form>[data-stf-action="save"]{grid-column:3;grid-row:1}
 .stf-sheet{max-height:calc(100% - 40px);display:flex;flex-direction:column}
-.stf-sheet-content{min-height:0;overflow:auto;overscroll-behavior:contain;padding:2px}
+.stf-sheet>.stf-sheet-content{min-height:0;flex:1 1 auto;overflow:auto;overscroll-behavior:contain;padding:2px}
 .stf-sheet-content>.tf-sheet-copy{margin:0 0 24px}
 .stf-sheet .tf-sheet-actions{padding-top:8px}
 .stf-sheet .tf-textarea{height:240px}

@@ -1,0 +1,40 @@
+.insight-tabs-dock-placeholder {
+  flex:0 1 auto;
+  min-width:0;
+  max-width:100%;
+  width:var(--insight-tabs-natural-width);
+  height:var(--insight-tabs-natural-height,66px);
+  pointer-events:none;
+}
+/* Native manual popover keeps the existing element in its original DOM tree
+   while escaping the panel's container-query containing block. */
+#insights-tabs.is-header-docked {
+  position:fixed;
+  inset:auto;
+  top:var(--insight-dock-top);
+  left:var(--insight-dock-left);
+  width:var(--insight-dock-width);
+  max-width:none;
+  margin:0;
+  border:0;
+  box-sizing:border-box;
+  background:var(--bg);
+  color:var(--text);
+  animation:insight-tabs-header-enter .22s cubic-bezier(.2,.7,.2,1) both;
+}
+#insights-tabs.is-header-docked::backdrop { background:transparent; pointer-events:none; }
+html:has(body[data-insight-tabs-dock]) { scroll-padding-top:var(--insight-tabs-dock-bottom); }
+body[data-insight-tabs-dock=below] #insights-tabs.is-header-docked {
+  border-radius:0 0 16px 16px;
+  box-shadow:0 10px 12px -10px #d1dbea;
+}
+@container insights (max-width:800px) {
+  .insight-tabs-dock-placeholder { order:3; flex-basis:100%; }
+}
+@keyframes insight-tabs-header-enter {
+  from { opacity:0; transform:translateY(calc(-100% - 16px)); }
+  to { opacity:1; transform:translateY(0); }
+}
+@media(prefers-reduced-motion:reduce) {
+  #insights-tabs.is-header-docked { animation:none; }
+}

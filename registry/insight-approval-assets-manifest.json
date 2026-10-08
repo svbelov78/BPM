@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-08",
+  "source": "https://www.figma.com/design/tOFCfQUjfFvAB0Pgqxb9xQ/Products-BPM?node-id=312-48421",
+  "designSystem": "https://www.figma.com/design/QdYByHLCCMIKfTI0O0SXiE/BPM-UI-KIT?node-id=1351-8",
+  "directory": "assets/insight-approval",
+  "assets": [
+    {"file":"approved.svg","component":"Approval / State=Approved","url":"https://www.figma.com/api/mcp/asset/3a3d6899-34e4-426a-a34c-3fc3f665a946.svg"},
+    {"file":"in-progress.svg","component":"Approval / State=In progress","url":"https://www.figma.com/api/mcp/asset/63967bdf-b45e-402d-aae6-1edb31fb8077.svg","note":"Archived flattened export; not rendered because the solid disk obscures the loader."},
+    {"file":"loading.svg","component":"Icon/24/Loading","nodeId":"223:5","url":"https://www.figma.com/api/mcp/asset/e23d6ce0-b230-4276-8f1a-8df987be6d91.svg","motion":"Original white 24px loading arc rotates continuously above a stationary indigo/default disk, per user clarification."},
+    {"file":"rejected.svg","component":"Approval / State=Rejected","url":"https://www.figma.com/api/mcp/asset/2caba879-751a-4dd7-b6a6-ce9f204c4fb6.svg"},
+    {"file":"pending.png","component":"Approval / Pending","nodeId":"1351:8","note":"Original 23×23 indicator inside a 24 px slot; unchanged export"},
+    {"file":"stop.svg","component":"Icon/24/Inactive stop","url":"https://www.figma.com/api/mcp/asset/5912d085-e8f6-4eed-ba46-0334a88d6220.svg"},
+    {"file":"empty.svg","component":"Icon/40/Zero state","url":"https://www.figma.com/api/mcp/asset/b5b98470-c1ff-4677-878f-a032afdde71c.svg"}
+  ],
+  "statusColors": {
+    "info/default": "#0088FF",
+    "indigo/default": "#6155F5",
+    "danger/default": "#FF383C",
+    "positive/default": "#34C759"
+  }
+}
