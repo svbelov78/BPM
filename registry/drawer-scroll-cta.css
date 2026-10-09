@@ -13,9 +13,8 @@ button[data-scroll-pending="true"] > img { display:none; }
 .scroll-cta-meter[hidden] { display:none; }
 .scroll-cta-meter > img { display:block;position:absolute;inset:0;width:24px;height:24px;max-width:none;margin:0;animation:none; }
 .scroll-cta-track { opacity:.2; }
-/* At radius 10px, a 2px arc spans 11.4591559deg. Start at twelve o'clock
- * and extend from that visible seed with the very first scroll movement.
- * This visual seed does not change the actual progress or accessibility value. */
-.scroll-cta-fill { mask-image:conic-gradient(#000 calc(11.4591559deg + var(--drawer-scroll-progress,0) * 348.5408441deg),transparent 0); }
+/* The arc represents the viewed share of the entire form, starting at noon.
+ * Keep a minimum 2px seed (radius 10px) without adding it to the percentage. */
+.scroll-cta-fill { mask-image:conic-gradient(#000 max(11.4591559deg,calc(var(--drawer-scroll-progress,0) * 360deg)),transparent 0); }
 /* A reduced-motion preference needs no alternative: this is direct position
  * feedback without spinning, easing, interpolation or a looping animation. */

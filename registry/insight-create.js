@@ -37,17 +37,14 @@
   const creationSources = ['SberBPM ЦА','ТБ','Process Mining'];
   const canonicalCreationSource = value => creationSources.find(source => normalize(source).replace(/\s/g,'') === normalize(value).replace(/\s/g,'')) || '';
   const requiresCompleteDescription = source => source === 'SberBPM ЦА' || source === 'ТБ';
-  const populatedEffect = effect => ['name','description','current','target','unit'].some(key => String(effect[key] ?? '').trim());
+  const populatedEffect = effect => (effect.type==='Качественный'?['name','description']:['name','description','current','target','unit']).some(key => String(effect[key] ?? '').trim());
   const effectCatalog = [
     ['Финансы','Рост операционного дохода','Количественный'],['Финансы','Сокращение ФОТ','Количественный'],
     ['Финансы','Сокращение операционных расходов без ФОТ','Количественный'],['Финансы','Снижение операционных потерь (фрод, штрафы, компенсации)','Количественный'],
     ['Клиент','Повышение клиентского опыта внешнего клиента','Качественный'],['Клиент','Повышение клиентского опыта внутреннего клиента','Качественный'],
     ['Процесс','Повышение качества процесса (меньше ошибок и переделок)','Качественный']
   ].map(([group,value,type])=>({group,value,label:value,type}));
-  const unitCatalog = [
-    ['Время',['сек.','мин.','час.','дн.','раб. дн.','мес.','чел.-ч']],['Количество',['шт.','шт./день','чел.','ПШЭ','ед.','раз']],
-    ['Доли и оценки',['%','п.п.','балл','пункт']],['Деньги',['руб.','тыс. руб.','млн. руб.','млрд. руб.']]
-  ].flatMap(([group,values])=>values.map(value=>({group,value,label:value})));
+  const unitCatalog = window.BpmInsightUnits.catalog;
   const banks = ['Байкальский банк','Волго-Вятский банк','Дальневосточный банк','Московский банк','Поволжский банк','Северо-Западный банк','Сибирский банк','Среднерусский банк','Уральский банк','Центрально-Черноземный банк','Юго-Западный банк'];
   const input = (name,label,value='',placeholder='',extra='') => `<label class="ic-field-wrap"><span class="field ic-input-field"><span class="field-content"><span class="internal-label">${esc(label)}</span><input name="${esc(name)}" value="${esc(value)}" placeholder="${esc(placeholder)}" autocomplete="off" ${extra}></span></span><span class="ic-error" data-error="${esc(name)}" hidden></span></label>`;
   const textarea = (name,label,value='',placeholder='',extra='') => `<label class="ic-field-wrap"><span class="field ic-textarea-field"><span class="internal-label">${esc(label)}</span><textarea name="${esc(name)}" placeholder="${esc(placeholder)}" maxlength="5000" ${extra}>${esc(value)}</textarea></span><span class="ic-error" data-error="${esc(name)}" hidden></span></label>`;
@@ -83,7 +80,7 @@
         label.dataset.requiredLabel ||= label.textContent;
         label.innerHTML=`${esc(label.dataset.requiredLabel)}${required?' <span aria-hidden="true">*</span>':''}`;
       });
-      form.querySelector('#ic-effects-title').innerHTML=`Ожидаемые эффекты${complete?' <span aria-hidden="true">*</span>':''}`;
+      form.querySelector('#ic-effects-title').textContent='Ожидаемые эффекты';
       form.querySelector('#ic-effects-requirement').hidden=!complete;
       if(complete&&!draft.effects.length)draft.effects.push(emptyEffect());
       setError('rootCauses');setError('solution');setEffectsError();
@@ -106,9 +103,10 @@
       element.style.height='auto';element.style.height=`${Math.min(202,Math.max(102,element.scrollHeight))}px`;
       element.style.overflowY=element.scrollHeight>202?'auto':'hidden';
     }
-    function select(id,label,options,values,change,multiple=false,custom=null) {
+    function select(id,label,options,values,change,multiple=false,custom=null,unit=false) {
       const instance=api.createSelect(id,{label,options,values,allowAll:false,placeholder:'Выберите',multiple,onChange:value=>{dirty=true;change(multiple ? value : value[0] || '');}});
-      if(custom || options.some(option=>option.group)) {
+      if(unit) window.BpmInsightUnits.enhanceSelect(instance);
+      else if(custom || options.some(option=>option.group)) {
         const render=instance.renderOptions.bind(instance), catalog=[...options];
         for(const value of values)if(!catalog.some(option=>option.value===value))catalog.push({value,label:value,group:'Свое значение'});
         instance.renderOptions=function() {
@@ -147,7 +145,8 @@
     }
     function effectMarkup(effect,index) {
       const prefix=`ic-${effect.id}`;
-      return `<article class="ic-effect" data-effect="${effect.id}"><header><span class="ic-effect-number">${index+1}</span><h3>Эффект</h3><button type="button" class="ic-icon-small" data-remove-effect="${effect.id}" aria-label="Удалить эффект ${index+1}" ${requiresCompleteDescription(draft.source)&&draft.effects.length===1?'disabled title="Единственный обязательный эффект нельзя удалить"':''}>${icon('remove')}</button></header>${selectHost(prefix+'-name')}${selectHost(prefix+'-type')}${textarea(prefix+'-description','Описание эффекта',effect.description,'Опишите, что конкретно улучшится и как это рассчитано (для количественных эффектов).','data-effect-field="description"')}<div class="ic-effect-numbers">${input(prefix+'-current','Текущее значение',effect.current,'Не указано','inputmode="decimal" data-effect-field="current"')}${input(prefix+'-target','Целевое значение',effect.target,'Не указано','inputmode="decimal" data-effect-field="target"')}${selectHost(prefix+'-unit')}</div><div class="ic-effect-period">${selectHost(prefix+'-frequency')}<div data-effect-period ${effect.frequency==='Регулярно'?'':'hidden'}>${selectHost(prefix+'-period')}</div></div><p class="ic-error" data-effect-error hidden></p></article>`;
+      const metrics=effect.type==='Качественный'?'':`<div class="ic-effect-numbers">${input(prefix+'-current','Текущее значение',effect.current,'Не указано','inputmode="decimal" data-effect-field="current"')}${input(prefix+'-target','Целевое значение',effect.target,'Не указано','inputmode="decimal" data-effect-field="target"')}${selectHost(prefix+'-unit')}</div><div class="ic-effect-period">${selectHost(prefix+'-frequency')}<div data-effect-period ${effect.frequency==='Регулярно'?'':'hidden'}>${selectHost(prefix+'-period')}</div></div>`;
+      return `<article class="ic-effect" data-effect="${effect.id}"><header><span class="ic-effect-number">${index+1}</span><h3>Эффект</h3><button type="button" class="ic-icon-small" data-remove-effect="${effect.id}" aria-label="Удалить эффект ${index+1}" ${requiresCompleteDescription(draft.source)&&draft.effects.length===1?'disabled title="Единственный обязательный эффект нельзя удалить"':''}>${icon('remove')}</button></header>${selectHost(prefix+'-name')}${selectHost(prefix+'-type')}${textarea(prefix+'-description','Описание эффекта',effect.description,'Опишите, что конкретно улучшится и как это рассчитано (для количественных эффектов).','data-effect-field="description"')}${metrics}<p class="ic-error" data-effect-error hidden></p></article>`;
     }
     function renderEffects() {
       selectors.filter(item=>item.id?.startsWith('ic-effect-')).forEach(item=>item.close?.());
@@ -155,10 +154,24 @@
       const list=form.querySelector('#ic-effects');list.innerHTML=draft.effects.map(effectMarkup).join('');
       draft.effects.forEach(effect=>{
         const prefix=`ic-${effect.id}`;
-        const add=(key,label,options,custom)=>select(`${prefix}-${key}`,label,typeof options[0]==='string'?choices(options):options,effect[key]?[effect[key]]:[],value=>{syncInputs();effect[key]=value;if(key==='name'){const found=effectCatalog.find(item=>item.value===value);if(found){effect.type=found.type;selectors.find(item=>item.id===`${prefix}-type`)?.set([effect.type]);}}if(key==='frequency')form.querySelector(`[data-effect="${effect.id}"] [data-effect-period]`).hidden=value!=='Регулярно';},false,custom);
+        effect.unit=window.BpmInsightUnits.canonicalize(effect.unit);
+        const add=(key,label,options,custom)=>select(`${prefix}-${key}`,label,typeof options[0]==='string'?choices(options):options,effect[key]?[effect[key]]:[],value=>{
+          syncInputs();const previousType=effect.type;effect[key]=value;
+          if(key==='name'){const found=effectCatalog.find(item=>item.value===value);if(found)effect.type=found.type;}
+          if(previousType!==effect.type){
+            const selectId=`${prefix}-${key}`,restoreFocus=document.activeElement?.id===`${selectId}-input`;
+            renderEffects();
+            if(restoreFocus){const replacement=selectors.find(item=>item.id===selectId);if(replacement){replacement.suppressFocusOpen=true;replacement.input.focus({preventScroll:true});replacement.suppressFocusOpen=false;}}
+            return;
+          }
+          if(key==='frequency')form.querySelector(`[data-effect="${effect.id}"] [data-effect-period]`).hidden=value!=='Регулярно';
+        },false,custom,key==='unit');
         add('name','Эффект',effectCatalog,{min:3,max:60});
-        add('type','Тип эффекта',['Количественный','Качественный']);add('unit','Ед. изм.',unitCatalog,{min:1,max:20});
-        add('frequency','Периодичность',['Регулярно','Единоразово']);add('period','Период',['Год','Квартал','Месяц']);
+        add('type','Тип эффекта',['Количественный','Качественный']);
+        if(effect.type!=='Качественный'){
+          add('unit','Ед. изм.',unitCatalog,{min:1,max:20});
+          add('frequency','Периодичность',['Регулярно','Единоразово']);add('period','Период',['Год','Квартал','Месяц']);
+        }
         list.querySelector(`[data-effect="${effect.id}"] textarea`).maxLength=4000;
       });
       list.querySelectorAll('textarea').forEach(resizeTextarea);
@@ -185,11 +198,9 @@
       finally {readingFiles=false;form.querySelector('.ic-dropzone').classList.remove('is-loading');scrollGate.setDisabled(form.querySelector('[data-submit]'),submitting);}
     }
     function renderParticipants() {
-      form.querySelector('#ic-owner-name').textContent=draft.owner || 'Не назначен';
-    }
-    function renderComments() {
-      form.querySelector('#ic-comment-count').textContent=draft.commentsDraft.length;
-      form.querySelector('#ic-comments').innerHTML=draft.commentsDraft.map(comment=>`<article class="ic-draft-comment"><small>${esc(comment.author)} · Черновик</small><p>${esc(comment.text)}</p></article>`).join('') || '<p class="ic-muted">Комментариев пока нет.</p>';
+      const key=`${draft.related[0]?.id||'insight-create'}:owner`,name=window.BpmAvatars.displayName(draft.owner,key);
+      form.querySelector('#ic-owner-name').textContent=name;
+      form.querySelector('#ic-owner-avatar').innerHTML=name==='Система'||name==='SYS'?'SYS':window.BpmAvatars.portrait(name,key);
     }
     function buildForm() {
       draft.source=canonicalCreationSource(draft.source);
@@ -199,14 +210,10 @@
         ${input('title','Название инсайта',draft.title,'Введите название инсайта','maxlength="240" required')}
         <section class="ic-context">${selectHost('ic-source','source')}<div id="ic-bank-field" ${draft.source==='ТБ'?'':'hidden'}>${selectHost('ic-bank','bank')}</div>${selectHost('ic-path')}${selectHost('ic-process','process')}</section>
         ${accordion('ic-relations','Связи процесса','<div id="ic-relations-content"></div>',true)}
-        <section class="ic-description"><h3>Описание инсайта</h3><div class="ic-description-and-status">${textarea('description','Проблема / наблюдение',draft.description,'Опишите проблему или наблюдение','required aria-describedby="ic-duplicate-status"')}<div id="ic-duplicate-status" class="ic-duplicate-status" role="status" aria-live="polite" hidden></div></div>${textarea('rootCauses','Корневые причины',draft.rootCauses,'Укажите причины возникновения проблемы')}${textarea('solution','Предложение/решение',draft.solution,'Опишите предлагаемое решение')}</section>
+        <section class="ic-description"><h3>Описание инсайта</h3><div class="ic-description-and-status">${textarea('description','Проблема / наблюдение',draft.description,'Опишите, в чём конкретно заключается проблема: что именно, на каком шаге пути и у кого болит и какие последствия для бизнеса несет данная проблема.','required aria-describedby="ic-duplicate-status"')}<div id="ic-duplicate-status" class="ic-duplicate-status" role="status" aria-live="polite" hidden></div></div>${textarea('rootCauses','Корневые причины',draft.rootCauses,'Опишите, в чем состоят корневые причины проблемы (могут быть определены, например, через методику "5 почему").')}${textarea('solution','Предложение/решение',draft.solution,'Опишите, что вы предлагаете изменить и как это повлияет на корневые причины (а не симптомы).')}</section>
         <section class="ic-effects-section"><header class="ic-effects-heading"><div><h3 id="ic-effects-title">Ожидаемые эффекты</h3><p>Укажите эффекты и цифры своего территориального банка. Остальные банки позже оценят воспроизводимость и эти эффекты у них.</p><p id="ic-effects-requirement">Обязательно: не менее одного эффекта.</p></div><button type="button" class="ic-link-button" data-add-effect>${icon('plus')}добавить эффект</button></header><p id="ic-effects-error" class="ic-error" hidden></p><div id="ic-effects"></div></section>
         ${accordion('ic-attachments','Вложения <span id="ic-attachment-count">0</span>',`<div class="ic-dropzone"><p>Перетащите или <button type="button" class="ic-link-button" data-add-files>добавьте файл ${icon('addFile')}</button></p><small>Допустимые форматы: PDF, XLSX, DOCX, TXT, JPG, JPEG, PNG, GIF, WEBP, PPTX</small><input id="ic-file-input" type="file" multiple accept=".pdf,.xlsx,.docx,.txt,.jpg,.jpeg,.png,.gif,.webp,.pptx" hidden></div><p class="ic-muted ic-file-help">Максимальное количество файлов за один раз загрузки: 10 файлов. Максимальный объём файлов суммарно — 10 МБ.</p><p id="ic-file-error" class="ic-error" role="alert" hidden></p><div id="ic-files"></div>`,true)}
-        <section class="ic-participants"><h3>Участники инсайта</h3><div class="ic-people"><div class="ic-person"><span class="ic-avatar">${icon('person')}</span><div><small>Владелец процесса</small><span id="ic-owner-name"></span></div></div><div class="ic-person"><span class="ic-avatar">${icon('person')}</span><div><small>Автор</small><span>${esc(draft.author)}</span></div></div></div></section>
-        ${accordion('ic-tasks','Задачи 0','<p class="ic-muted">Задачи можно добавить после создания инсайта.</p>')}
-        ${accordion('ic-comments-section','Комментарии <span id="ic-comment-count">0</span>',`<div id="ic-comments"></div><div class="ic-comment-compose">${input('comment','Комментарий','','Введите текст комментария','maxlength="2000"')}<button type="button" class="button secondary-button" data-add-comment>Добавить</button></div><p class="ic-muted">Комментарий сохранится вместе с инсайтом.</p>`)}
-        ${accordion('ic-rating','Оценка','<p class="ic-muted">Оценить инсайт можно после его создания.</p>')}
-        ${accordion('ic-history','История изменений 0','<p class="ic-muted">История появится после создания инсайта.</p>')}
+        <section class="ic-participants"><h3>Участники инсайта</h3><div class="ic-people"><div class="ic-person"><span class="ic-avatar" id="ic-owner-avatar"></span><div><small>Владелец процесса</small><span id="ic-owner-name"></span></div></div><div class="ic-person"><span class="ic-avatar">${draft.author==='Система'||draft.author==='SYS'?'SYS':window.BpmAvatars.portrait(draft.author,'insight-create:author')}</span><div><small>Автор</small><span>${esc(draft.author)}</span></div></div></div></section>
         <p id="ic-submit-error" class="ic-error" role="alert" hidden></p></div><footer class="ic-actions"><button type="button" class="button secondary-button" data-close>Отменить</button><button type="submit" class="button primary-button" data-submit>Создать инсайт</button></footer>`;
       const sourceSummary=()=>{const badge=form.querySelector('#ic-source-summary'), text=window.BpmInsightPresentation.source(draft);badge.querySelector('.insight-source-text').textContent=text;badge.title=text;form.querySelector('#ic-bank-field').hidden=draft.source!=='ТБ';};
       select('ic-source','Источник',choices(creationSources),draft.source?[draft.source]:[],value=>{syncInputs();draft.source=value;setError('source');sourceSummary();updateRequirements();renderEffects();});
@@ -215,7 +222,7 @@
       select('ic-process','Процесс',processRecords().map(row=>({value:row.id,label:`${row.code||`П${row.number}`} ${row.title}`})),draft.related.map(row=>row.id),value=>{
         const found=processInfo(value);draft.related=found?[{...found,variants:[]}]:[];draft.products=[];draft.owner=processRecords().find(row=>row.id===value)?.owner||'';setError('process');renderRelations();renderParticipants();
       });
-      updateRequirements();renderRelations();renderEffects();renderAttachments();renderParticipants();renderComments();form.querySelectorAll('textarea').forEach(resizeTextarea);
+      updateRequirements();renderRelations();renderEffects();renderAttachments();renderParticipants();form.querySelectorAll('textarea').forEach(resizeTextarea);
       if(matches.length)renderMatchStatus('found');
     }
     function renderMatchStatus(state) {
@@ -275,12 +282,12 @@
         else if(effect.name.trim().length<3||effect.name.trim().length>60)message='Название эффекта должно содержать от 3 до 60 символов.';
         else if(!['Количественный','Качественный'].includes(effect.type)){message='Выберите тип эффекта.';field='type';}
         else if(effect.description.trim().length<10||effect.description.trim().length>4000){message='Описание эффекта должно содержать от 10 до 4000 символов.';field='description';}
-        else if((current&&!numeric(current))||(target&&!numeric(target))){message='Введите корректное десятичное число.';field=current&&!numeric(current)?'current':'target';}
+        else if(effect.type==='Количественный'&&((current&&!numeric(current))||(target&&!numeric(target)))){message='Введите корректное десятичное число.';field=current&&!numeric(current)?'current':'target';}
         else if(effect.type==='Количественный'&&(!current||!target)){message='Укажите текущее и целевое значения количественного эффекта.';field=!current?'current':'target';}
-        else if(current&&target&&Number(current.replace(',','.'))===Number(target.replace(',','.'))){message='Целевое значение совпадает с текущим — эффекта нет.';field='target';}
-        else if((effect.type==='Количественный'||current||target)&&(!effect.unit.trim()||effect.unit.length>20)){message='Укажите единицу измерения: от 1 до 20 символов.';field='unit';}
-        else if(!['Регулярно','Единоразово'].includes(effect.frequency)){message='Выберите периодичность эффекта.';field='frequency';}
-        else if(effect.frequency==='Регулярно'&&!effect.period){message='Выберите период регулярного эффекта.';field='period';}
+        else if(effect.type==='Количественный'&&current&&target&&Number(current.replace(',','.'))===Number(target.replace(',','.'))){message='Целевое значение совпадает с текущим — эффекта нет.';field='target';}
+        else if(effect.type==='Количественный'&&(!effect.unit.trim()||effect.unit.length>20)){message='Укажите единицу измерения: от 1 до 20 символов.';field='unit';}
+        else if(effect.type==='Количественный'&&!['Регулярно','Единоразово'].includes(effect.frequency)){message='Выберите периодичность эффекта.';field='frequency';}
+        else if(effect.type==='Количественный'&&effect.frequency==='Регулярно'&&!effect.period){message='Выберите период регулярного эффекта.';field='period';}
         const error=box.querySelector('[data-effect-error]');error.id=`ic-${effect.id}-error`;error.textContent=message;error.hidden=!message;box.classList.toggle('has-error',!!message);
         box.querySelectorAll('[aria-invalid]').forEach(control=>{control.removeAttribute('aria-invalid');control.removeAttribute('aria-describedby');});
         if(message){valid=false;const control=box.querySelector(`[data-effect-field="${field}"]`)||box.querySelector(`#ic-${effect.id}-${field}-input`);control?.setAttribute('aria-invalid','true');control?.setAttribute('aria-describedby',error.id);}
@@ -299,6 +306,7 @@
         if(typeof onCreate!=='function')throw new Error('Сохранение инсайтов пока не подключено.');
         const payload=structuredClone(draft);payload.title=payload.title.trim();payload.description=payload.description.trim();payload.rootCauses=payload.rootCauses.trim();payload.solution=payload.solution.trim();
         if(!requiresCompleteDescription(payload.source))payload.effects=payload.effects.filter(populatedEffect);
+        payload.effects.forEach(effect=>{if(effect.type==='Качественный')for(const key of ['current','target','unit','frequency','period'])delete effect[key];});
         if(payload.source!=='ТБ')payload.bank='';
         payload.detail={duplicateIds:matches.map(row=>row.id),duplicateCheck:{...check,title:payload.title,description:payload.description,accepted:!!matches.length}};
         const created=await onCreate(payload);if(!created)throw new Error('Не удалось сохранить инсайт. Попробуйте ещё раз.');
@@ -323,13 +331,13 @@
         if(button.dataset.removeFile){draft.attachments=draft.attachments.filter(file=>file.id!==button.dataset.removeFile);dirty=true;renderAttachments();}
         if(button.hasAttribute('data-show-matches'))showMatches();
         if(button.dataset.removeRelation){const kind=button.dataset.removeRelation;const list=kind==='variants'?draft.related[0].variants:draft.products;list.splice(list.indexOf(button.dataset.value),1);selectors.find(item=>item.id===`ic-${kind}`)?.set([...list]);dirty=true;renderRelationChips();}
-        if(button.hasAttribute('data-add-comment')){const field=form.elements.namedItem('comment');if(field.value.trim()){draft.commentsDraft.push({id:crypto.randomUUID(),author:draft.author,text:field.value.trim()});field.value='';dirty=true;renderComments();}}
       });
       form.addEventListener('change',event=>{if(event.target.id==='ic-file-input'){attachFiles(event.target.files);event.target.value='';}});
       form.addEventListener('dragover',event=>{const zone=event.target.closest('.ic-dropzone');if(zone){event.preventDefault();zone.classList.add('is-dragover');}});
       form.addEventListener('dragleave',event=>{const zone=event.target.closest('.ic-dropzone');if(zone&&!zone.contains(event.relatedTarget))zone.classList.remove('is-dragover');});
       form.addEventListener('drop',event=>{const zone=event.target.closest('.ic-dropzone');if(zone){event.preventDefault();zone.classList.remove('is-dragover');attachFiles(event.dataTransfer.files);}});
       form.addEventListener('scroll',event=>{if(!event.target.classList.contains('ic-scroll'))return;const viewport=event.target.getBoundingClientRect();selectors.forEach(item=>{if(!item.popup)return;const anchor=item.control.getBoundingClientRect();if(anchor.bottom<viewport.top||anchor.top>viewport.bottom)item.close();else item.refresh();});},{passive:true,capture:true});
+      window.addEventListener('resize',()=>{if(dialog.open)form.querySelectorAll('textarea').forEach(resizeTextarea);},{passive:true});
       dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
       // The modal backdrop absorbs clicks without closing or discarding the draft.
       dialog.addEventListener('click',event=>{if(event.target===dialog){event.preventDefault();event.stopPropagation();}});

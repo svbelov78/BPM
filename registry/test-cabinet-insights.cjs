@@ -204,18 +204,25 @@ async function assets(page, label) {
     await openDrawer(page, 'INS-000055');
     const opinionBefore = (await read(page, 'INS-000055')).detail.workflow.opinions.responses;
     await page.locator(`${detail} [data-id-reproduction="Воспроизводится"]`).click();
+    for (const index of (await read(page, 'INS-000055')).detail.effects.keys()) {
+      await page.locator(`${detail} [data-id-applicable="${index}"][data-id-value="false"]`).click();
+    }
     await page.locator(opinionField).fill('Несохранённое мнение при переходе из кабинета');
     await setScroll(page, 0);
     let progress = await gate(page);
     assert.equal(progress.pending, 'true', 'Primary opinion action waits for full content reading');
     assert.equal(progress.disabled, true);
-    assert.equal(progress.progress, 0);
+    const initialViewedFraction = await page.locator(scroll).evaluate(node => (node.scrollTop + node.clientHeight) / node.scrollHeight);
+    assert.ok(initialViewedFraction > 0 && initialViewedFraction < 1, 'Opening shows a nonzero visible part of the scrollable detail');
+    assert.ok(Math.abs(progress.progress - initialViewedFraction) < 0.0002, 'Reading progress includes the content already visible on opening');
     assert.equal(progress.meters, 1, 'One visible reading-progress indicator');
     await page.locator(opinionSubmit).evaluate(node => node.click());
     assert.deepEqual((await read(page, 'INS-000055')).detail.workflow.opinions.responses, opinionBefore, 'Direct click cannot bypass the reading gate or save a draft');
     await setScroll(page, 0.4);
     progress = await gate(page);
-    assert.ok(progress.progress > 0.3 && progress.progress < 0.5, 'Reading progress follows the actual scroll');
+    const partialViewedFraction = await page.locator(scroll).evaluate(node => (node.scrollTop + node.clientHeight) / node.scrollHeight);
+    assert.ok(Math.abs(progress.progress - partialViewedFraction) < 0.0002, 'Reading progress follows the viewed fraction including the visible viewport');
+    assert.ok(progress.progress > initialViewedFraction && progress.progress < 1, 'Partial scrolling advances reading progress without completing the gate');
     const drawerPosition = await page.locator(scroll).evaluate(node => node.scrollTop);
     await transfer(page, 'INS-000055');
     assert.equal(await page.locator(opinionField).inputValue(), 'Несохранённое мнение при переходе из кабинета', 'Unsaved opinion survives moving the shared detail into a tab');
@@ -276,7 +283,10 @@ async function assets(page, label) {
     const authored = (await read(page, 'INS-000056')).detail.effects;
     await page.locator(`${detail} [data-id-reproduction="Воспроизводится"]`).click();
     await page.locator(opinionField).fill('Мнение сохранено в drawer кабинета');
-    await page.locator(`${detail} [data-id-applicable="0"]`).click();
+    await page.locator(`${detail} [data-id-applicable="0"][data-id-value="true"]`).click();
+    for (let index = 1; index < authored.length; index++) {
+      await page.locator(`${detail} [data-id-applicable="${index}"][data-id-value="false"]`).click();
+    }
     await page.locator(`${detail} [data-id-field="effect:0:current"]`).fill('630');
     await page.locator(`${detail} [data-id-field="effect:0:target"]`).fill('125');
     await page.locator(`${detail} [data-id-field="effect:0:target"]`).press('Tab');
@@ -307,7 +317,7 @@ async function assets(page, label) {
     assert.equal((await read(page, 'INS-000056')).detail.workflow.opinions.responses.find(response => response.bank === bank).comment, 'Мнение сохранено в drawer кабинета', 'Unsaved later edit leaves the previously submitted opinion unchanged');
     report('drawer opinion/effects/rating persist into the tab; later unsaved edits remain local and survive close');
 
-    await page.locator('#insights-back').click();
+    await page.locator('.insights-view-controls button[aria-pressed="true"]').click();
     await registryReady(page);
     await page.locator('#insights-results [data-insight-open="INS-000052"]').click();
     await page.locator(`#insights-panel ${detail}[data-insight-id="INS-000052"]`).waitFor();

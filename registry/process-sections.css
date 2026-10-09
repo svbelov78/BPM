@@ -1,5 +1,5 @@
-/* Lower sections of Process Details/Content. Tables retain the design's column
- * proportions and typography; narrow drawers scroll each table independently. */
+/* Lower sections of Process Details/Content. Compact tables prioritize
+ * descriptive columns; wide tables grow every column proportionally. */
 .pd-data-content{display:flex;flex-direction:column;align-items:stretch;gap:24px;min-width:0;width:100%;font-size:17px;line-height:24px;letter-spacing:-.119px}
 .pd-monitoring-content{gap:16px}
 .pd-data-toolbar{display:flex;align-items:center;gap:24px;min-width:0;width:100%}
@@ -13,7 +13,7 @@
 .pd-data-alert-icon .pd-icon{width:16px;height:16px}
 .pd-data-inline-link{color:var(--blue);text-align:left;display:inline}
 .pd-data-inline-link:hover{text-decoration:underline}
-.pd-data-alert-confirm{gap:16px;align-items:center;background:#0088ff1a}
+.pd-data-alert-confirm{gap:16px;align-items:flex-start;background:#0088ff1a}
 .pd-data-confirm{background:var(--white);border:1px solid var(--border);font-size:13px;line-height:18px;min-height:34px;padding:7px 16px;border-radius:8px;flex:0 0 auto}
 .pd-data-confirm:hover{background:var(--hover)}
 .pd-data-filter{position:relative;flex:0 0 24px;align-self:center}
@@ -51,6 +51,10 @@
 .pd-data-small{font-size:13px;line-height:18px;letter-spacing:-.039px}
 .pd-data-metadata{display:flex;align-items:center;flex-wrap:wrap;gap:8px 4px;max-width:100%}
 .pd-data-table-monitoring .pd-data-metadata{gap:8px}
+.pd-monitoring-title{display:flex;align-items:flex-start;gap:8px;min-width:0;width:100%}
+.pd-process-section .pd-monitoring-title>.pd-copy-tag{flex:0 0 auto}
+.pd-monitoring-title>.pd-copy-tag .pd-tag{background:var(--panel)}
+.pd-monitoring-title>.pd-data-title{flex:1;min-width:0;overflow-wrap:break-word}
 .pd-data-table .pd-tag{height:24px;min-width:0;max-width:none;width:max-content;flex:0 0 auto;white-space:nowrap;font-size:13px;line-height:18px;letter-spacing:-.039px;padding:0 8px;border-radius:8px;display:inline-flex;align-items:center;gap:4px}
 .pd-data-table .pd-tag .pd-icon{width:16px;height:16px}
 .pd-data-table .pd-source-tag .pd-tag{color:var(--secondary);background:transparent}
@@ -116,7 +120,7 @@
    Local refinements only: customer-journey tables retain their existing styles. */
 .pd-process-section{border:0;box-shadow:inset 0 0 0 1px var(--border)}
 .pd-process-section>.pd-section-content{padding-top:8px}
-.pd-process-section .pd-data-table{min-width:1262.666px;border-collapse:separate}
+.pd-process-section .pd-data-table{min-width:700px;border-collapse:separate}
 .pd-process-section .pd-data-table th{height:50px;font-size:13px;line-height:18px;letter-spacing:-.039px;vertical-align:bottom;padding:16px}
 .pd-process-section .pd-table-sort{display:flex;width:max-content;position:relative;min-height:18px;line-height:18px}
 .pd-process-section .pd-sort-arrow{position:absolute;left:calc(100% + 8px)}
@@ -150,7 +154,8 @@
 #pd-monitoring>.pd-section-heading h2{letter-spacing:-.066px}
 .pd-process-section .pd-monitoring-toolbar>.pd-data-add{width:232px;align-self:center}
 #pd-monitoring :is(.pd-data-alert-icon,.pd-data-efficiency-heading)>.pd-icon{width:16px;height:16px;flex-basis:16px}
-#pd-monitoring .pd-data-alert-confirm .pd-data-alert-icon{padding-top:0}
+#pd-monitoring .pd-data-alert-confirm .pd-data-alert-icon{padding-top:4px}
+.pd-data-alert-confirm .pd-data-confirm{align-self:center}
 .pd-data-table-monitoring .pd-tag{background:var(--white)}
 .pd-data-table-monitoring :is(.pd-data-efficiency,.pd-data-actions){font-size:0;line-height:0}
 .pd-data-table-monitoring .pd-data-efficiency .efficiency-unrated-card{gap:8px;min-width:56px}
@@ -197,6 +202,108 @@
 .pd-process-section .pd-data-table-consultant [data-pd-key="document-2"]{height:168px}
 .pd-process-section .pd-data-table-consultant td{padding:24px 16px}
 .pd-process-section .pd-data-table-consultant td:nth-child(2){font-weight:590;letter-spacing:-.51px}
+
+/* Text and tags are bounded by their cell, not by their intrinsic width. */
+.pd-process-section .pd-data-stack{width:100%}
+.pd-process-section .pd-data-metadata{min-width:0;width:100%}
+.pd-process-section :is(.pd-copy-tag,.pd-tag-action,.pd-source-tag,.pd-task-type){min-width:0;max-width:100%;flex-shrink:1}
+.pd-process-section .pd-data-table .pd-tag{max-width:100%;flex-shrink:1;justify-content:flex-start}
+.pd-process-section .pd-data-tag-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pd-process-section .pd-data-table .pd-tag>.pd-icon{flex:0 0 16px}
+.pd-process-section .pd-data-table .pd-data-actions{padding-left:0;padding-right:0}
+.pd-process-section .pd-data-table-monitoring .pd-data-metadata{flex-wrap:nowrap}
+.pd-process-section .pd-data-table-monitoring .pd-data-metadata>.pd-tag-action:last-child{flex-shrink:0}
+
+@container process-content (min-width:700px){
+  .pd-process-section .pd-data-table{min-width:0}
+  .pd-process-section :is(.pd-data-table-monitoring,.pd-data-table-insights,.pd-data-table-tasks) col:first-child,
+  .pd-process-section :is(.pd-data-table-aris,.pd-data-table-consultant) col:nth-child(2){width:auto!important}
+  .pd-process-section .pd-data-table-monitoring col:nth-child(2){width:clamp(80px,8.545cqw,112px)!important}
+  .pd-process-section .pd-data-table-monitoring col:nth-child(3){width:clamp(120px,10.99cqw,144px)!important}
+  .pd-process-section .pd-data-table-monitoring col:nth-child(4){width:clamp(72px,8.545cqw,112px)!important}
+  .pd-process-section .pd-data-table-monitoring col:nth-child(5){width:clamp(100px,11.295cqw,148px)!important}
+  .pd-process-section .pd-data-table-monitoring col:nth-child(6){width:clamp(134px,11.755cqw,154px)!important}
+  .pd-process-section .pd-data-table-monitoring col:nth-child(7){width:clamp(32px,3.664cqw,48px)!important}
+  .pd-process-section .pd-data-table-insights col:nth-child(2){width:clamp(140px,16.789cqw,220px)!important}
+  .pd-process-section .pd-data-table-insights col:nth-child(3){width:clamp(112px,10.379cqw,136px)!important}
+  .pd-process-section .pd-data-table-insights col:nth-child(4){width:clamp(148px,14.043cqw,184px)!important}
+  .pd-process-section .pd-data-table-insights col:nth-child(5){width:clamp(64px,7.63cqw,100px)!important}
+  .pd-process-section .pd-data-table-insights col:nth-child(6){width:clamp(76px,10.073cqw,132px)!important}
+  .pd-process-section .pd-data-table-tasks col:nth-child(2){width:clamp(84px,12.36cqw,162px)!important}
+  .pd-process-section .pd-data-table-tasks col:nth-child(3){width:clamp(112px,19.08cqw,250px)!important}
+  .pd-process-section .pd-data-table-tasks col:nth-child(4){width:clamp(64px,9.767cqw,128px)!important}
+  .pd-process-section .pd-data-table-tasks col:nth-child(5){width:clamp(108px,9.767cqw,128px)!important}
+  .pd-process-section .pd-data-table-tasks col:nth-child(6){width:clamp(132px,14.194cqw,186px)!important}
+  .pd-process-section .pd-data-table-tasks col:nth-child(7){width:clamp(124px,11.144cqw,146px)!important}
+  .pd-process-section .pd-data-table-aris col:first-child{width:clamp(112px,14.5cqw,190px)!important}
+  .pd-process-section .pd-data-table-aris col:nth-child(3){width:clamp(112px,13.74cqw,180px)!important}
+  .pd-process-section .pd-data-table-aris col:nth-child(4){width:clamp(112px,13.44cqw,176px)!important}
+  .pd-process-section .pd-data-table-aris col:nth-child(5){width:clamp(144px,12.06cqw,158px)!important}
+  .pd-process-section .pd-data-table-aris col:nth-child(6){width:clamp(32px,3.664cqw,48px)!important}
+  .pd-process-section .pd-data-table-consultant col:first-child{width:clamp(112px,12.82cqw,168px)!important}
+  .pd-process-section .pd-data-table-consultant col:nth-child(3),
+  .pd-process-section .pd-data-table-consultant col:nth-child(4){width:clamp(112px,13.74cqw,180px)!important}
+  .pd-process-section .pd-data-table-consultant col:nth-child(5){width:clamp(112px,10.99cqw,144px)!important}
+  .pd-process-section .pd-data-table-consultant col:nth-child(6){width:clamp(24px,3.664cqw,48px)!important}
+}
+@container process-content (max-width:1310px){
+  .pd-process-section :is(.pd-data-title,.pd-data-description,.pd-data-process-cell .pd-data-small){display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;max-width:100%;overflow-wrap:break-word}
+  .pd-process-section .pd-table-sort{width:100%;align-items:flex-end}
+  .pd-process-section .pd-sort-arrow{position:static;width:0;flex:0 0 0;overflow:hidden}
+  .pd-process-section .pd-table-sort:is([data-active=true],:hover,:focus-visible) .pd-sort-arrow{width:16px;flex-basis:16px}
+  .pd-process-section .pd-table-sort>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+  .pd-process-section .pd-data-person>span:last-child{overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow-wrap:normal}
+  .pd-process-section .pd-data-table-insights .pd-data-icon-value{max-width:100%;align-items:flex-start;gap:4px;white-space:normal}
+  .pd-process-section .pd-data-table-insights .pd-data-icon-value>span{min-width:0;white-space:normal}
+}
+@container process-content (min-width:700px) and (max-width:1100px){
+  .pd-process-section .pd-data-table th,
+  .pd-process-section .pd-data-table td:not(.pd-data-actions):not(.pd-data-column-spacer){padding-left:12px;padding-right:12px}
+  .pd-process-section .pd-data-table-tasks col:nth-child(3){width:clamp(112px,15cqw,165px)!important}
+  .pd-process-section .pd-data-table-tasks .pd-data-avatar-group .pd-data-avatar{margin-right:-12px}
+}
+@container process-content (min-width:700px) and (max-width:860px){
+  .pd-process-section .pd-data-table th,
+  .pd-process-section .pd-data-table td:not(.pd-data-actions):not(.pd-data-column-spacer){padding-left:8px;padding-right:8px}
+  .pd-process-section .pd-data-table-tasks col:nth-child(6){width:124px!important}
+  .pd-process-section .pd-data-table-tasks col:nth-child(7){width:124px!important}
+}
+/* Above the reference drawer width, share spare space between all columns.
+   Ratios preserve the original 1262.666 px table at its native size. */
+@container process-content (min-width:1310px){
+  .pd-process-section .pd-data-table-monitoring col:nth-child(1){width:43.136220%!important}
+  .pd-process-section .pd-data-table-monitoring col:nth-child(2){width:8.870116%!important}
+  .pd-process-section .pd-data-table-monitoring col:nth-child(3){width:11.404435%!important}
+  .pd-process-section .pd-data-table-monitoring col:nth-child(4){width:8.870116%!important}
+  .pd-process-section .pd-data-table-monitoring col:nth-child(5){width:11.721225%!important}
+  .pd-process-section .pd-data-table-monitoring col:nth-child(6){width:12.196410%!important}
+  .pd-process-section .pd-data-table-monitoring col:nth-child(7){width:3.801478%!important}
+  .pd-process-section .pd-data-table-insights col:nth-child(1){width:38.859556%!important}
+  .pd-process-section .pd-data-table-insights col:nth-child(2){width:17.423442%!important}
+  .pd-process-section .pd-data-table-insights col:nth-child(3){width:10.770855%!important}
+  .pd-process-section .pd-data-table-insights col:nth-child(4){width:14.572334%!important}
+  .pd-process-section .pd-data-table-insights col:nth-child(5){width:7.919747%!important}
+  .pd-process-section .pd-data-table-insights col:nth-child(6){width:10.454065%!important}
+  .pd-process-section .pd-data-table-tasks col:nth-child(1){width:20.802534%!important}
+  .pd-process-section .pd-data-table-tasks col:nth-child(2){width:12.829989%!important}
+  .pd-process-section .pd-data-table-tasks col:nth-child(3){width:19.799366%!important}
+  .pd-process-section .pd-data-table-tasks col:nth-child(4){width:10.137276%!important}
+  .pd-process-section .pd-data-table-tasks col:nth-child(5){width:10.137276%!important}
+  .pd-process-section .pd-data-table-tasks col:nth-child(6){width:14.730729%!important}
+  .pd-process-section .pd-data-table-tasks col:nth-child(7){width:11.562830%!important}
+  .pd-process-section .pd-data-table-aris col:nth-child(1){width:15.047518%!important}
+  .pd-process-section .pd-data-table-aris col:nth-child(2){width:40.443506%!important}
+  .pd-process-section .pd-data-table-aris col:nth-child(3){width:14.255544%!important}
+  .pd-process-section .pd-data-table-aris col:nth-child(4){width:13.938754%!important}
+  .pd-process-section .pd-data-table-aris col:nth-child(5){width:12.513200%!important}
+  .pd-process-section .pd-data-table-aris col:nth-child(6){width:3.801478%!important}
+  .pd-process-section .pd-data-table-consultant col:nth-child(1){width:13.305174%!important}
+  .pd-process-section .pd-data-table-consultant col:nth-child(2){width:42.977825%!important}
+  .pd-process-section .pd-data-table-consultant col:nth-child(3){width:14.255544%!important}
+  .pd-process-section .pd-data-table-consultant col:nth-child(4){width:14.255544%!important}
+  .pd-process-section .pd-data-table-consultant col:nth-child(5){width:11.404435%!important}
+  .pd-process-section .pd-data-table-consultant col:nth-child(6){width:3.801478%!important}
+}
 @media print{
   .pd-process-section .pd-data-table{min-width:0;font-size:9px;line-height:12px}
   .pd-process-section .pd-data-table th,.pd-process-section .pd-data-table td{height:auto;padding:6px;font-size:9px;line-height:12px}

@@ -311,7 +311,7 @@ async function filtersAndSort(page) {
       await button.click();
       const direction = await button.locator('xpath=..').getAttribute('aria-sort');
       assert.ok(['ascending','descending'].includes(direction),`${id}: aria-sort updates`);
-      const values = await target.locator('tbody tr').evaluateAll((rows,index) => rows.map(row => row.cells[index].textContent.trim()),column);
+      const values = await target.locator('tbody tr').evaluateAll((rows,index) => rows.map(row => row.cells[index].dataset.pdSortValue || row.cells[index].textContent.trim()),column);
       const compare = new Intl.Collator('ru',{numeric:true,sensitivity:'base'});
       const sorted = [...values].sort((a,b) => compare.compare(a,b) * (direction === 'descending' ? -1 : 1));
       assert.deepEqual(values,sorted,`${id}: actual row order follows ${direction}`);
@@ -340,9 +340,12 @@ async function responsive(page) {
           element.scrollLeft = 0;
           return result;
         });
-        if (width < 1920) {
+        if (width < 768) {
           assert.ok(result.scroll > result.client,`${width} ${id}: wide table remains locally scrollable`);
           assert.ok(result.left > 0,`${width} ${id}: horizontal scroll actually moves`);
+        } else {
+          assert.ok(result.scroll <= result.client + 1,`${width} ${id}: all columns fit without horizontal scrolling`);
+          assert.equal(result.left,0,`${width} ${id}: horizontal scroll has no hidden columns`);
         }
       }
       await settlePaint(page);
@@ -369,7 +372,7 @@ async function responsive(page) {
     }
   }
   await page.setViewportSize({width:1920,height:1080});
-  report('1920/1440/390/320 process shell, anchors, independent table scrolling and screenshots');
+  report('1920/1440 tables fit; 390/320 keep independent table scrolling; process shell, anchors and screenshots');
 }
 
 async function structureEntry(page) {

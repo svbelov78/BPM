@@ -59,7 +59,7 @@ async function dock(page,width) {
   await page.evaluate(ids=>{
    for(const id of ids){const button=document.createElement('button');button.type='button';button.dataset.insightOpen=id;document.querySelector('#insights-panel').append(button);button.click();button.remove();}
   },ids);
-  await page.locator('#insights-back').click();await ready(page);await paint(page);
+  await page.locator('.insights-view-controls button[aria-pressed="true"]').click();await ready(page);await paint(page);
   assert.equal(await page.locator('#insights-tabs [data-insight-tab]').count(),21,'Real store records populate many open tabs');
   for(const width of [1440,3840,390,320])await dock(page,width);
   await dock(page,1440);
@@ -75,7 +75,7 @@ async function dock(page,width) {
   await page.locator(`[data-insight-tab="${first}"]`).focus();await page.keyboard.press('ArrowRight');await paint(page);
   const current=await page.evaluate(()=>document.activeElement?.dataset.insightTab);
   assert.ok(current&&current!==first,'Docked/tab-strip keyboard navigation selects another actual tab');
-  await page.locator('#insights-back').click();await ready(page);await dock(page,1440);
+  await page.locator('.insights-view-controls button[aria-pressed="true"]').click();await ready(page);await dock(page,1440);
   await page.locator(`[data-insight-tab="${current}"]`).hover();await page.locator(`[data-insight-tab-close="${current}"]`).click();await paint(page);
   assert.equal(await page.locator(`[data-insight-tab="${current}"]`).count(),0,'Close removes only its own tab while docked');
   assert.equal(await page.locator('#insights-tabs [data-insight-tab]').count(),20);

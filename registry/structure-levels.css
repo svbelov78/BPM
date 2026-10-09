@@ -27,7 +27,7 @@ body.structure-mode .structure-toolbar .structure-toggle img{width:24px;height:2
 .structure-people-list .option-label{font-size:15px;line-height:20px;letter-spacing:0}
 .structure-people-role{display:block;font-size:11px;line-height:16px;font-weight:400;color:var(--secondary);margin-top:2px}
 .structure-people-popup mark{background:#fffa76;color:inherit;border-radius:4px;padding:0;font:inherit;box-decoration-break:clone;-webkit-box-decoration-break:clone}
-.structure-people-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:0 0 auto;border-top:1px solid var(--border);padding-top:4px;color:var(--secondary);font-size:13px;line-height:18px}
+.structure-people-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:0 0 auto;padding-top:4px;color:var(--secondary);font-size:13px;line-height:18px}
 .structure-level-filters{display:flex;gap:2px;align-items:center;min-width:0}
 .structure-level-filters>.select-host{flex:1 1 0;min-width:0}
 .structure-level-separator{flex:0 0 16px;width:16px;height:16px}

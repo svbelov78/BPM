@@ -89,9 +89,10 @@
         const entries=results.filter(entry=>entry.kind===kind);if(!entries.length)return '';
         return `<div class="structure-search-group" role="group" aria-label="${label}"><div class="structure-search-group-label" aria-hidden="true">${label}</div>${entries.map(entry=>{
           const itemIndex=index++;
-          const leading=entry.person?'<span class="avatar structure-search-person-avatar" aria-hidden="true"></span>':`<button type="button" tabindex="-1" class="id-badge structure-search-id" data-search-copy aria-label="Скопировать ${esc(entry.code)}" title="Скопировать ${esc(entry.code)}">${highlight(entry.code,input.value,true)}<img src="assets/search-suggest-copy.svg" width="16" height="16" alt=""></button>`;
-          const label=[entry.code,entry.title].filter(Boolean).join(' ');
-          return `<div class="select-option structure-search-option${entry.person?' structure-search-person':''}" role="option" aria-selected="false" id="structure-search-option-${itemIndex}" data-search-kind="${kind}" data-search-id="${esc(entry.id)}" data-search-index="${itemIndex}" aria-label="Добавить в фильтры: ${esc(label)}">${leading}<span class="option-label">${highlight(entry.title,input.value)}</span></div>`;
+          const displayTitle=entry.person?window.BpmAvatars.displayName(entry.title,`${entry.id}:owner`):entry.title;
+          const leading=entry.person?`<span class="avatar structure-search-person-avatar" aria-hidden="true">${window.BpmAvatars.portrait(displayTitle)}</span>`:`<button type="button" tabindex="-1" class="id-badge structure-search-id" data-search-copy aria-label="Скопировать ${esc(entry.code)}" title="Скопировать ${esc(entry.code)}">${highlight(entry.code,input.value,true)}<img src="assets/search-suggest-copy.svg" width="16" height="16" alt=""></button>`;
+          const label=[entry.code,displayTitle].filter(Boolean).join(' ');
+          return `<div class="select-option structure-search-option${entry.person?' structure-search-person':''}" role="option" aria-selected="false" id="structure-search-option-${itemIndex}" data-search-kind="${kind}" data-search-id="${esc(entry.id)}" data-search-index="${itemIndex}" aria-label="Добавить в фильтры: ${esc(label)}">${leading}<span class="option-label">${highlight(displayTitle,input.value)}</span></div>`;
         }).join('')}</div>`;
       }).join('')||`<div class="popup-empty">${all.length?'Найденные сущности уже добавлены в фильтры.':'Ничего не найдено. Попробуйте другое название или ID.'}</div>`;
       // Match the grouped DOM order even if a future search implementation ranks globally.

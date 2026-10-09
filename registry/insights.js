@@ -21,6 +21,11 @@
   };
   const img = (name, size = 24, className = '') => `<img src="${assets[name]}" width="${size}" height="${size}" class="${className}" alt="" aria-hidden="true">`;
   const labels = {block:'Блоки', division:'Структурные подразделения', product:'Продукты', path:'Клиентские пути', process:'Процессы', source:'Источники', bank:'Тер. банки', owner:'Владельцы', author:'Авторы', status:'Статус'};
+  const attentionTooltips = {
+    approval:'Инсайты вашего ТБ, где требуется ваше согласование',
+    opinion:'Инсайты других ТБ — нужно оценить, воспроизводится ли инсайт у вас',
+    decision:'Инсайт прошел согласование и оценку воспроизводимости – нужно решить, брать ли его в работу'
+  };
   const sortChoices = [{value:'id-desc',label:'ID, инсайт ↓'}, {value:'id-asc',label:'ID, инсайт ↑'}, {value:'title-asc',label:'Название А–Я'}, {value:'title-desc',label:'Название Я–А'}, {value:'created-desc',label:'Сначала новые'}, {value:'created-asc',label:'Сначала старые'}, {value:'rating-desc',label:'Высокая оценка'}, {value:'rating-asc',label:'Низкая оценка'}, {value:'comments-desc',label:'Больше комментариев'}, {value:'comments-asc',label:'Меньше комментариев'}, {value:'owner-asc',label:'Владелец А–Я'}, {value:'owner-desc',label:'Владелец Я–А'}, {value:'status-asc',label:'Статус А–Я'}, {value:'status-desc',label:'Статус Я–А'}];
   const referencePeriod = {from:'2001-08-21', to:'2026-09-13'};
   const LOADING_DURATION = 2000;
@@ -39,13 +44,20 @@
     // fixed sample end-date predates records created during a later demo session.
     const defaultPeriod = {...referencePeriod,to:data.reduce((latest,row) => row.created > latest ? row.created : latest,referencePeriod.to)};
     const state = {view:'cards', query:'', filters:Object.fromEntries(Object.keys(labels).map(key => [key, []])), ...defaultPeriod, attention:'', sort:'id-desc'};
+    // Demo names are a view projection, never an assignment or source mutation.
+    function displayValue(row,key) {
+      return key === 'owner' || key === 'author'
+        ? window.BpmAvatars.displayName(row[key],`${row.id}:${key}`) : row[key];
+    }
+    function ownerDisplayName(row) {return displayValue(row,'owner');}
     const selects = {};
+    let processOptionLabels = new Map();
     const openTabs = [], tabScroll = new Map();
     let activeId = null, registryScroll = 0, restoreRecordFocus = null;
     let active = false, loading = false, loadingTimer, calendar = null, relationAnchor = null, relations = null, suppressRelationFocus = false;
-    panel.innerHTML = `<div class="insights-title-row"><h1 id="insights-title"><button type="button" id="insights-back" aria-label="Вернуться к реестру инсайтов" hidden>${img('back')}<span>Инсайты</span></button><span id="insights-title-label">Инсайты</span><span class="insights-total" id="insights-count"></span></h1><div id="insights-tabs" class="insights-tabs" role="tablist" aria-label="Открытые инсайты" hidden></div><div class="insights-view-controls" role="group" aria-label="Вид реестра инсайтов">
+    panel.innerHTML = `<div class="insights-title-row"><h1 id="insights-title"><button type="button" id="insights-back" aria-label="Вернуться к реестру инсайтов"><span id="insights-back-icon" hidden>${img('back')}</span><span id="insights-title-label">Инсайты</span><span class="insights-total" id="insights-count"></span></button></h1><div id="insights-tabs" class="insights-tabs" role="tablist" aria-label="Открытые инсайты" hidden></div><div class="insights-view-controls" role="group" aria-label="Вид реестра инсайтов">
       <button type="button" id="insights-export" class="icon-button" aria-label="Экспортировать инсайты" data-tooltip="Экспорт">${img('download')}</button><button type="button" id="insights-table" class="icon-button" aria-label="Табличный вид инсайтов" aria-pressed="false" data-tooltip="Таблица">${img('table')}</button><button type="button" id="insights-cards" class="icon-button selected" aria-label="Карточный вид инсайтов" aria-pressed="true" data-tooltip="Карточки">${img('cards')}</button></div></div>
-      <div id="insights-registry-view"><div class="insights-filters"><div class="insights-alert">${img('info',16)}<span>Несколько инсайтов ожидают вашего <button type="button" data-insight-attention="approval">согласования ${data.filter(row => row.needsApproval).length}</button> и <button type="button" data-insight-attention="opinion">мнения ${data.filter(row => row.needsOpinion).length}</button></span></div>
+      <div id="insights-registry-view"><div class="insights-filters"><div class="insights-alert">${img('info',16)}<span>Несколько инсайтов ожидают вашего <button type="button" data-insight-attention="approval" data-tooltip="${esc(attentionTooltips.approval)}">согласования ${data.filter(row => row.needsApproval).length}</button> и <button type="button" data-insight-attention="opinion" data-tooltip="${esc(attentionTooltips.opinion)}">мнения ${data.filter(row => row.needsOpinion).length}</button></span></div>
       <div class="insights-primary"><button type="button" id="insights-create" class="button primary-button insights-create">${img('plus')}Создать инсайт</button><div class="field search-field insights-search"><input id="insights-search" type="search" aria-label="Поиск инсайтов по ID, названию, процессу или автору" placeholder="Введите ID, название, процесс, автора..." autocomplete="off"><button type="button" id="insights-clear-search" class="small-icon" aria-label="Очистить поиск инсайтов" hidden>${img('close',16)}</button>${img('search')}</div><div id="insights-status" class="select-host"></div><button type="button" id="insights-date" class="field insights-date" aria-expanded="false" aria-haspopup="dialog"><span class="field-content"><span class="internal-label">Даты создания</span><span id="insights-date-summary" class="single-value"></span></span>${img('calendar')}</button><div id="insights-sort" class="select-host"></div></div>
       <div class="insights-filter-grid">${Object.keys(labels).filter(key => key !== 'status').map(key => `<div id="insights-${key}" class="select-host"></div>`).join('')}</div></div>
       <section id="insights-applied" class="applied-filters" aria-label="Применённые фильтры инсайтов" hidden><div id="insights-chips" class="applied-filter-groups"></div><button type="button" id="insights-reset" class="clear-all-filters" aria-label="Сбросить все фильтры инсайтов">${img('exit')}</button></section>
@@ -58,7 +70,13 @@
     cabinetDrawer.id = 'cabinet-insight-drawer'; cabinetDrawer.className = 'task-drawer cabinet-insight-drawer';
     cabinetDrawer.setAttribute('aria-labelledby','insight-detail-title'); document.body.append(cabinetDrawer);
     let cabinetDrawerId = null, cabinetTrigger = null, drawerClosingTimer;
-    const detail = window.BpmInsightDetail.create({mount:detailHost,api:{...api,closeDetail:() => cabinetDrawerId ? closeCabinetDrawer() : showRegistry(),openInTab:() => {
+    const detail = window.BpmInsightDetail.create({mount:detailHost,api:{...api,closeDetail:() => cabinetDrawerId ? closeCabinetDrawer() : showRegistry(),closeInsightTab:id => {
+      const fromCabinet = !!cabinetDrawerId;
+      // Restore the shared host before closing its tab. Selecting the neighbor
+      // offscreen must not navigate away from the user's Cabinet.
+      if (fromCabinet) closeCabinetDrawer({immediate:true});
+      closeTab(id,{activate:!fromCabinet});
+    },openInTab:() => {
       closeCabinetDrawer({immediate:true,restoreFocus:false}); api.openSection?.();
     }},getRow:id => store.get(id),onChange:(id,patch) => store.update(id,patch)});
     function finishCabinetDrawer() {
@@ -125,8 +143,26 @@
 
     function choices(key) {
       if (key === 'status') return window.BpmInsightWorkflow.statuses.map(value => ({value,label:value}));
-      const values = data.flatMap(row => Array.isArray(row[key]) ? row[key] : [key === 'owner' ? row[key] || 'Не назначен' : row[key]]);
-      return [...new Set(values)].filter(Boolean).sort(collator.compare).map(value => ({value,label:value}));
+      const values = data.flatMap(row => {const value=displayValue(row,key);return Array.isArray(value) ? value : [value];});
+      const unique = [...new Set(values)].filter(Boolean).sort(collator.compare);
+      if (key === 'process') {
+        const records = [...(window.BPM_DATA || []),...(window.BPM_STRUCTURE?.records || [])].filter(row => row.entity === 'processes');
+        const byId = new Map(records.map(row => [row.id,row]));
+        const codesByTitle = new Map();
+        [...data.flatMap(row => row.related || []),...records].forEach(item => {
+          const record = byId.get(item.id);
+          const number = record?.number ?? item.number ?? String(item.code || record?.code || '').match(/^П\s*(\d+)$/i)?.[1]
+            ?? String(item.id || '').match(/^(?:processes-|П\s*)(\d+)$/i)?.[1];
+          if (!item.title || !/^\d+$/.test(String(number ?? ''))) return;
+          if (!codesByTitle.has(item.title)) codesByTitle.set(item.title,new Set());
+          codesByTitle.get(item.title).add(`П ${String(number).padStart(4,'0')}`);
+        });
+        processOptionLabels = new Map(unique.map(value => {
+          const codes = [...(codesByTitle.get(value) || [])].sort(collator.compare);
+          return [value,codes.length ? `${codes.join(', ')} — ${value}` : value];
+        }));
+      }
+      return unique.map(value => ({value,label:key === 'process' ? processOptionLabels.get(value) : value}));
     }
     Object.keys(labels).forEach(key => {
       selects[key] = api.createSelect(`insights-${key}`, {label:labels[key], multiple:true, options:choices(key), onChange:values => {
@@ -135,6 +171,13 @@
         load();
       }});
     });
+    const renderProcessOptions = selects.process.renderOptions.bind(selects.process);
+    selects.process.renderOptions = function() {
+      const query = this.query;
+      // Accept the original compact code as well as its spaced display form.
+      this.query = query.trim().replace(/^п\s*(?=\d)/i,'П ');
+      try {renderProcessOptions();} finally {this.query = query;}
+    };
     selects.sort = api.createSelect('insights-sort', {label:'Сортировка', allowAll:false, icon:'sort', options:sortChoices, values:[state.sort], minPopupWidth:260,
       valueLabel:value => ({id:'ID, инсайт',title:'Название',created:value.endsWith('desc') ? 'Сначала новые' : 'Сначала старые',rating:'Оценка',comments:'Комментарии',owner:'Владелец',status:'Статус'}[value.split('-')[0]]),
       onChange:values => {state.sort = values[0] || 'id-desc'; load();}});
@@ -150,8 +193,7 @@
       }).join('');
       tabs.scrollLeft = scrollLeft;
       if (focused) tabs.querySelector(`[data-insight-tab="${CSS.escape(focused)}"]`)?.focus({preventScroll:true});
-      $('insights-back').hidden = !activeId;
-      $('insights-title-label').hidden = !!activeId;
+      $('insights-back-icon').hidden = !activeId;
       $('insights-registry-view').hidden = !!activeId;
       $('insights-detail-view').hidden = !activeId;
       panel.classList.toggle('has-insight-tabs',!!openTabs.length);
@@ -187,7 +229,7 @@
       const names={approval:'согласования',opinion:'мнения',decision:'решения'};
       const items=Object.entries(names).map(([kind,label])=>({kind,label,count:data.filter(row=>attentionMatches(row,kind)).length})).filter(item=>item.count);
       const alert=panel.querySelector('.insights-alert');alert.hidden=!items.length;
-      alert.querySelector('span').innerHTML=`Ожидают вашего ${items.map(item=>`<button type="button" data-insight-attention="${item.kind}" aria-pressed="${state.attention===item.kind}">${item.label} ${item.count}</button>`).join(', ')}`;
+      alert.querySelector('span').innerHTML=`Ожидают вашего ${items.map(item=>`<button type="button" data-insight-attention="${item.kind}" data-tooltip="${esc(attentionTooltips[item.kind])}" aria-pressed="${state.attention===item.kind}">${item.label} ${item.count}</button>`).join(', ')}`;
     }
     function focusTab(id) {
       const tab = panel.querySelector(`[data-insight-tab="${CSS.escape(id)}"]`);
@@ -204,18 +246,35 @@
       if (activeId) {tabScroll.set(activeId,detail.getScrollTop()); restoreRecordFocus = options.focus === false ? null : activeId;}
       activeId = null; detail.hide(); renderTabs(); load();
       if (options.focus !== false) $('insights-title').setAttribute('tabindex','-1');
-      requestAnimationFrame(() => {if (!activeId && active) {window.scrollTo({top:registryScroll,behavior:'instant'}); if (options.focus !== false) $('insights-title').focus({preventScroll:true});}});
+      requestAnimationFrame(() => {if (!activeId && active) {window.scrollTo({top:options.scrollTop ?? registryScroll,behavior:'instant'}); if (options.focus !== false) $('insights-title').focus({preventScroll:true});}});
     }
-    function closeTab(id) {
+    function closeTab(id,options = {}) {
       const index = openTabs.indexOf(id); if (index < 0) return;
       openTabs.splice(index,1);
       if (activeId === id) {
         const next = openTabs[index] || openTabs[index - 1];
-        if (next) openInsight(next); else showRegistry();
-      } else {renderTabs(); if (activeId) focusTab(activeId);}
+        if (options.activate === false) {activeId = next || null; renderTabs();}
+        else if (next) openInsight(next); else showRegistry();
+      } else {renderTabs(); if (activeId && options.activate !== false) focusTab(activeId);}
       tabScroll.delete(id); detail.close(id);
     }
-    $('insights-back').addEventListener('click',() => showRegistry());
+    // The prototype heading replays the original demo scenarios, rather than
+    // only navigating back. User-created records and open tabs are retained.
+    $('insights-back').addEventListener('click',() => {
+      closePopups();
+      if (activeId) tabScroll.set(activeId,detail.getScrollTop());
+      activeId = null; restoreRecordFocus = null; detail.hide();
+      const restored = store.resetDemo();
+      restored.forEach(id => {detail.close(id); tabScroll.delete(id);});
+      // Include retained local records created in another view/browser tab,
+      // not only those created through this controller's own drawer.
+      defaultPeriod.to = data.reduce((latest,row) => row.created > latest ? row.created : latest,referencePeriod.to);
+      state.sort = 'id-desc'; selects.sort.set([state.sort]);
+      renderTabs(); reset();
+      registryScroll = 0;
+      requestAnimationFrame(() => {if (!activeId && active) window.scrollTo({top:0,behavior:'instant'});});
+      api.toast(store.persistenceAvailable() ? 'Демосценарии восстановлены. Созданные вами инсайты сохранены.' : 'Демосценарии восстановлены для текущего сеанса. Созданные вами инсайты сохранены.',{success:true});
+    });
     $('insights-tabs').addEventListener('pointerdown',() => {
       $('insights-tabs').querySelectorAll('.is-keyboard-active').forEach(tab => tab.classList.remove('is-keyboard-active'));
     });
@@ -247,11 +306,11 @@
       const query = normalize(state.query.trim());
       const [key, direction] = state.sort.split('-');
       return data.filter(row => {
-        const searchable = [row.id,row.title,row.description,row.author,row.owner,row.path,...row.related.flatMap(item => [item.code,item.title])].join(' ');
-        return (!query || normalize(searchable).includes(query)) && Object.entries(state.filters).every(([field, values]) => !values.length || values.some(value => Array.isArray(row[field]) ? row[field].includes(value) : (field === 'owner' ? row[field] || 'Не назначен' : row[field]) === value))
+        const searchable = [row.id,row.title,row.description,displayValue(row,'author'),ownerDisplayName(row),row.path,...row.related.flatMap(item => [item.code,item.title])].join(' ');
+        return (!query || normalize(searchable).includes(query)) && Object.entries(state.filters).every(([field, values]) => {const projected=displayValue(row,field);return !values.length || values.some(value => Array.isArray(projected) ? projected.includes(value) : projected === value);})
           && (!state.from || row.created >= state.from) && (!state.to || row.created <= state.to)
           && (!state.attention || attentionMatches(row,state.attention));
-      }).sort((a,b) => (typeof a[key] === 'number' ? a[key] - b[key] : collator.compare(a[key] || '',b[key] || '')) * (direction === 'desc' ? -1 : 1) || collator.compare(b.id,a.id));
+      }).sort((a,b) => {const first=displayValue(a,key),second=displayValue(b,key);return (typeof first === 'number' ? first - second : collator.compare(first || '',second || '')) * (direction === 'desc' ? -1 : 1) || collator.compare(b.id,a.id);});
     }
     function status(row, withDate = false) {
       return `<span class="insights-status${withDate ? ' cabinet-status' : ''}">${window.BpmInsightPresentation.status(row,withDate)}${row.rejection && !withDate ? `<button type="button" class="insights-rejection" data-tooltip="${esc(row.rejection)}" aria-label="Причина отклонения">${img('info',16)}</button>` : ''}</span>`;
@@ -263,22 +322,24 @@
       return `<div class="insights-meta${card ? ' card-tags cabinet-insight-tags' : ''}">${window.BpmInsightPresentation.sourceBadge(row,'insights-source tag cabinet-source-tag')}${idBadge(row.id)}${img('direction',16,'insights-relation-arrow')}${card ? relatedButton(row) : `${first ? idBadge(first.code) : ''}${row.related.length > 1 ? relatedButton(row) : ''}`}</div>`;
     }
     const rating = row => `${row.previousRating != null ? `${number(row.previousRating)} ↓ ` : ''}${number(row.rating)}`;
-    const ownerName = row => `<span class="insights-owner-name" title="${esc(row.owner || 'Не назначен')}">${(row.owner || '---').trim().split(/\s+/).map(word => `<span>${esc(word)}</span>`).join(' ')}</span>`;
+    const ownerName = row => {const name=ownerDisplayName(row);return `<span class="insights-owner-name" title="${esc(name)}">${name.split(/\s+/).map(word => `<span>${esc(word)}</span>`).join(' ')}</span>`;};
+    const ownerPortrait = row => {const name=ownerDisplayName(row);return name==='Система'||name==='SYS'?'SYS':window.BpmAvatars.portrait(name,`${row.id}:owner`);};
+    const ownerAvatar = row => `<span class="${row.owner?'insights-owner-avatar avatar':'task-avatar cabinet-avatar'}" aria-hidden="true">${ownerPortrait(row)}</span>`;
     function tableRating(row) {
       const own = row.detail?.userRating ?? row.previousRating;
       if (!(own > 0)) return `<span>${number(row.rating)}</span>`;
       return `<span class="insights-rating-values" role="img" aria-label="Моя оценка: ${number(own)}; общая оценка: ${number(row.rating)}"><span aria-hidden="true">${number(own)}</span><span class="insights-rating-arrow" aria-hidden="true">${img('ratingArrow',16)}</span><span aria-hidden="true">${number(row.rating)}</span></span>`;
     }
     function card(row) {
-      const owner = row.owner || 'Не назначен';
+      const owner = ownerDisplayName(row);
       return `<article class="entity-card cabinet-card cabinet-insight-card insights-card" data-insight-id="${esc(row.id)}" aria-label="${esc(row.title)}">
         <div class="card-header">${status(row,true)}${metadata(row,true)}</div><div class="card-body"><button type="button" class="card-title" data-insight-open="${esc(row.id)}" title="${esc(row.title)}">${esc(row.title)}</button><p class="card-description">${esc(row.description)}</p></div>
-        <div class="card-footer"><div class="owner"><span class="task-avatar cabinet-avatar" aria-hidden="true">${img('person',18)}</span><span class="owner-name" title="${esc(owner)}">${esc(owner)}</span></div><div class="cabinet-feedback"><span class="cabinet-feedback-item" title="Оценка ${esc(rating(row))}">${img('star')}<span>${esc(rating(row))}</span></span><span class="cabinet-feedback-item" title="Комментарии: ${row.comments}">${img('comments')}<span>${row.comments}</span></span></div></div></article>`;
+        <div class="card-footer"><div class="owner"><span class="task-avatar cabinet-avatar" aria-hidden="true">${ownerPortrait(row)}</span><span class="owner-name" title="${esc(owner)}">${esc(owner)}</span></div><div class="cabinet-feedback"><span class="cabinet-feedback-item" title="Оценка ${esc(rating(row))}">${img('star')}<span>${esc(rating(row))}</span></span><span class="cabinet-feedback-item" title="Комментарии: ${row.comments}">${img('comments')}<span>${row.comments}</span></span></div></div></article>`;
     }
     function table(rows, isLoading = false) {
       const columns = [['id','ID, Инсайт, источник, процесс'],['owner','Владелец КП / процесса'],['created','Дата создания'],['status','Статус'],['comments','Комментарии'],['rating','Рейтинг']];
       const [sortKey, direction] = state.sort.split('-');
-      return `<div class="insights-table-wrap" tabindex="0" role="region" aria-label="Таблица инсайтов; на узком экране прокручивается горизонтально"><table class="insights-table"><colgroup><col><col style="width:240px"><col style="width:136px"><col style="width:153px"><col style="width:100px"><col style="width:100px"></colgroup><thead><tr>${columns.map(([key,label],index) => `<th scope="col"${sortKey === key ? ` aria-sort="${direction === 'desc' ? 'descending' : 'ascending'}"` : ''}><button type="button" data-insight-sort="${key}" aria-label="Сортировать: ${label}">${index === 4 ? img('comments') : index === 5 ? img('starOutline') : index === 1 ? '<span>Владелец<br>КП / процесса</span>' : esc(label)}${index < 4 && sortKey === key ? img('sort',16, direction === 'asc' ? 'is-ascending' : '') : ''}</button></th>`).join('')}</tr></thead><tbody>${isLoading ? skeletonRows(rows.length || Math.min(data.length,6) || 4) : rows.map(row => `<tr data-insight-id="${esc(row.id)}" class="insights-table-row${row.problem ? ' is-problem' : ''}"><td class="insights-main-cell"><button type="button" class="insights-row-title" data-insight-open="${esc(row.id)}">${esc(row.title)}</button><p class="insights-row-description">${esc(row.description)}</p>${metadata(row)}</td><td class="owner-cell"><div class="insights-owner">${row.owner ? img('avatar',32,'insights-owner-avatar') : `<span class="task-avatar cabinet-avatar">${img('person',18)}</span>`}${ownerName(row)}</div></td><td class="date-cell"><time datetime="${row.created}">${date(row.created)}</time></td><td class="status-cell">${status(row)}</td><td class="comment-cell"><span class="insights-score">${img('comments')}<span>${row.comments}</span></span></td><td class="rating-cell"><span class="insights-score">${img('starOutline')}${tableRating(row)}</span></td></tr>`).join('')}</tbody></table></div>`;
+      return `<div class="insights-table-wrap" tabindex="0" role="region" aria-label="Таблица инсайтов; на узком экране прокручивается горизонтально"><table class="insights-table"><colgroup><col><col style="width:240px"><col style="width:136px"><col style="width:153px"><col style="width:100px"><col style="width:100px"></colgroup><thead><tr>${columns.map(([key,label],index) => `<th scope="col"${sortKey === key ? ` aria-sort="${direction === 'desc' ? 'descending' : 'ascending'}"` : ''}><button type="button" data-insight-sort="${key}" aria-label="Сортировать: ${label}">${index === 4 ? img('comments') : index === 5 ? img('starOutline') : index === 1 ? '<span>Владелец<br>КП / процесса</span>' : esc(label)}${index < 4 && sortKey === key ? img('sort',16, direction === 'asc' ? 'is-ascending' : '') : ''}</button></th>`).join('')}</tr></thead><tbody>${isLoading ? skeletonRows(rows.length || Math.min(data.length,6) || 4) : rows.map(row => `<tr data-insight-id="${esc(row.id)}" class="insights-table-row${row.problem ? ' is-problem' : ''}"><td class="insights-main-cell"><button type="button" class="insights-row-title" data-insight-open="${esc(row.id)}">${esc(row.title)}</button><p class="insights-row-description">${esc(row.description)}</p>${metadata(row)}</td><td class="owner-cell"><div class="insights-owner">${ownerAvatar(row)}${ownerName(row)}</div></td><td class="date-cell"><time datetime="${row.created}">${date(row.created)}</time></td><td class="status-cell">${status(row)}</td><td class="comment-cell"><span class="insights-score">${img('comments')}<span>${row.comments}</span></span></td><td class="rating-cell"><span class="insights-score">${img('starOutline')}${tableRating(row)}</span></td></tr>`).join('')}</tbody></table></div>`;
     }
     function appliedFilters() {
       const groups = Object.entries(state.filters).filter(([,values]) => values.length).map(([key,values]) => ({key,label:labels[key],values}));
@@ -286,7 +347,10 @@
       if (state.from !== defaultPeriod.from || state.to !== defaultPeriod.to) groups.push({key:'date',label:'Даты создания',values:[state.from || state.to ? `${date(state.from)} → ${date(state.to)}` : 'Все даты']});
       if (state.attention) groups.push({key:'attention', label:'Ожидают', values:[state.attention === 'approval' ? 'Вашего согласования' : state.attention === 'decision' ? 'Вашего решения' : 'Вашего мнения']});
       $('insights-applied').hidden = !groups.length;
-      $('insights-chips').innerHTML = groups.map(group => `<div class="applied-filter-group"><span class="applied-filter-label">${esc(group.label)}</span>${group.values.map(value => `<span class="chip applied-filter-chip"><span class="chip-text">${esc(value)}</span><button type="button" data-insight-filter-key="${group.key}" data-insight-filter-value="${esc(value)}" aria-label="Убрать фильтр: ${esc(value)}">${img('close',16)}</button></span>`).join('')}</div>`).join('');
+      $('insights-chips').innerHTML = groups.map(group => `<div class="applied-filter-group"><span class="applied-filter-label">${esc(group.label)}</span>${group.values.map(value => {
+        const label = group.key === 'process' ? processOptionLabels.get(value) || value : value;
+        return `<span class="chip applied-filter-chip"><span class="chip-text"${group.key === 'process' ? ` title="${esc(label)}"` : ''}>${esc(label)}</span><button type="button" data-insight-filter-key="${group.key}" data-insight-filter-value="${esc(value)}" aria-label="Убрать фильтр: ${esc(label)}">${img('close',16)}</button></span>`;
+      }).join('')}</div>`).join('');
     }
     function render() {
       if (!active || activeId) return;
@@ -454,6 +518,7 @@
       },
       focusSearch() {if (activeId) showRegistry({focus:false}); $('insights-search').scrollIntoView({block:'center'}); $('insights-search').focus({preventScroll:true});},
       getRows:filteredRows, isActive:() => active, openInsight, openCabinetInsight, closeCabinetDrawer,
+      taskCreated(id,taskId) {detail.taskCreated(id,taskId);renderTabs();},
       openCreate(trigger) {closePopups();creator.open(trigger);}
     };
   }

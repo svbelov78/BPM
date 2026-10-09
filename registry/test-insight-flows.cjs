@@ -41,7 +41,7 @@ async function main() {
     assert.ok(await page.locator('#insights-registry-view').isHidden());
     await page.locator('[data-id-rating="4"]').click();
     assert.equal(await page.evaluate(id=>window.BpmInsightStore.get(id).detail.userRating,primary),4);
-    await page.locator('#insights-back').click(); await ready(page);
+    await page.locator('.insights-view-controls button[aria-pressed="true"]').click(); await ready(page);
     await page.locator(`[data-insight-open="${second}"]`).click();
     assert.equal(await page.locator('#insights-tabs [role=tab]').count(),2);
     await page.locator(`[data-insight-tab="${primary}"]`).click();
@@ -50,7 +50,7 @@ async function main() {
     assert.equal(await page.locator('[role=tab][aria-selected=true]').innerText(),second);
     await page.locator(`[data-insight-tab="${second}"]`).press('Home');
     assert.equal(await page.locator('[role=tab][aria-selected=true]').innerText(),primary);
-    await page.locator('#insights-back').click(); await ready(page);
+    await page.locator('.insights-view-controls button[aria-pressed="true"]').click(); await ready(page);
     await page.locator(`[data-insight-open="${primary}"]`).click();
     assert.equal(await page.locator('#insights-tabs [role=tab]').count(),2,'Repeated open reuses tab');
     await page.locator(`[data-insight-tab="${primary}"]`).hover();
@@ -64,7 +64,7 @@ async function main() {
     await page.locator('#insights-table').click(); await ready(page);
     await page.locator(`#insights-results [data-insight-open="${primary}"]`).click();
     assert.ok(await page.locator('#insights-detail-view').isVisible());
-    await page.locator('#insights-back').click(); await ready(page);
+    await page.locator('.insights-view-controls button[aria-pressed="true"]').click(); await ready(page);
     assert.ok(await page.locator('.insights-table').isVisible(),'Return preserves table');
     await page.locator('#insights-create').click();
     const drawer=page.locator('#insight-create-drawer');
@@ -104,9 +104,6 @@ async function main() {
     await effect.locator('[data-effect-field=current]').fill('240');
     await effect.locator('[data-effect-field=target]').fill('60');
     await selectFirst(page,`ic-${effectId}-unit`);
-    await drawer.locator('#ic-comments-section summary').click();
-    await drawer.locator('[name=comment]').fill('Комментарий из формы создания');
-    await drawer.locator('[data-add-comment]').click();
     await drawer.locator('#ic-file-input').setInputFiles({name:'example.txt',mimeType:'text/plain',buffer:Buffer.from('Local attachment demo')});
     await drawer.locator('#ic-attachment-count').filter({hasText:'1'}).waitFor();
     await drawer.locator('[data-submit]').click();
@@ -115,23 +112,23 @@ async function main() {
     const created=await page.evaluate(()=>window.BpmInsightStore.list().find(row=>row.local));
     assert.equal(created.id,'INS-000079');
     assert.equal(created.title,'Оптимизация освещения архивного помещения');
-    assert.equal(created.comments,1);
+    assert.equal(created.comments,0);
     assert.equal(created.attachments[0].name,'example.txt');
     assert.equal(await page.locator('[role=tab][aria-selected=true]').innerText(),created.id);
     assert.equal(await page.locator('#insight-detail-title').innerText(),created.title);
-    assert.ok((await page.locator('#insights-detail-view').innerText()).includes('Комментарий из формы создания'));
-    await page.locator('#insights-back').click(); await ready(page);
+    await page.locator('.insights-view-controls button[aria-pressed="true"]').click(); await ready(page);
     assert.equal(await page.locator('#insights-results [data-insight-id]').count(),seed.length+1,'New record is visible despite old default date');
     await page.reload(); await ready(page);
     assert.ok(await page.evaluate(id=>!!window.BpmInsightStore.get(id),created.id),'Creation survives reload');
     assert.equal(await page.locator(`#insights-results [data-insight-open="${created.id}"]`).count(),1,'Default period includes the newly created record after reload');
-    report('Creation, field validation, attachments/comments metadata, current date visibility, local persistence');
+    report('Creation, field validation, attachment metadata, current date visibility, local persistence');
 
     await page.locator('[data-insight-open="INS-000067"]').click();
     await page.locator('[data-id-create-task]').click();
-    await page.locator('#special-task-flow[open]').waitFor();
-    assert.ok((await page.locator('#special-task-flow').innerText()).includes('Задача к инсайту'));
-    assert.ok((await page.locator('#stf-insightId-input').inputValue()).includes('INS-000067'),'Related task preselects insight');
+    await page.locator('#special-task-flow[open][data-type="insight-work"]').waitFor();
+    assert.equal(await page.locator('#stf-heading').innerText(),'Создать задачу');
+    assert.equal(await page.locator('#stf-title').inputValue(),(await page.evaluate(()=>BpmInsightStore.get('INS-000067'))).title,'Related task seeds the selected insight title');
+    assert.equal(await page.locator('#stf-insightId-input,#stf-processId-input,#stf-assignees-input').count(),0,'Insight context stays implicit in the compact four-field form');
     await page.evaluate(()=>window.BpmSpecialTaskFlow.close({immediate:true,restoreFocus:false}));
     report('Existing task-creation flow opens with the selected registry insight');
 
@@ -142,7 +139,7 @@ async function main() {
       await page.screenshot({path:path.join(output,`detail-${width}.png`),animations:'disabled'});
     }
     await page.setViewportSize({width:390,height:844});
-    await page.locator('#insights-back').click();await ready(page);
+    await page.locator('.insights-view-controls button[aria-pressed="true"]').click();await ready(page);
     await page.locator('#insights-create').click();
     await drawer.locator('[name=title]').fill('Совпадение на мобильном');
     await drawer.locator('[name=description]').fill(match.description);

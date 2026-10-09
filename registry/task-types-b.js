@@ -317,10 +317,48 @@
     }
   };
 
+  // Owner decision «Взять в работу»: a focused task form bound to an insight,
+  // distinct from the legacy generic «Задача к инсайту» catalog entry.
+  // Older compact tasks stored a single executor. Project that person into the
+  // editable assignment list on open, without mutating the persisted record.
+  const normalizeInsightWork = d => {
+    const assigned = list(d.assignees).filter(name => text(name));
+    return {...d,assignees:assigned.length ? [...new Set(assigned)] : text(d.executor) ? [d.executor] : []};
+  };
+  const insightWorkTask = {
+    ...insightTask,
+    id:'insight-work',label:'Работа над инсайтом',tag:'Работа над инсайтом',
+    formTitle:() => 'Создать задачу',
+    createCopy:'Задача будет создана в Sber BPM и передана в SberTrack.',
+    hideTypeBack:true,hideReset:true,createCancelLabel:'Отмена',createLabel:'Создать задачу',
+    initial:() => ({...commonDraft(''),insightId:'',insightTitle:'',insightCode:'',executor:''}),
+    normalizeDraft:normalizeInsightWork,
+    fields:(d,ctx) => [
+      {key:'title',label:'Название задачи',kind:'text',required:true,placeholder:'Введите название задачи'},
+      {key:'description',label:'Описание задачи',kind:'textarea',required:true,placeholder:'Введите описание задачи'},
+      deadline(d),
+      {key:'assignees',label:'Ответственные',kind:'people',required:true,placeholder:'Выберите',value:list(d.assignees)}
+    ],
+    validate:(d,ctx) => {
+      const errors = requiredCommon(d,ctx,{processRequired:false});
+      if (!text(d.description)) errors.description = 'Введите описание задачи.';
+      if (list(d.assignees).some(name => !text(name) || !list(ctx.people).includes(name)))
+        errors.assignees = 'Выберите доступных ответственных из списка.';
+      if (!d.insightId || !list(ctx.insights).some(i => String(i.id) === String(d.insightId)))
+        errors.insightId = 'Связанный инсайт недоступен. Откройте задачу из карточки инсайта.';
+      return errors;
+    },
+    onCreate:(d,ctx) => ({...insightTask.onCreate(d,ctx),assignees:[...new Set(list(d.assignees))]}),
+    viewFields:(d,ctx) => insightTask.viewFields(normalizeInsightWork(data(d,ctx)),ctx).map(field =>
+      field.key === 'description' ? {...field,label:'Описание задачи'} : field),
+    actions:(task,ctx) => insightTask.actions(normalizeInsightWork(task),ctx)
+  };
+
   Object.assign(window.BpmTaskTypes || (window.BpmTaskTypes = {}), {
     [metricInapplicability.id]:metricInapplicability,
     [bulkInapplicability.id]:bulkInapplicability,
     [businessUpdate.id]:businessUpdate,
-    [insightTask.id]:insightTask
+    [insightTask.id]:insightTask,
+    [insightWorkTask.id]:insightWorkTask
   });
 })();

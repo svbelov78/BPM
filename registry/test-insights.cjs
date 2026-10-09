@@ -105,14 +105,24 @@ async function chooseFirstValue(page, key, requestedValue) {
   await input.click();
   const popup = page.locator(`#insights-${key}-list`);
   await popup.waitFor({state: 'visible'});
-  const option = requestedValue ? popup.locator(`[role="option"][data-option="${requestedValue}"]`) : popup.locator('[role="option"][data-option]:not([data-option=""])').first();
+  let option = requestedValue ? popup.locator(`[role="option"][data-option="${requestedValue}"]`) : popup.locator('[role="option"][data-option]:not([data-option=""])').first();
   const label = (await option.locator('.option-label').textContent()).trim();
+  const value = await option.getAttribute('data-option');
+  if (key === 'process') {
+    const code = label.match(/П (\d{4,})/);
+    assert.ok(code, 'Process choices include an actual, spaced four-digit code');
+    await input.fill(`П${code[1]}`);
+    option = popup.locator(`[role="option"][data-option="${value}"]`);
+    assert.ok(await option.isVisible(), 'Process can be found by its compact ID');
+    assert.equal((await option.locator('.option-label').textContent()).trim(),label,'ID search preserves the complete process choice');
+  }
   await option.click();
   await assertLoading(page, `${key} filter`);
   await page.keyboard.press('Escape');
   await paint(page);
   assert.equal(await input.getAttribute('aria-expanded'), 'false', `${key}: selector closes with Escape`);
-  return label;
+  if (key === 'process') assert.equal(await page.locator('#insights-chips [data-insight-filter-key="process"]').first().evaluate(button => button.closest('.chip').querySelector('.chip-text').textContent),label,'Selected process chip keeps both the name and ID');
+  return value;
 }
 
 async function assertImages(page, label) {

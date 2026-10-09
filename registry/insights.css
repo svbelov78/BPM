@@ -28,7 +28,8 @@
 }
 .insights-total { color: var(--secondary); }
 #insights-title { flex: none; }
-#insights-back { display: inline-flex; align-items: center; gap: 8px; color: var(--blue); font: inherit; letter-spacing: inherit; }
+#insights-back { display: inline-flex; align-items: center; gap: 8px; color: inherit; font: inherit; letter-spacing: inherit; border-radius: 4px; }
+.insights-panel.is-insight-detail #insights-back { color: var(--blue); }
 #insights-back img { flex: none; width: 24px; height: 24px; }
 .insights-tabs { display: flex; align-items: center; flex: 0 1 auto; gap: 8px; min-width: 0; max-width: 100%; padding: 8px; border-radius: 16px; background: #0088ff1a; overflow-x: auto; scrollbar-width: thin; overscroll-behavior-x: contain; }
 /* Compress labels before scrolling. At extreme tab counts, retain a usable
@@ -125,7 +126,7 @@ body.insight-tab-open main { padding-bottom: 0; }
   line-height: 24px;
   letter-spacing: -.119px;
 }
-.insights-search input::placeholder { color: var(--text); opacity: 1; }
+.insights-search input::placeholder { color: var(--placeholder); opacity: 1; }
 .insights-search > button { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; flex: none; }
 .insights-date {
   display: flex;

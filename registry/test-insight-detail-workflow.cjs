@@ -9,24 +9,30 @@ const ready = page => page.waitForFunction(() => document.querySelector('#insigh
 const read = (page,id) => page.evaluate(id => window.BpmInsightStore.get(id),id);
 const readToEnd = page => page.locator('#insights-detail-view .id-detail-scroll').evaluate(node => {node.scrollTop = node.scrollHeight;node.dispatchEvent(new Event('scroll'));});
 async function open(page,id) {
-  if (await page.locator('#insights-back').isVisible()) await page.locator('#insights-back').click();
+  // Return via the current view, without invoking the heading's demo reset.
+  if (await page.locator('#insights-panel.is-insight-detail').count()) await page.locator('.insights-view-controls button[aria-pressed="true"]').click();
   await ready(page);
   await page.locator(`[data-insight-open="${id}"]`).click();
   await page.locator('#insight-detail-title').waitFor();
 }
 async function main() {
   const browser = await chromium.launch({headless:true,channel:'chrome'});
-  const context = await browser.newContext({viewport:{width:1920,height:1080},reducedMotion:'reduce'});
+  const context = await browser.newContext({viewport:{width:1920,height:1080},reducedMotion:'reduce',offline:true});
   const page = await context.newPage(), errors = [];
   page.on('pageerror',error => errors.push(String(error)));
   try {
     await page.goto(pathToFileURL(source).href+'#insights'); await ready(page);
     await open(page,'INS-000055');
     assert.equal(await page.locator('dialog[open]').count(),0,'Detail remains an internal tab');
-    assert.equal(await page.locator('[data-id-reproduction]').count(),4,'Other bank can assess reproducibility');
+    assert.equal(await page.locator('#insights-detail-view .ia-tracker').count(),0,'Approved insights do not show the approval tracker during bank assessment');
+    assert.equal(await page.locator('[data-id-reproduction]').count(),3,'Other bank can assess reproducibility using three toggleable choices');
+    assert.equal(await page.locator('#id-detail-tasks,[data-id-create-task]').count(),0,'Tasks stay unavailable before the owner takes the insight in work');
+    await page.locator('#insights-detail-view').evaluate(host => {const button=document.createElement('button');button.setAttribute('data-id-create-task','');host.append(button);button.click();button.remove();});
+    assert.equal(await page.locator('#special-task-flow[open]').count(),0,'A synthetic hidden task action cannot bypass the status gate');
     const authored = (await read(page,'INS-000055')).detail.effects;
     await page.locator('[data-id-reproduction="Воспроизводится"]').click();
-    await page.locator('[data-id-applicable="0"]').click();
+    await page.locator('[data-id-applicable="0"][data-id-value="true"]').click();
+    for (let index=1;index<authored.length;index++) await page.locator(`[data-id-applicable="${index}"][data-id-value="false"]`).click();
     await page.locator('[data-id-field="effect:0:current"]').fill('500');
     await page.locator('[data-id-field="effect:0:target"]').fill('100');
     await page.locator('[data-id-field="effect:0:target"]').press('Tab');
@@ -58,6 +64,7 @@ async function main() {
 
     await open(page,'INS-000054');
     const decisionRow = await read(page,'INS-000054');
+    assert.equal(await page.locator('#insights-detail-view .ia-tracker').count(),0,'Owner decision view does not show approval history after the Новый stage');
     assert.equal(await page.locator('[data-id-reproduction]').count(),0,'Process owner cannot edit another bank opinion');
     await page.locator('[data-id-reject]').click();
     assert.equal(await page.locator('[data-id-decision-submit]').isDisabled(),true,'Reject requires reason');
@@ -65,6 +72,7 @@ async function main() {
     await readToEnd(page);await page.locator('[data-id-decision-submit]').click();
     const rejected = await read(page,'INS-000054');
     assert.equal(rejected.status,'Отклонено');
+    assert.equal(await page.locator('#id-detail-tasks,[data-id-create-task]').count(),0,'Rejected insights do not expose Tasks');
     assert.ok(rejected.detail.comments.some(item => item.text === 'Решение уже реализовано в другом процессе.'));
     assert.equal(await page.locator('[data-id-reject],[data-id-take]').count(),0,'Decision actions close after a terminal decision');
     assert.equal(await page.locator('[data-id-comment-form]').count(),1);
@@ -77,7 +85,22 @@ async function main() {
     await page.evaluate(row => window.BpmInsightStore.update(row.id,{status:row.status,detail:row.detail,rejection:'',comments:row.comments}),decisionRow);
     await open(page,'INS-000054');
     await readToEnd(page);await page.locator('[data-id-take]').click();
+    await page.locator('#special-task-flow[open][data-type="insight-work"]').waitFor();
+    assert.equal((await read(page,'INS-000054')).status,decisionRow.status,'Opening the task form does not accept the insight early');
+    await page.locator('#stf-description').fill('Выполнить работу по выбранному инсайту.');
+    await page.locator('#stf-assignees-input').click();
+    await page.locator('#stf-assignees-list [data-option]:not([data-option=""])').first().click();
+    await page.keyboard.press('Escape');
+    await page.locator('#special-task-flow .tf-content').evaluate(node => {node.scrollTop=node.scrollHeight;node.dispatchEvent(new Event('scroll'));});
+    await page.locator('#special-task-flow [data-stf-action="save"]').click();
+    await page.locator('#special-task-flow[open]').waitFor({state:'hidden'});
+    await page.locator('#id-detail-tasks .id-detail-tasks[aria-busy="false"]').waitFor();
     assert.equal((await read(page,'INS-000054')).status,'В работе');
+    assert.equal(await page.locator('#insights-detail-view .ia-tracker').count(),0,'Taking the insight in work does not bring back the approval tracker');
+    assert.equal(await page.locator('#id-detail-tasks').count(),1,'Taking the insight in work immediately reveals Tasks');
+    assert.equal(await page.locator('[data-id-create-task]').count(),1,'Taking the insight in work enables task creation');
+    await page.reload();await ready(page);await open(page,'INS-000054');
+    assert.equal(await page.locator('#id-detail-tasks,[data-id-create-task]').count(),2,'The in-work task availability survives reload');
     assert.equal(await page.locator('[data-id-reproduction],[data-id-applicable]').count(),0);
     console.log('PASS — Required rejection reason, canonical team decisions, comments and ratings remain available');
 

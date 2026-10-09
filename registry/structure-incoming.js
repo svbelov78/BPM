@@ -17,7 +17,7 @@
   function renderRow(row, isFavorite, entity) {
     const id = esc(row.id), code = esc(label(row, entity));
     const owners = Array.isArray(row.owners) ? row.owners.filter(Boolean) : [];
-    const name = row.owner || owners.join(', ') || 'Владелец не указан';
+    const name = window.BpmAvatars.displayName(row.owner || owners.join(', '), `${row.id}:owner`);
     const role = row.ownerRole || '';
     const tags = Array.isArray(row.tags) ? row.tags : [];
     const favorite = isFavorite(row) ? `<span class="favorite-heart" role="img" aria-label="В избранном">${icon('liked', 24)}</span>` : '';
@@ -25,7 +25,7 @@
     const relationship = relationshipType ? `<span class="tag structure-incoming-relationship${relationshipType === 'Основной' ? ' is-primary' : ''}"${row.relationshipSimulated ? ' title="Демонстрационный тип участия процесса в КП"' : ''}>${esc(relationshipType)}</span>` : '';
     // Card usage has a 24px glyph and no pill or trend in this compact insertion.
     const efficiency = window.BpmCardVisuals.efficiency({...row, delta:0}, false);
-    return `<tr class="structure-incoming-row" data-structure-record="${id}" data-record-entity="${entity}"><td class="structure-incoming-process-cell"><div class="structure-incoming-process"><div class="structure-incoming-meta">${favorite}<button type="button" class="id-badge" data-structure-copy="${id}" aria-label="Скопировать ${code}">${code}${icon('copy', 16)}</button>${relationship}${tags.map(tag => `<span class="tag">${esc(tag)}</span>`).join('')}</div><button type="button" class="structure-incoming-title" data-structure-detail="${id}">${esc(row.title)}</button></div></td><td class="structure-incoming-owner-cell"><div class="structure-incoming-owner"${owners.length ? ` title="${esc(owners.join('; '))}"` : ''}><span class="avatar" aria-hidden="true"></span><span class="structure-incoming-owner-copy"><span class="structure-incoming-owner-name">${esc(name)}</span>${role ? `<span class="structure-incoming-owner-role">${esc(role)}</span>` : ''}</span></div></td><td class="structure-incoming-efficiency-cell"><div class="structure-incoming-efficiency">${efficiency}</div></td></tr>`;
+    return `<tr class="structure-incoming-row" data-structure-record="${id}" data-record-entity="${entity}"><td class="structure-incoming-process-cell"><div class="structure-incoming-process"><div class="structure-incoming-meta">${favorite}<button type="button" class="id-badge" data-structure-copy="${id}" aria-label="Скопировать ${code}">${code}${icon('copy', 16)}</button>${relationship}${tags.map(tag => `<span class="tag">${esc(tag)}</span>`).join('')}</div><button type="button" class="structure-incoming-title" data-structure-detail="${id}">${esc(row.title)}</button></div></td><td class="structure-incoming-owner-cell"><div class="structure-incoming-owner"${owners.length ? ` title="${esc(owners.join('; '))}"` : ''}><span class="avatar" aria-hidden="true">${window.BpmAvatars.portrait(name)}</span><span class="structure-incoming-owner-copy"><span class="structure-incoming-owner-name">${esc(name)}</span>${role ? `<span class="structure-incoming-owner-role">${esc(role)}</span>` : ''}</span></div></td><td class="structure-incoming-efficiency-cell"><div class="structure-incoming-efficiency">${efficiency}</div></td></tr>`;
   }
 
   function render(node, options = {}) {

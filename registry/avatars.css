@@ -1,0 +1,14 @@
+/* One local 4×4 atlas: first eight portraits male, last eight female.
+ * Retain each existing wrapper's circle size, alignment, tooltip and semantics. */
+.bpm-avatar-portrait {
+  display: block;
+  width: 100%;
+  height: 100%;
+  flex: none;
+  min-width: 0;
+  border-radius: inherit;
+  background-image: url("assets/avatars/business-portraits-v1.png");
+  background-size: 400% 400%;
+  background-repeat: no-repeat;
+  background-position: var(--bpm-avatar-x) var(--bpm-avatar-y);
+}

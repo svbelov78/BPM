@@ -95,7 +95,9 @@
       if (!root || !scroll || !scroll.isConnected || !scroll.clientHeight || !scroll.getClientRects().length || scroll.closest('[inert]')) return;
       if (!completed) {
         const range = Math.max(0,scroll.scrollHeight - scroll.clientHeight);
-        progress = range <= 2 ? 1 : Math.max(0,Math.min(1,scroll.scrollTop / range));
+        // The full ring represents the entire form, including the portion
+        // already visible at the top, rather than only the remaining travel.
+        progress = range <= 2 ? 1 : Math.max(0,Math.min(1,(scroll.scrollTop + scroll.clientHeight) / scroll.scrollHeight));
         if (range <= 2 || range - scroll.scrollTop <= 2) { completed = true; progress = 1; }
       }
       paint();

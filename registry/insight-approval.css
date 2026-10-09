@@ -54,6 +54,17 @@
 .ia-stage-copy small { color:var(--secondary);overflow-wrap:anywhere; }
 .ia-stage-copy p { padding:8px 0; }
 .ia-stage-copy .ia-stage-deadline { color:var(--text); }
+.ia-stage-date-line { display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px;min-width:0; }
+.ia-stage-date-line small { min-width:0; }
+.ia-tracker .ia-stage-own { color:var(--insight-status-indigo,#6155f5);font-size:13px;line-height:18px;letter-spacing:-.039px;white-space:nowrap; }
+.ia-approval-motion-root { position:relative; }
+.ia-approval-flight-layer { position:absolute;inset:0;z-index:6;pointer-events:none;overflow:hidden; }
+.ia-tracker.is-approval-flight-source { visibility:hidden; }
+.ia-tracker.ia-tracker--flight { position:absolute;margin:0;box-sizing:border-box;overflow:auto;scrollbar-width:none;pointer-events:none;box-shadow:0 16px 48px #1a1a1a38,0 4px 12px #1a1a1a24;will-change:transform,opacity; }
+.ia-tracker--flight::-webkit-scrollbar { display:none; }
+.ia-tracker--flight p { font-size:17px;line-height:24px;letter-spacing:-.119px;overflow-wrap:anywhere;white-space:pre-line;margin:0; }
+.ia-tracker--flight strong { font-size:17px;line-height:24px;font-weight:590;letter-spacing:-.51px; }
+.ia-tracker--flight small { font-size:13px;line-height:18px;letter-spacing:-.039px; }
 .ia-stage-current { display:grid;place-items:center;flex:none;width:24px;height:24px;border-radius:50%;background:var(--insight-status-indigo); }
 .ia-stage-loader { animation:ia-loading 1s linear infinite;transform-origin:center; }
 @keyframes ia-loading { to { transform:rotate(360deg); } }
@@ -70,11 +81,30 @@
 .ia-effects { display:flex;flex-direction:column;gap:24px;background:var(--white);padding:24px;border:1px solid var(--insight-divider);border-radius:16px; }
 .ia-effect { display:flex;gap:8px;padding-bottom:32px;border-bottom:1px solid var(--insight-divider); }
 .ia-effect:last-child { padding-bottom:8px;border:0; }
-.ia-effect > div { display:flex;flex-direction:column;gap:16px;min-width:0; }
+.ia-effect > div { display:flex;flex:1;flex-direction:column;gap:16px;min-width:0; }
 .ia-effect-number { flex:none;align-self:flex-start;width:24px;border-radius:8px;background:var(--insight-info-subtle);text-align:center;color:var(--blue);font-size:22px;line-height:26px;font-weight:590; }
 .ia-effect-values { display:flex;flex-wrap:wrap;gap:24px;align-items:end; }
 .ia-effect-values .ia-value { gap:8px; }
 .ia-effect-values .internal-label { color:var(--secondary); }
+.ia-effect-counts { font-size:17px;line-height:24px;font-weight:400;letter-spacing:-.119px; }
+.ia-effects-table-scroll { width:100%;min-width:0;overflow:auto;border-radius:16px;scrollbar-width:thin;scrollbar-color:var(--border) transparent; }
+.ia-effects-table-scroll:focus-visible { outline:2px solid var(--blue);outline-offset:3px; }
+.ia-effects-table { width:100%;min-width:900px;border-collapse:collapse;table-layout:fixed;text-align:left; }
+.ia-effects-table col:nth-child(1) { width:27%; }
+.ia-effects-table col:nth-child(2) { width:9%; }
+.ia-effects-table col:nth-child(3),.ia-effects-table col:nth-child(4),.ia-effects-table col:nth-child(5) { width:10%; }
+.ia-effects-table col:nth-child(6) { width:34%; }
+.ia-effects-table--qualitative { min-width:520px; }
+.ia-effects-table--qualitative col:nth-child(1) { width:32%; }
+.ia-effects-table--qualitative col:nth-child(2) { width:16%; }
+.ia-effects-table--qualitative col:nth-child(3) { width:52%; }
+.ia-effects-table th { padding:12px;background:var(--bg);color:var(--secondary);font-size:13px;line-height:18px;font-weight:400;letter-spacing:-.039px;vertical-align:top; }
+.ia-effects-table td { padding:12px;border-bottom:1px solid var(--border);vertical-align:top;overflow-wrap:anywhere; }
+.ia-effects-table tr:last-child td { border-bottom:0; }
+.ia-effects-table td strong,.ia-effects-table td small { display:block; }
+.ia-effects-table td small { color:var(--secondary);font-weight:400; }
+.ia-effects-table .ia-effect-author-row td { background:var(--insight-info-subtle); }
+.ia-effects-table .ia-effect-author-label { color:var(--blue); }
 .ia-empty { display:flex;flex-direction:column;align-items:center;padding:16px;text-align:center;color:var(--secondary); }
 .ia-task { display:flex;gap:12px;align-items:center;padding:16px;background:var(--white);border-radius:16px;text-align:left; }
 .ia-participants h3 { font-size:17px;line-height:24px;margin-bottom:16px; }

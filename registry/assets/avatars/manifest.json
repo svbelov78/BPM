@@ -1,0 +1,20 @@
+{
+  "asset": "business-portraits-v1.png",
+  "created": "2026-10-09",
+  "mode": "built-in image_gen",
+  "fictional": true,
+  "appearanceBrief": "Slavic business professionals, as explicitly requested by the user",
+  "layout": {
+    "columns": 4,
+    "rows": 4,
+    "maleRows": [
+      0,
+      1
+    ],
+    "femaleRows": [
+      2,
+      3
+    ]
+  },
+  "prompt": "Use case: photorealistic-natural. Asset type: one square avatar sprite atlas for a business application prototype. Generate EXACTLY a 4 by 4 grid of 16 distinct fictional adult business professionals of Slavic appearance. All portraits are fictional ordinary professionals, not real people and not celebrity likenesses. The top TWO ROWS contain eight different men, the bottom TWO ROWS contain eight different women. Ages 28 to 60, varied hairstyles (brown, dark, blond, grey), eye colors, facial features, clean-shaven and some modest beards, some glasses, natural understated expressions. Slavic appearance throughout this set, fair to lightly tanned complexions; individual variety within that brief. Tasteful business attire (blazers, shirts, suits), no logos. Every tile a separate centered head-and-shoulders studio photograph with exact identical framing: full head visible, face centered, eyes about 40 percent down, shoulders/collar visible at bottom, face readable at 32px circle. Soft neutral light-grey studio backgrounds, natural flattering lighting, natural skin texture. EXACT square tiles without gutters, outer margins, dividers, text, borders, rounded corners or overlays. Tile boundaries at 25%, 50%, 75% in BOTH dimensions; edge-to-edge photographic tiles. A flat sprite atlas, not UI, not a screenshot, not illustration. High-quality photorealism."
+}

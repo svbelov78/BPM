@@ -314,6 +314,38 @@ test('literal markup is retained as inert text rather than executed or double-es
   assert.equal(environment({saved:env.storage.get(KEY)}).call('get',row.id).title,title);
 });
 
+test('explicit demo replay restores complete seed scenarios and preserves local records',() => {
+  const env = environment(), baseline = json(env.call('list'));
+  const created = json(env.call('create',{title:'Мой инсайт',description:'Оставить этот текст',source:'ТБ',bank:'Мой банк',attachments:[{name:'my.pdf',size:20,type:'application/pdf'}]}));
+  env.call('update',created.id,{status:'В работе',detail:{userRating:5,comments:[{author:'Вы',text:'Мой комментарий'}],taskIds:['my-task']}});
+  const local = json(env.call('get',created.id));
+  env.evaluate(`for (const row of BpmInsightStore.list().filter(row => !row.local)) BpmInsightStore.update(row.id,{status:'Отклонено',needsApproval:false,needsOpinion:false,rejection:'Завершено в демонстрации',detail:{workflow:{stages:[],stage:'complete',opinions:{responses:[]},teamDecision:{decision:'reject'}},reproduction:'Воспроизводится',reproductionComment:'Оценено'}});`);
+  env.evaluate(`eventsSeen = []; BpmInsightStore.subscribe((rows,event) => eventsSeen.push(event));`);
+  const beforeWrites = env.writes.length, restored = json(env.call('resetDemo'));
+  assert.deepEqual(restored.sort(),baseline.map(row => row.id).sort());
+  assert.equal(env.writes.length,beforeWrites + 1,'Replay is one atomic snapshot write');
+  assert.deepEqual(json(env.call('list')).filter(row => !row.local),baseline);
+  assert.deepEqual(json(env.call('get',created.id)),local,'Locally created insight remains byte-equivalent');
+  assert.deepEqual(json(env.evaluate('eventsSeen')),[{type:'reset-demo',id:null}]);
+  assert.equal(env.evaluate('JSON.stringify(BPM_INSIGHT_DATA)'),env.originalSeed,'Immutable seeds stay untouched');
+  const reloaded = environment({saved:env.storage.get(KEY)});
+  assert.deepEqual(json(reloaded.call('list')),json(env.call('list')),'Replay and user records survive reload');
+  assert.equal(reloaded.call('create',{title:'После сброса'}).id,'INS-000080','Replay never reuses a local record ID');
+});
+
+test('demo replay preserves legacy local-ID collisions and works with unavailable storage',() => {
+  const baseline = environment(), rows = json(baseline.call('list'));
+  rows[0] = {...rows[0],local:true,title:'Пользовательская запись с прежним ID',status:'В работе'};
+  const collision = environment({saved:snapshot(rows)}), before = json(collision.call('get',rows[0].id));
+  assert.equal(json(collision.call('resetDemo')).includes(rows[0].id),false);
+  assert.deepEqual(json(collision.call('get',rows[0].id)),before);
+  const blocked = environment({readFailure:true,writeFailure:true}), seed = json(blocked.call('list'));
+  blocked.call('update',seed[0].id,{status:'В работе'});
+  assert.equal(blocked.call('resetDemo').length,seed.length);
+  assert.deepEqual(json(blocked.call('list')),seed);
+  assert.equal(blocked.call('persistenceAvailable'),false,'Session replay does not claim persistent storage');
+});
+
 const started = performance.now();
 let failures = 0;
 for (const {name,run} of tests) {

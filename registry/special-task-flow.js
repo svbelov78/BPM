@@ -9,23 +9,24 @@
   const img=(name,size=24)=>`<img src="${assets[name]||window.BpmTaskTypeAssets?.[name]||assets.info}" alt="" width="${size}" height="${size}">`;
   const terminal=t=>['Завершено','Отклонена','Отозвана','Отменено'].includes(t?.status);
   const dateISO=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
-  const commonKeys=['title','description','deadline','processId','processCode','processTitle','block','division','assignees','insightId','insightCode','insightTitle','initiator','resultVariant'];
+  const commonKeys=['title','description','deadline','processId','processCode','processTitle','block','division','assignees','executor','insightId','insightCode','insightTitle','initiator','resultVariant'];
   const bindingTargets=new Map();
   let api={},dialog,definition,task,draft,initial,trigger,mode='create',selects=[],calendar,sheet,closing=false,closeTimer,returnFocus=true;
   const scrollGate=window.BpmDrawerScroll.create(), sheetScrollGate=window.BpmDrawerScroll.create();
   let scrollMode=null;
+  let invocationCallbacks={};
   const drafts=new Map();
   function context(){
     const unique=new Map();
     [...(window.BPM_DATA||[]),...(window.BPM_STRUCTURE?.records||[])].filter(r=>r.entity==='processes').forEach(r=>unique.set(r.id,{...r,code:r.code||(r.number?`П${r.number}`:r.id)}));
     const processes=[...unique.values()];
-    const people=[...new Set([store().currentUser,...store().list().flatMap(t=>[t.initiator,...t.assignees]),...processes.map(p=>p.owner)].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));
+    const people=[...new Set([store().currentUser,...store().list().flatMap(t=>[t.initiator,...t.assignees,...(t.flowType==='insight-work'&&t.executor?[t.executor]:[])]),...processes.map(p=>p.owner)].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));
     const insights=new Map((window.BPM_CABINET_DATA?.insights||[]).map(row=>[row.id,row]));
     (window.BpmInsightStore?.list()||[]).forEach(row=>insights.set(row.id,{...row,processId:row.related?.[0]?.id||'',processIds:(row.related||[]).map(item=>item.id),resultVariant:row.related?.[0]?.variants?.[0]||''}));
     return {processes,people,insights:[...insights.values()],currentUser:store().currentUser,task,mode,draft};
   }
   function empty(){return {title:'',description:'',deadline:'',processId:'',processCode:'',processTitle:'',block:'',division:'',assignees:[],insightId:'',insightCode:'',insightTitle:'',initiator:store().currentUser,...definition.initial?.(context())};}
-  function fromTask(record){return {...empty(),...clone(record),...clone(record.flowData||{})};}
+  function fromTask(record){const value={...empty(),...clone(record),...clone(record.flowData||{})};return definition.normalizeDraft?.(value,context())||value;}
   function configure(options){api={...api,...options};}
   function setup(){
     dialog=document.createElement('dialog');dialog.id='special-task-flow';dialog.className='task-drawer task-flow special-task-flow';dialog.setAttribute('aria-labelledby','stf-heading');document.body.append(dialog);
@@ -54,16 +55,20 @@
     mode=options.mode||'create';task=mode==='create'?null:store().get(options.taskId);
     definition=window.BpmTaskTypes?.[options.typeId||task?.flowType];
     if(!definition||mode!=='create'&&!task){api.toast?.('Задача не найдена.');return;}
+    invocationCallbacks={onCreated:typeof options.onCreated==='function'?options.onCreated:null,
+      beforeCreate:typeof options.beforeCreate==='function'?options.beforeCreate:null};
     scrollGate.begin();scrollMode=mode;
     initial=mode==='create'?empty():fromTask(task);
     draft=mode==='create'?clone(drafts.get(definition.id)||initial):clone(initial);
-    if(mode==='create'&&definition.id==='insight'&&options.insightId){
+    if(mode==='create'&&['insight','insight-work'].includes(definition.id)&&options.insightId){
       const insight=context().insights.find(row=>row.id===options.insightId);
       if(insight){
         // Explicitly creating a task from another insight must not inherit a
         // different insight's previously saved draft/context.
-        if(draft.insightId!==insight.id)draft=empty();
+        const differentInsight=draft.insightId!==insight.id;
+        if(differentInsight)draft=empty();
         Object.assign(draft,{insightId:insight.id,insightCode:insight.code,insightTitle:insight.title});
+        if(definition.id==='insight-work'&&differentInsight)draft.title=insight.title;
         if(insight.processId)setProcess(insight.processId);
         initial=clone(draft);
       }
@@ -85,7 +90,7 @@
       const fallback=cabinet?panel?.querySelector('[data-cabinet-create="tasks"]'):$('tasks-create');
       (valid?trigger:card||fallback)?.focus({preventScroll:true});
     }
-    trigger=null;
+    trigger=null;invocationCallbacks={};
   }
   function close({restoreFocus=true,immediate=false}={}){
     if(!dialog?.open||closing)return;
@@ -96,10 +101,10 @@
   }
   function button(action,label,kind='',icon='',disabled=false){return `<button type="button" class="button tf-button ${kind==='primary'?'is-primary':kind==='text'?'is-text':''}" data-stf-action="${esc(action)}" aria-label="${esc(label)}"${disabled?' disabled':''}><span class="tf-button-label">${esc(label)}</span>${icon?img(icon):''}</button>`;}
   function badge(id){return `<button type="button" class="task-id-badge" data-stf-copy="${esc(id)}" aria-label="Скопировать ID ${esc(id)}"><span>${esc(id)}</span>${img('copy',16)}</button>`;}
-  function avatar(name){return `<span class="tf-avatar" title="${esc(name)}">${esc(name==='Система'?'SYS':V.initials(name))}</span>`;}
+  function avatar(rawName,fallbackKey='special-task-person'){const name=window.BpmAvatars.displayName(rawName,fallbackKey);return `<span class="tf-avatar" title="${esc(name)}">${name==='Система'||name==='SYS'?'SYS':window.BpmAvatars.portrait(name,fallbackKey)}</span>`;}
   function header(){
     const exit=`<button type="button" class="task-drawer-close" data-stf-action="close" aria-label="Закрыть задачу">${img('close')}</button>`;
-    if(mode==='create')return `<header class="tf-header"><div class="tf-title-row"><div class="tf-title-group"><button type="button" class="tf-back" data-stf-action="back">${img('back')}Типы задач</button><h2 id="stf-heading">${esc(definition.formTitle?.(draft)||definition.label)}</h2></div>${exit}</div></header>`;
+    if(mode==='create')return `<header class="tf-header"><div class="tf-title-row"><div class="tf-title-group">${definition.hideTypeBack?'':`<button type="button" class="tf-back" data-stf-action="back">${img('back')}Типы задач</button>`}<h2 id="stf-heading">${esc(definition.formTitle?.(draft)||definition.label)}</h2></div>${exit}</div></header>`;
     return `<header class="tf-header"><div class="tf-title-row"><div class="tf-meta"><h2 id="stf-heading">Задача</h2>${badge(task.id)}${V.typeTag(definition.tag||definition.label)}</div>${exit}</div><h2 class="tf-task-title">${mode==='view'&&!terminal(task)?`<button type="button" class="tf-edit-title" data-stf-action="edit" title="Редактировать задачу">${esc(task.title)}</button>`:esc(task.title)}</h2>${V.status(task,true)}</header>`;
   }
   function fields(){return (mode==='view'?(definition.viewFields||definition.fields):definition.fields)(draft,context()).filter(Boolean);}
@@ -109,7 +114,7 @@
     const scroll=preserve?dialog.querySelector('.tf-content')?.scrollTop||0:0;
     hidePopups();selects=[];bindingTargets.clear();sheet=null;dialog.dataset.mode=mode;dialog.dataset.type=definition.id;
     const list=fields();
-    dialog.innerHTML=`<div class="tf-shell">${header()}<div class="tf-content"><form id="stf-form" class="tf-form" novalidate>${renderFields(list,draft,'stf',mode!=='view')}${mode==='view'?comments():''}</form></div>${footer()}</div><div class="sr-only stf-live" role="status" aria-live="polite"></div>`;
+    dialog.innerHTML=`<div class="tf-shell">${header()}<div class="tf-content">${mode==='create'&&definition.createCopy?`<p class="stf-create-copy">${esc(definition.createCopy)}</p>`:''}<form id="stf-form" class="tf-form" novalidate>${renderFields(list,draft,'stf',mode!=='view')}${mode==='view'?comments():''}</form></div>${footer()}</div><div class="sr-only stf-live" role="status" aria-live="polite"></div>`;
     bindFields(list,draft,'stf',mode!=='view');
     list.filter(f=>['metrics','variants'].includes(f.kind)).forEach(f=>window.BpmTaskCollections.bind(f,draft,'stf',collectionContext()));
     $('stf-form').addEventListener('submit',event=>{event.preventDefault();if(mode!=='view')save();});
@@ -135,7 +140,7 @@
     if(f.kind==='heading')return `<h3 class="stf-heading${f.tone?` stf-heading--${esc(f.tone)}`:''}">${esc(f.text||f.label)}</h3>`;
     if(f.kind==='note')return `<div class="stf-note stf-note--${esc(f.tone||'info')}">${f.tone==='plain'?'':img(f.tone==='warning'?'warningInfo16':'lightning',16)}<span>${esc(f.text||f.value||'')}</span></div>`;
     if(f.kind==='accordion')return `<details class="stf-accordion"${f.open?' open':''}><summary>${esc(f.label)}${img('chevron',16)}</summary><div>${esc(f.text)}</div></details>`;
-    if(f.kind==='person')return `<div class="tf-person">${avatar(value||'—')}<div class="tf-readonly"><span class="internal-label">${esc(f.label)}</span><span class="tf-value">${esc(value||'—')}</span></div></div>`;
+    if(f.kind==='person'){const personKey=`${task?.id||draft?.insightId||prefix}:${key}`,name=window.BpmAvatars.displayName(value,personKey);return `<div class="tf-person">${avatar(name,personKey)}<div class="tf-readonly"><span class="internal-label">${esc(f.label)}</span><span class="tf-value">${esc(name)}</span></div></div>`;}
     if(f.kind==='checklist')return `<fieldset class="stf-options stf-checklist" id="${id}"><legend>${esc(f.label||'')}</legend>${f.options.map((o,i)=>choice(`${id}-${i}`,key,o.value,o.label,'checkbox',(value||[]).includes(o.value),!writable,prefix,o.help||o.label)).join('')}${err}</fieldset>`;
     if(f.kind==='variants'||f.kind==='metrics')return collection(f,data,prefix,writable)+err;
     if(f.kind==='radio'||f.kind==='checkbox'||f.kind==='switch'){
@@ -147,13 +152,13 @@
       let text=value;
       if(f.kind==='process'){const row=context().processes.find(p=>p.id===value);return `<div class="tf-readonly"><span class="internal-label">${esc(f.label||'Процесс')}</span><div class="tf-process-value">${value?badge(row?.code||data.processCode||value):''}${value?`<button class="tf-value tf-editable" type="button" data-stf-action="process" data-process-id="${esc(value)}">${esc(row?.title||data.processTitle||value)}</button>`:'—'}</div>${err}</div>`;}
       if(f.kind==='date')return `<div class="tf-deadline-row"><div class="tf-readonly"><span class="internal-label">${esc(f.label)}</span><span class="tf-value">${value?esc(V.date(value)):'Без срока'}</span></div>${key==='deadline'?`<span class="tf-deadline-note">${deadline(value)}</span>`:''}</div>`;
-      if(f.kind==='people')return `<div class="tf-assignees"><div class="tf-readonly"><span class="internal-label">${esc(f.label)}</span><span class="tf-value">Выбрано ${(value||[]).length}</span></div><div class="tf-avatar-group">${(value||[]).map(avatar).join('')}</div>${err}</div>`;
+      if(f.kind==='people')return `<div class="tf-assignees"><div class="tf-readonly"><span class="internal-label">${esc(f.label)}</span><span class="tf-value">Выбрано ${(value||[]).length}</span></div><div class="tf-avatar-group">${(value||[]).map((name,index)=>avatar(name,`${task?.id||draft?.insightId||prefix}:${key==='assignees'?'assignee':key}:${index}`)).join('')}</div>${err}</div>`;
       if(f.kind==='multiselect')return `<div class="tf-readonly"><span class="internal-label">${esc(f.label)}</span><div class="stf-readonly-chips">${(value||[]).map(v=>`<span class="chip">${esc(f.options?.find(o=>o.value===v)?.label||v)}</span>`).join('')||'—'}</div>${help}${err}</div>`;
       if(f.options){text=Array.isArray(value)?value.map(v=>f.options.find(o=>o.value===v)?.label||v).join(', '):f.options.find(o=>o.value===value)?.label||value;}
       return `<div class="tf-readonly"><span class="internal-label">${esc(f.label||'')}</span><div class="tf-value${f.tone==='link'?' stf-link-value':''}">${esc(Array.isArray(text)?text.join(', '):text??'—')}</div>${help}${err}</div>`;
     }
-    if(['select','multiselect','process','people','insight'].includes(f.kind))return `<div class="stf-select-field" data-field="${esc(key)}"><div id="${id}" class="select-host"></div>${f.kind==='people'?`<div class="tf-avatar-group" id="${id}-avatars">${(value||[]).map(avatar).join('')}</div>`:''}${help}${err}</div>`;
-    if(f.kind==='date')return `<div class="tf-deadline-row${key==='deadline'?'':' stf-period-date'}"><div class="tf-date-wrap"><label class="field stf-date-field${f.disabled?' is-disabled':''}"><span class="tf-field-content"><span class="internal-label">${esc(f.label)}</span><input id="${id}" data-stf-key="${esc(key)}" data-prefix="${prefix}" inputmode="numeric" placeholder="ДД.ММ.ГГГГ" value="${value?esc(V.date(value)):''}" autocomplete="off"${f.disabled?' disabled':''}></span><button type="button" data-stf-action="calendar" data-field="${esc(key)}" data-prefix="${prefix}" aria-label="Выбрать дату"${f.disabled?' disabled':''}>${img('calendar')}</button></label>${err}</div>${key==='deadline'?`<span class="tf-deadline-note" id="${id}-note">${deadline(value)}</span>`:''}</div>`;
+    if(['select','multiselect','process','people','insight'].includes(f.kind))return `<div class="stf-select-field" data-field="${esc(key)}"><div id="${id}" class="select-host"></div>${f.kind==='people'?`<div class="tf-avatar-group" id="${id}-avatars">${(value||[]).map((name,index)=>avatar(name,`${task?.id||draft?.insightId||prefix}:${key==='assignees'?'assignee':key}:${index}`)).join('')}</div>`:''}${help}${err}</div>`;
+    if(f.kind==='date')return `<div class="tf-deadline-row${key==='deadline'?'':' stf-period-date'}"><div class="tf-date-wrap"><label class="field stf-date-field${f.disabled?' is-disabled':''}"><span class="tf-field-content"><span class="internal-label">${esc(f.label)}</span><input id="${id}" data-stf-key="${esc(key)}" data-prefix="${prefix}" inputmode="numeric" placeholder="ДД.ММ.ГГГГ" value="${value?esc(V.date(value)):''}" autocomplete="off"${f.disabled?' disabled':''}></span><button type="button" data-stf-action="calendar" data-field="${esc(key)}" data-prefix="${prefix}" aria-label="Выбрать дату"${f.disabled?' disabled':''}>${img('calendar')}</button></label>${err}</div>${key==='deadline'&&!f.hideCountdown?`<span class="tf-deadline-note" id="${id}-note">${deadline(value)}</span>`:''}</div>`;
     const textarea=f.kind==='textarea';
     return `<div class="stf-input-field${f.card?' stf-card':''}">${f.previousValue!==undefined?`<p class="stf-previous">${esc(f.previousValue)}</p>`:''}<div class="field ${textarea?'tf-textarea':'tf-field'}"><label><span class="internal-label">${esc(f.label)}${f.required?' *':''}</span>${textarea?`<textarea id="${id}" data-stf-key="${esc(key)}" data-prefix="${prefix}" placeholder="${esc(f.placeholder||'Введите текст')}" maxlength="20000">${esc(value||'')}</textarea>`:`<input id="${id}" data-stf-key="${esc(key)}" data-prefix="${prefix}" value="${esc(value||'')}" placeholder="${esc(f.placeholder||'Введите текст')}" maxlength="20000" autocomplete="off">`}</label></div>${help}${err}</div>`;
   }
@@ -179,15 +184,15 @@
       if(['select','multiselect','process','people','insight'].includes(f.kind)){
         const ctx=context(),multiple=['people','multiselect'].includes(f.kind);
         const options=f.kind==='process'?ctx.processes.map(p=>({value:p.id,label:`${p.code||p.id} ${p.title}`})):f.kind==='people'?ctx.people.map(p=>({value:p,label:p})):f.kind==='insight'?ctx.insights.map(i=>({value:i.id,label:`${i.code} ${i.title}`})):f.options||[];
-        const select=api.createSelect(id,{label:f.label,placeholder:f.placeholder||'Выберите',allowAll:false,multiple,placement:f.kind==='people'?'above':undefined,options:multiple?options:[{value:'',label:'Не выбрано'},...options],values:multiple?data[f.key]||[]:data[f.key]?[data[f.key]]:[],onChange:values=>{
+        const select=api.createSelect(id,{label:`${f.label}${f.showRequired&&f.required?' *':''}`,placeholder:f.placeholder||'Выберите',allowAll:false,multiple,placement:f.kind==='people'?'above':undefined,options:multiple?options:[{value:'',label:'Не выбрано'},...options],values:multiple?data[f.key]||[]:data[f.key]?[data[f.key]]:[],onChange:values=>{
           const previousValue=data[f.key];
           data[f.key]=multiple?[...values]:values[0]||'';
           if(prefix==='stf'&&f.kind==='process'&&previousValue!==data[f.key]){setProcess(data[f.key]);Object.assign(data,{resultVariant:'',selectedVariantId:'',beforeVariant:null,businessDescriptionId:'',metrics:[],proposedVariants:[]});}
           if(f.kind==='insight'){const row=ctx.insights.find(i=>i.id===data[f.key]);Object.assign(data,{insightCode:row?.code||'',insightTitle:row?.title||''});}
           clearError(id);changed();
           // Select's own close operation must finish before replacing its host.
-          if(!multiple)setTimeout(()=>{if(dialog.open&&!closing&&!sheet)render(true);},0);
-          else if(f.kind==='people')$(`${id}-avatars`).innerHTML=(data[f.key]||[]).map(avatar).join('');
+          if(!multiple&&f.rerenderOnChange!==false)setTimeout(()=>{if(dialog.open&&!closing&&!sheet)render(true);},0);
+          else if(f.kind==='people')$(`${id}-avatars`).innerHTML=(data[f.key]||[]).map((name,index)=>avatar(name,`${task?.id||draft?.insightId||prefix}:${f.key==='assignees'?'assignee':f.key}:${index}`)).join('');
         }});if(f.disabled){select.disabled=true;select.input.disabled=true;select.toggle.disabled=true;select.control.classList.add('is-disabled');}selects.push(select);
       }
     }
@@ -217,7 +222,7 @@
   }
   function actions(){return definition.actions?.(task,{...context(),draft})||[];}
   function footer(){
-    if(mode!=='view')return `<footer class="tf-footer tf-footer--form">${button('cancel','Отменить')}${button('reset','Сбросить','text','reset')}${button('save',mode==='create'?'Создать':'Сохранить','primary','tick')}</footer>`;
+    if(mode!=='view')return `<footer class="tf-footer tf-footer--form">${button('cancel',mode==='create'?definition.createCancelLabel||'Отменить':'Отменить')}${definition.hideReset?'':button('reset','Сбросить','text','reset')}${button('save',mode==='create'?definition.createLabel||'Создать':'Сохранить','primary','tick')}</footer>`;
     const available=actions();
     const controls=available.map(a=>button(`lifecycle:${a.id}`,a.label,a.kind,a.icon,Boolean(a.disabled)));
     let content;
@@ -227,7 +232,7 @@
     else content=`${controls.slice(0,-1).join('')}<span class="tf-spacer"></span>${controls.at(-1)}`;
     return `<footer class="tf-footer stf-footer">${content}</footer>`;
   }
-  function comments(){return (task.comments||[]).length?`<section class="tf-comments"><h3>Комментарии</h3>${task.comments.map(c=>`<article class="tf-comment"><p class="tf-comment-author">${esc(c.author)} | ${esc(V.date(c.created))}</p><p class="tf-value">${esc(c.text)}</p></article>`).join('')}</section>`:'';}
+  function comments(){return (task.comments||[]).length?`<section class="tf-comments"><h3>Комментарии</h3>${task.comments.map((c,index)=>`<article class="tf-comment"><p class="tf-comment-author">${esc(window.BpmAvatars.displayName(c.author,`${task.id}:comment:${index}:author`))} | ${esc(V.date(c.created))}</p><p class="tf-value">${esc(c.text)}</p></article>`).join('')}</section>`:'';}
   function clearError(id){$(`${id}-error`)?.setAttribute('hidden','');const n=$(id);(n?.matches('input,textarea')?n:n?.querySelector('input'))?.removeAttribute('aria-invalid');}
   function showErrors(errors,prefix='stf'){
     const entries=Object.entries(errors||{});if(!entries.length)return false;
@@ -256,8 +261,13 @@
     if(mode==='edit'){const latest=store().get(task.id);if(!latest||terminal(latest)){if(latest){task=latest;draft=fromTask(task);mode='view';render();}return;}}
     try{
       const created=mode==='create';const data=payload({...draft,...createPatch});
+      // This permission check belongs to the caller opening this form, not to
+      // the global task catalog; capture it before any store notifications.
+      const createdCallback=invocationCallbacks.onCreated||api.onCreated;
+      if(created&&invocationCallbacks.beforeCreate?.(data,context())===false)
+        throw new Error('Создание задачи сейчас недоступно. Проверьте состояние инсайта.');
       task=created?store().create(data):store().update(task.id,data);drafts.delete(definition.id);mode='view';
-      if(created){const record=task;dialog.addEventListener('close',()=>api.onCreated?.(record),{once:true});close({restoreFocus:false});}
+      if(created){const record=task;dialog.addEventListener('close',()=>createdCallback?.(record),{once:true});close({restoreFocus:false});}
       else {draft=fromTask(task);initial=clone(draft);render();api.toast?.('Изменения сохранены');}
     }catch(error){api.toast?.(error.message);dialog.querySelector('.stf-live').textContent=error.message;}
   }

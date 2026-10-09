@@ -133,7 +133,7 @@
   function formMarkup(){
     return `<form id="tf-form" class="tf-form" novalidate>${mode==='create'?'<div id="tf-insight" class="select-host"></div>':''}${field('title','Название',draft.title,'Введите название задачи')}<div class="tf-deadline-row"><div class="tf-date-wrap"><label class="field tf-field" for="tf-deadline"><span class="field-content"><span class="internal-label">Срок задачи</span><input id="tf-deadline" name="deadline" value="${esc(draft.deadline?V.date(draft.deadline):'')}" placeholder="ДД.ММ.ГГГГ" inputmode="numeric" autocomplete="off" maxlength="10"></span><button type="button" class="select-toggle" data-tf-action="calendar" aria-label="Выбрать срок задачи" aria-haspopup="dialog" aria-expanded="false">${img('calendar')}</button></label><p class="field-error" id="tf-deadline-error" hidden></p></div><span class="tf-deadline-note" id="tf-deadline-note">${deadlineMarkup(draft)}</span></div><div id="tf-process" class="select-host"></div><div id="tf-variant" class="select-host"></div>${field('description','Описание',draft.description,'Введите описание задачи',true)}<div class="tf-assignees"><div id="tf-assignees" class="select-host"></div><p class="field-error" id="tf-assignees-error" hidden></p><div class="tf-avatar-group" id="tf-assignee-avatars">${avatars(draft.assignees)}</div></div></form>`;
   }
-  function avatars(names){return names.map(name=>`<span class="tf-avatar" title="${esc(name)}" aria-label="${esc(name)}">${esc(V.initials(name))}</span>`).join('');}
+  function avatars(names,role='assignee'){return names.map((rawName,index)=>{const key=`${task?.id||draft?.insightId||draft?.processId||'task-form'}:${role}${role==='assignee'?`:${index}`:''}`,name=window.BpmAvatars.displayName(rawName,key);return `<span class="tf-avatar" title="${esc(name)}" aria-label="${esc(name)}">${name==='Система'||name==='SYS'?'SYS':window.BpmAvatars.portrait(name,key)}</span>`;}).join('');}
   function bindForm(){
     const add=(id,config)=>{const options=config.multiple?config.options:[{value:'',label:'Не выбрано'},...config.options];const select=api.createSelect(id,{allowAll:false,placeholder:'Выберите',...config,options});selects.push(select);return select;};
     if(mode==='create'){
@@ -179,7 +179,7 @@
     const editable=key&&editableTask(task);
     return `<div class="tf-readonly"><span class="internal-label">${esc(label)}</span>${editable?`<button type="button" class="tf-value tf-editable" data-tf-edit="${key}" aria-label="Редактировать: ${esc(label)}" title="Редактировать">${content}</button>`:`<div class="tf-value">${content}</div>`}</div>`;
   }
-  function person(label,name){return `<div class="tf-person">${avatars([name])}${readonly(label,esc(name))}</div>`;}
+  function person(label,name){const role=label==='Инициатор'?'initiator':label==='Исполнитель'?'executor':label,key=`${task?.id||'task-form'}:${role}`;return `<div class="tf-person">${avatars([name],role)}${readonly(label,esc(window.BpmAvatars.displayName(name,key)))}</div>`;}
   function viewMarkup(){
     const due=`<div class="tf-deadline-row">${readonly('Срок задачи',esc(task.deadline?V.date(task.deadline):'Без срока'),'deadline')}<span class="tf-deadline-note">${deadlineMarkup(task)}</span></div>`;
     const process=`<div class="tf-readonly"><span class="internal-label">Процесс</span><div class="tf-process-value">${task.processId?badge(task.processCode||task.processId):''}${task.processId?`<button type="button" class="tf-value tf-editable" data-tf-action="process" title="Открыть процесс">${esc(task.processTitle)}</button>`:'—'}</div></div>`;
@@ -187,7 +187,7 @@
     const description=readonly('Описание',esc(task.description||'—'),'description');
     const initiator=person('Инициатор',task.initiator);
     const responsible=`<div class="tf-assignees">${readonly('Ответственные',`Выбрано ${task.assignees.length}`,'assignees')}<div class="tf-avatar-group">${avatars(task.assignees)}</div></div>`;
-    const comments=(task.comments||[]).length?`<section class="tf-comments"><h3>Комментарии</h3>${task.comments.map(c=>`<article class="tf-comment"><p class="tf-comment-author">${esc(c.author)} | ${esc(V.date(c.created))}</p><p class="tf-value">${esc(c.text)}</p></article>`).join('')}</section>`:'';
+    const comments=(task.comments||[]).length?`<section class="tf-comments"><h3>Комментарии</h3>${task.comments.map((c,index)=>`<article class="tf-comment"><p class="tf-comment-author">${esc(window.BpmAvatars.displayName(c.author,`${task.id}:comment:${index}:author`))} | ${esc(V.date(c.created))}</p><p class="tf-value">${esc(c.text)}</p></article>`).join('')}</section>`:'';
     return due+(terminal(task)?initiator+responsible+process+variant+description:process+variant+description+initiator+responsible)+(task.executor?person('Исполнитель',task.executor):'')+comments;
   }
   function footer(){

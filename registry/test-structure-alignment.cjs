@@ -99,13 +99,16 @@ async function incomingOwnerAppearance(table, width, direction) {
   const owners = await table.locator('.structure-incoming-owner').evaluateAll(elements => elements.map(owner => {
     const style = getComputedStyle(owner.querySelector('.structure-incoming-owner-name'));
     const avatar = owner.querySelector('.avatar'), circle = avatar.getBoundingClientRect();
-    return {font: [style.fontSize, style.lineHeight, style.fontWeight, style.letterSpacing], width: circle.width, height: circle.height, blank: avatar.childNodes.length === 0, hidden: avatar.getAttribute('aria-hidden')};
+    const portrait = avatar.firstElementChild, photo = portrait.getBoundingClientRect();
+    return {font: [style.fontSize, style.lineHeight, style.fontWeight, style.letterSpacing], width: circle.width, height: circle.height, children: avatar.childElementCount, hidden: avatar.getAttribute('aria-hidden'), portraitTag:portrait.tagName, portraitHidden:portrait.getAttribute('aria-hidden'), background:getComputedStyle(portrait).backgroundImage, portraitWidth:photo.width, portraitHeight:photo.height};
   }));
   check(width, `${direction} incoming owners`, () => {
     assert.ok(owners.length > 0, 'Related list has owners');
     owners.forEach(owner => {
       assert.deepEqual(owner.font, ['13px', '18px', '400', '-0.039px'], 'Incoming owner uses Additional/R');
-      assert.deepEqual([owner.width, owner.height, owner.blank, owner.hidden], [32, 32, true, 'true'], 'Incoming avatar is a blank decorative 32px circle');
+      assert.deepEqual([owner.width, owner.height, owner.children, owner.hidden], [32, 32, 1, 'true'], 'Incoming avatar keeps its decorative 32px wrapper and has one portrait');
+      assert.deepEqual([owner.portraitTag,owner.portraitHidden],['SPAN','true']); assert.notEqual(owner.background,'none');
+      close(owner.portraitWidth,32,'Portrait fills avatar width'); close(owner.portraitHeight,32,'Portrait fills avatar height');
     });
   });
 }
@@ -193,7 +196,7 @@ async function inspectWidth(browser, width) {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   try {
-    await page.goto(pathToFileURL(path.join(__dirname, 'index.html')).href);
+    await page.goto(`${pathToFileURL(path.join(__dirname, 'index.html')).href}#main`);
     await page.waitForTimeout(2200);
     for (const view of ['cards', 'table']) {
       if (view === 'table') { await page.locator('#table-view').click(); await page.waitForTimeout(2200); }
@@ -276,7 +279,7 @@ async function inspectWidth(browser, width) {
         headerHeight:table.tHead.getBoundingClientRect().height,
         columns:[...table.tHead.rows[0].cells].slice(1).map(cell=>cell.getBoundingClientRect().width),
         titleFont:getComputedStyle(row.querySelector('.structure-row-title')).fontSize,
-        placeholderImages:row.querySelectorAll('.structure-owner>.avatar>img').length,
+        portraitCount:row.querySelectorAll('.structure-owner>.avatar>span[aria-hidden="true"]').length,
         glyphFirst:!pill||pill.querySelector('.bpm-efficiency-glyph').getBoundingClientRect().left<pill.querySelector('.efficiency-value').getBoundingClientRect().left
       };
     });
@@ -285,7 +288,7 @@ async function inspectWidth(browser, width) {
       assert.equal(tableDesign.columns.length,2,'Owner and efficiency are the only columns after the title');
       tableDesign.columns.forEach((value,index)=>close(value,[700,184][index],'Fixed table column width'));
       assert.equal(tableDesign.titleFont,'17px');
-      assert.equal(tableDesign.placeholderImages,0,'Outer table uses the blank avatar from the source');
+      assert.equal(tableDesign.portraitCount,1,'Outer table uses one shared decorative portrait');
       assert.equal(tableDesign.glyphFirst,true,'Structure efficiency glyph precedes the percentage');
     });
     const reverseDisclosures = await product.locator('[data-structure-related], .structure-linked-row').count();

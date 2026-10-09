@@ -9,6 +9,7 @@
   const image = (name, className = '') => `<img${className ? ` class="${className}"` : ''} src="${asset(`assets/cabinet/${name}.svg`)}" alt="" aria-hidden="true">`;
   const embed = markup => window.BPMEmbeddedAsset ? markup.replace(/src="(assets\/[^"<>]+)"/g, (_, path) => `src="${asset(path)}"`) : markup;
   const personName = person => typeof person === 'object' && person !== null ? person.name || person.label || '' : String(person || '');
+  const displayName = (person,key) => window.BpmAvatars.displayName(personName(person),key);
   const number = value => String(value ?? '—').replace('.', ',');
   const date = value => window.BpmTaskVisuals.date(value);
   const highlight = row => row.highlight === 'problem' ? ' cabinet-card-problem' : row.highlight === 'positive' || row.highlight === true ? ' cabinet-card-positive' : '';
@@ -23,13 +24,13 @@
   function body(row, task = false) {
     return `<div class="${task ? 'task-card-body' : 'card-body'}"><button type="button" class="${task ? 'task-card-title' : 'card-title'}" ${open(row)} title="${escape(row.title)}">${escape(row.title)}</button><p class="${task ? 'task-card-description' : 'card-description'}">${escape(row.description)}</p></div>`;
   }
-  function avatar(person, initials = false) {
-    const name = personName(person);
-    return `<span class="task-avatar cabinet-avatar" title="${escape(name)}" aria-label="${escape(name)}">${initials && name ? escape(window.BpmTaskVisuals.initials(name)) : image('person')}</span>`;
+  function avatar(person, initials = false, fallbackKey = 'cabinet-person') {
+    const name = displayName(person,fallbackKey);
+    return `<span class="task-avatar cabinet-avatar" title="${escape(name)}" aria-label="${escape(name)}">${name === 'Система' || name === 'SYS' ? 'SYS' : window.BpmAvatars.portrait(name,fallbackKey)}</span>`;
   }
   function owner(row) {
-    const name = personName(row.owner);
-    return `<div class="owner">${avatar(row.owner)}<span class="owner-name" title="${escape(name)}">${escape(name)}</span></div>`;
+    const name = displayName(row.owner,`${row.id}:owner`);
+    return `<div class="owner">${avatar(row.owner,false,`${row.id}:owner`)}<span class="owner-name" title="${escape(name)}">${escape(name)}</span></div>`;
   }
   function status(row, type) {
     const label = row.status || (type === 'insight' ? 'Создан' : 'Подтверждён');
@@ -66,10 +67,10 @@
   }
   function participants(row) {
     const people = Array.isArray(row.assignees) ? row.assignees : [];
-    const names = people.map(personName);
+    const names = people.map((person,index)=>displayName(person,`${row.id}:assignee:${index}`));
     const extra = people.length > 3 ? `<span class="task-avatar task-avatar-overflow" title="${escape(names.slice(3).join(', '))}">+${people.length - 3}</span>` : '';
-    const group = people.length ? `<span class="task-avatar-group${people.length > 1 ? ' cabinet-assignees-full' : ''}" aria-label="Исполнители: ${escape(names.join(', '))}">${people.slice(0, 3).map(person => avatar(person, true)).join('')}${extra}</span>${people.length > 1 ? `<span class="task-avatar task-avatar-overflow cabinet-assignees-compact" title="${escape(names.join(', '))}" aria-label="Исполнители: ${escape(names.join(', '))}">+${people.length}</span>` : ''}` : '<span class="task-unassigned">Не назначены</span>';
-    return `<span class="task-participant-route">${avatar(row.initiator, true)}${image('direction-flow', 'task-direction')}${group}</span>`;
+    const group = people.length ? `<span class="task-avatar-group${people.length > 1 ? ' cabinet-assignees-full' : ''}" aria-label="Исполнители: ${escape(names.join(', '))}">${people.slice(0, 3).map((person,index) => avatar(person,true,`${row.id}:assignee:${index}`)).join('')}${extra}</span>${people.length > 1 ? `<span class="task-avatar task-avatar-overflow cabinet-assignees-compact" title="${escape(names.join(', '))}" aria-label="Исполнители: ${escape(names.join(', '))}">+${people.length}</span>` : ''}` : `<span class="task-unassigned">${escape(displayName('',`${row.id}:assignee:0`))}</span>`;
+    return `<span class="task-participant-route">${avatar(row.initiator,true,`${row.id}:initiator`)}${image('direction-flow', 'task-direction')}${group}</span>`;
   }
   function isComplete(row) {
     return row.complete === true || row.completed === true || /^(завершен[ао]?|завершён[ао]?|выполнен[ао]?|согласован[ао]?)$/i.test(String(row.status || '').trim());

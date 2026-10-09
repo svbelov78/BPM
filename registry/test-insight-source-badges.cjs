@@ -112,7 +112,7 @@ async function checkBadges(scope, label, {constrained = false, cards = false} = 
       await checkBadges(page.locator('#insights-detail-view'), `${width}px detail`);
     }
     await checkBadges(page.locator('#insights-detail-view'), 'detail constrained', {constrained: true});
-    await page.locator('#insights-back').click(); await ready(page);
+    await page.locator('.insights-view-controls button[aria-pressed="true"]').click(); await ready(page);
     await page.locator(`[data-insight-open="${approval.id}"]`).click();
     const approvalTab = page.locator('#insights-detail-view');
     await approvalTab.waitFor({state: 'visible'});
@@ -122,7 +122,7 @@ async function checkBadges(scope, label, {constrained = false, cards = false} = 
       await checkBadges(approvalTab, `${width}px approval`);
     }
     await checkBadges(approvalTab, 'approval constrained', {constrained: true});
-    await page.locator('#insights-back').click(); await ready(page);
+    await page.locator('.insights-view-controls button[aria-pressed="true"]').click(); await ready(page);
 
     await page.locator('#insights-create').click();
     const create = page.locator('#insight-create-drawer');

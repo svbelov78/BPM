@@ -59,6 +59,23 @@
     // content and business status, without inventing permission to approve.
     return {version:1,route:'none',authorRole:'',stage:'complete',stages:[],currentActor:null,opinions:{dueDate:'',expectedBanks:10,responses:[]},teamDecision:null};
   }
+  function getParticipants(row) {
+    const result = [{role:'Владелец процесса',name:row?.owner || 'Не назначен'},{role:'Автор',name:row?.author || 'Не указан'}];
+    const seen = new Set(), workflow = getWorkflow(row);
+    for (const stage of Array.isArray(workflow.stages) ? workflow.stages : []) {
+      for (const decision of Array.isArray(stage.decisions) ? stage.decisions : []) {
+        const name = typeof decision?.actorName === 'string' ? decision.actorName.trim() : '';
+        if (decision?.decision !== 'approve' || !name) continue;
+        const actorId = String(decision.actorId ?? '').trim();
+        const key = actorId ? `id:${actorId}` : `name:${name.toLocaleLowerCase('ru-RU').replace(/\s+/g,' ')}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const role = typeof decision.role === 'string' ? decision.role.trim() : '';
+        result.push({name,role:role ? `Согласующий · ${role}` : 'Согласующий'});
+      }
+    }
+    return result;
+  }
   function activeStage(workflow) {return (workflow.stages || []).find(stage => stage.id === workflow.stage && stage.status === 'current');}
   function resolveActor(workflow, actor) {return actor || workflow.currentActor;}
   function canApprove(row, actor) {
@@ -139,8 +156,14 @@
     if (!canDecideTeam(row,options.actor)) throw new Error('Решение команды по инсайту недоступно или уже принято');
     const workflow = getWorkflow(row), user = resolveActor(workflow,options.actor);
     workflow.teamDecision = {actorId:user.id,actorName:user.name,role:user.role,decision:options.decision,comment,date};
+    if (options.decision === 'accept' && typeof options.taskId === 'string' && options.taskId.trim()) workflow.teamDecision.taskId = options.taskId.trim();
     const status = options.decision === 'accept' ? 'В работе' : 'Отклонено';
-    return patchForDecision(row,workflow,status,user,options.decision,comment,date,`${options.decision === 'accept' ? 'Инсайт взят в работу' : 'Инсайт отклонён командой процесса'}: ${user.name}`);
+    const patch = patchForDecision(row,workflow,status,user,options.decision,comment,date,`${options.decision === 'accept' ? 'Инсайт взят в работу' : 'Инсайт отклонён командой процесса'}: ${user.name}`);
+    if (workflow.teamDecision.taskId) {
+      patch.detail.taskIds = [...new Set([...(row.detail?.taskIds || []),workflow.teamDecision.taskId])];
+      patch.detail.history[0].text += `. Создана задача: ${workflow.teamDecision.taskId}`;
+    }
+    return patch;
   }
   function saveOpinion(row, options = {}) {
     if (!canGiveOpinion(row,options.actor)) throw new Error('Подача или изменение мнения по инсайту недоступны');
@@ -148,9 +171,47 @@
     const comment = String(options.comment || '').trim();
     if (comment.length > 1000) throw new Error('Комментарий не должен превышать 1000 символов.');
     const workflow = getWorkflow(row), user = resolveActor(workflow,options.actor), date = decisionDate(options.now);
-    const effects = options.reproduction === 'Не воспроизводится' ? [] : (options.effects || []).map(effect => {
-      const own = {id:String(effect.id || ''),applicable:effect.applicable === true,current:'',target:'',unit:'',comment:String(effect.comment || '').trim()};
+    const source = row.detail?.effects || row.effects || [];
+    const authoredEffects = Array.isArray(source) ? source : [source];
+    let answers = [];
+    if (options.reproduction !== 'Не воспроизводится') {
+      const submitted = options.effects ?? [];
+      if (!Array.isArray(submitted)) throw new Error('Некорректный список оценок эффектов.');
+      const requiredAnswer = 'Оцените актуальность каждого эффекта: выберите «Да» или «Нет».';
+      const authoredIds = authoredEffects.map(effect => String(effect?.id ?? '').trim()), byId = new Map(), seen = new Set();
+      authoredIds.forEach((id,index) => {
+        if (!id) return;
+        if (byId.has(id)) throw new Error('Некорректный список эффектов инсайта. Обновите карточку.');
+        byId.set(id,index);
+      });
+      authoredIds.forEach((id,index) => {
+        if (!id && byId.has(`effect-${index}`)) throw new Error('Некорректный список эффектов инсайта. Обновите карточку.');
+      });
+      answers = Array.from(submitted,(effect,index) => {
+        if (!effect || typeof effect !== 'object' || Array.isArray(effect)) throw new Error(requiredAnswer);
+        const id = String(effect.id ?? '').trim();
+        // Legacy author effects without IDs are addressed by their original
+        // position (the detail view uses effect-N). Never let an arbitrary ID
+        // fall back to that position and impersonate an author's effect.
+        const legacyAtIndex = index < authoredEffects.length && !authoredIds[index];
+        const authoredIndex = legacyAtIndex && (!id || id === `effect-${index}`)
+          ? index : byId.has(id) ? byId.get(id) : -1;
+        if (authoredIndex === -1) throw new Error('Оценка относится к неизвестному эффекту инсайта.');
+        if (seen.has(authoredIndex)) throw new Error('Оценка одного эффекта передана несколько раз.');
+        seen.add(authoredIndex);
+        if (typeof effect.applicable !== 'boolean') throw new Error(requiredAnswer);
+        return {effect,id,authored:authoredEffects[authoredIndex]};
+      });
+      if (seen.size !== authoredEffects.length) throw new Error(requiredAnswer);
+    }
+    const effects = answers.map(({effect,id,authored}) => {
+      const own = {id,applicable:effect.applicable,comment:String(effect.comment || '').trim()};
       if (own.comment.length > 1000) throw new Error('Комментарий к эффекту не должен превышать 1000 символов.');
+      // Type comes from the author's effect, not the submitted response. A
+      // qualitative effect has only applicability and a comment, even if an
+      // older UI/snapshot still supplied numeric or periodicity fields.
+      if (String(authored?.type || '').trim() === 'Качественный') return own;
+      Object.assign(own,{current:'',target:'',unit:''});
       if (own.applicable) {
         own.current = String(effect.current ?? '').trim(); own.target = String(effect.target ?? '').trim(); own.unit = String(effect.unit || '').trim();
         for (const value of [own.current,own.target]) if (value && !Number.isFinite(Number(value.replace(',','.')))) throw new Error('Введите числовое значение.');
@@ -169,5 +230,5 @@
       history:[{date:displayDate(date),text:`${previous ? 'Мнение обновлено' : 'Мнение отправлено'}: ${user.bank}, ${user.name}`},...clone(row.detail?.history || [])]};
     return {status,needsApproval:false,needsOpinion:false,detail};
   }
-  window.BpmInsightWorkflow = Object.freeze({statuses,statusMetadata,canonicalize,getWorkflow,createWorkflow,initialize,canApprove,decide,canDecideTeam,decideTeam,isOpinionOpen,canGiveOpinion,canEditOpinion:canGiveOpinion,needsOpinion,saveOpinion,canEditAuthor,addDays,participants});
+  window.BpmInsightWorkflow = Object.freeze({statuses,statusMetadata,canonicalize,getWorkflow,getParticipants,createWorkflow,initialize,canApprove,decide,canDecideTeam,decideTeam,isOpinionOpen,canGiveOpinion,canEditOpinion:canGiveOpinion,needsOpinion,saveOpinion,canEditAuthor,addDays,participants});
 })();

@@ -37,6 +37,7 @@ function rendererContracts() {
     calls.push({row, snapshot: plain(row), table});
     return '<span class="fixture-efficiency"></span>';
   }}}};
+  vm.runInNewContext(fs.readFileSync(path.join(root, 'avatars.js'), 'utf8'), context, {filename: 'avatars.js'});
   vm.runInNewContext(source, context, {filename: 'structure-incoming.js'});
   const api = context.window.BPMStructureIncoming;
   assert.equal(typeof api?.render, 'function', 'Stateless renderer API is available without a DOM');
@@ -44,7 +45,9 @@ function rendererContracts() {
   const node = freeze({id: 'incoming-node', name: 'Входящие процессы', records});
   const before = JSON.stringify(node);
   let html = api.render(node);
-  assert.equal((html.match(/<span class="avatar" aria-hidden="true"><\/span>/g) || []).length, records.length, 'Each incoming process keeps a decorative blank avatar');
+  assert.equal((html.match(/<span class="avatar" aria-hidden="true"><span\b/g) || []).length, records.length, 'Each incoming process has one shared decorative portrait inside its unchanged avatar wrapper');
+  const samePersonPortrait = context.window.BpmAvatars.portrait(records[0].owner);
+  assert.equal(html.split(samePersonPortrait).length - 1, records.length, 'The same owner consistently receives the same portrait across incoming rows');
   assert.doesNotMatch(html, /assets\/person\.svg/, 'Incoming processes do not render a person glyph');
   assert.deepEqual(ids(html), records.map(row => row.id), 'Default render retains all rows; paging belongs to its caller');
   assert.equal(calls.length, records.length, 'Every row uses the shared efficiency renderer');
@@ -71,6 +74,16 @@ function rendererContracts() {
   const sparse = freeze({id: 'sparse', entity: 'processes', title: 'Без дополнительных данных', efficiency: null});
   html = api.render({id: 'sparse-node', records: [sparse]});
   assert.deepEqual(ids(html), ['sparse']);
+  const sparseName = context.window.BpmAvatars.displayName('', `${sparse.id}:owner`);
+  assert.match(sparseName, /^[А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+$/, 'Missing owner receives a complete Russian demo name');
+  assert.ok(html.includes(`<span class="structure-incoming-owner-name">${sparseName}</span>`), 'Registry label uses the stable display-only owner name');
+  assert.ok(html.includes(context.window.BpmAvatars.portrait(sparseName)), 'Owner label and portrait represent the same generated person');
+  for (const missingOwner of ['', '---', 'Не указан', 'Не назначен']) {
+    const record = freeze({...sparse, owner:missingOwner}), snapshot = JSON.stringify(record);
+    const missingHtml = api.render({id:'missing-owner-node', records:[record]});
+    assert.ok(missingHtml.includes(`<span class="structure-incoming-owner-name">${sparseName}</span>`), 'Missing-owner aliases consistently use the record-based demo identity');
+    assert.equal(JSON.stringify(record), snapshot, 'Display-only owner replacement does not assign an owner in source data');
+  }
   assert.doesNotMatch(html.slice(html.indexOf('<tbody>')), /\bundefined\b|\bNaN\b|Владелец процесса|Типовой/, 'Missing metadata does not become invented values');
   assert.doesNotMatch(html, /structure-incoming-relationship/, 'A missing participation role does not become a made-up tag');
   assert.match(html, /data-table-entity="processes"/, 'The default related entity remains processes');
@@ -103,7 +116,7 @@ function rendererContracts() {
   const pathNode = freeze({id: 'related-paths', name: 'Процесс с названием', recordEntity: 'paths', records: pathRows});
   const pathBefore = JSON.stringify(pathNode);
   html = api.render(pathNode, {pagination, isFavorite: row => row.id === pathRows[0].id});
-  assert.equal((html.match(/<span class="avatar" aria-hidden="true"><\/span>/g) || []).length, pathRows.length, 'Each related client path also keeps a decorative blank avatar');
+  assert.equal((html.match(/<span class="avatar" aria-hidden="true"><span\b/g) || []).length, pathRows.length, 'Each related client path also uses a shared decorative portrait');
   assert.doesNotMatch(html, /assets\/person\.svg/, 'Related client paths do not render a person glyph');
   assert.deepEqual(ids(html), pathRows.map(row => row.id), 'Reverse relationships retain the caller-provided KP records and order');
   assert.match(html, /data-table-entity="paths"/);
@@ -133,11 +146,11 @@ function rendererContracts() {
   report('DOM-free reciprocal renderer, both entity identities/labels, explicit participation roles, immutable records, >50 rows, caller sort/page/order/duplicates, pagination and missing/escaped data');
 }
 
-const cssFiles = ['styles.css', 'efficiency-palette.css', 'card-visuals.css', 'structure.css', 'structure-incoming.css'];
+const cssFiles = ['styles.css', 'efficiency-palette.css', 'card-visuals.css', 'structure.css', 'structure-incoming.css', 'avatars.css'];
 const harness = `<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 ${cssFiles.map(file => `<link rel="stylesheet" href="/${file}">`).join('\n')}
 <style>body{margin:0}#incoming-test-host{width:1551px;max-width:100%;margin:0}#incoming-test-heading{display:block}#incoming-test-panel{min-width:0}#incoming-test-shell{min-width:0;width:100%}#incoming-test-shell>tbody>tr>td{padding:0;height:auto;border:0}</style>
-<script src="/card-visuals.js" defer></script><script src="/structure-incoming.js" defer></script>
+<script src="/avatars.js" defer></script><script src="/card-visuals.js" defer></script><script src="/structure-incoming.js" defer></script>
 </head><body><section id="incoming-test-host"><button type="button" id="incoming-test-heading" data-expand="incoming-test" aria-expanded="true" aria-controls="incoming-test-panel">Входящие процессы</button><table id="incoming-test-shell" class="structure-table"><tbody><tr><td><div id="incoming-test-panel"></div></td></tr></tbody></table></section></body></html>`;
 
 async function serve() {
@@ -190,18 +203,20 @@ async function semanticsAndGeometry(page) {
       padding: [style.paddingTop, style.paddingRight, style.paddingBottom, style.paddingLeft], background: style.backgroundColor,
       rows: [...element.tBodies[0].rows].map(row => {
         const title = row.querySelector('[data-structure-detail]'), titleStyle = getComputedStyle(title);
-        const efficiency = row.querySelector('.bpm-efficiency-glyph'), glyph = efficiency.getBoundingClientRect();
+        const efficiency = row.querySelector('.efficiency-glyph'), glyph = efficiency.getBoundingClientRect();
         const metadata = row.querySelector('.structure-incoming-meta').getBoundingClientRect();
         const process = row.querySelector('.structure-incoming-process'), processStyle = getComputedStyle(process);
         const ownerName = getComputedStyle(row.querySelector('.structure-incoming-owner-name'));
         const ownerRole = getComputedStyle(row.querySelector('.structure-incoming-owner-role'));
         const avatarElement = row.querySelector('.structure-incoming-owner .avatar'), avatar = avatarElement.getBoundingClientRect();
+        const portrait = avatarElement.firstElementChild, portraitBox = portrait.getBoundingClientRect();
         const efficiencyStyle = getComputedStyle(row.querySelector('.structure-incoming-efficiency > .efficiency'));
         return {id: row.dataset.structureRecord, entity: row.dataset.recordEntity, height: row.getBoundingClientRect().height,
           columns: [...row.cells].map(cell => cell.getBoundingClientRect().width),
           title: {size: titleStyle.fontSize, line: titleStyle.lineHeight, weight: titleStyle.fontWeight, tracking: titleStyle.letterSpacing},
           metadata: {height: metadata.height, gap: processStyle.rowGap},
           owner: {nameSize: ownerName.fontSize, nameLine: ownerName.lineHeight, nameWeight: ownerName.fontWeight, nameTracking: ownerName.letterSpacing, roleSize: ownerRole.fontSize, roleLine: ownerRole.lineHeight, avatarWidth: avatar.width, avatarHeight: avatar.height, avatarChildren: avatarElement.childElementCount, avatarHidden: avatarElement.getAttribute('aria-hidden')},
+          portrait: {tag:portrait.tagName, hidden:portrait.getAttribute('aria-hidden'), background:getComputedStyle(portrait).backgroundImage, width:portraitBox.width, height:portraitBox.height},
           efficiency: {background: efficiencyStyle.backgroundColor, radius: efficiencyStyle.borderRadius, leftPadding: getComputedStyle(row.querySelector('.structure-incoming-efficiency')).paddingLeft},
           glyph: {width: glyph.width, height: glyph.height},
           buttons: [...row.querySelectorAll('[data-structure-detail],[data-structure-copy]')].map(button => ({tag: button.tagName, type: button.getAttribute('type')}))};
@@ -220,7 +235,9 @@ async function semanticsAndGeometry(page) {
     [651, 684, 184].forEach((width, column) => near(row.columns[column], width, `Row ${index + 1} column ${column + 1}`));
     assert.deepEqual(row.title, {size: '17px', line: '24px', weight: '590', tracking: '-0.51px'});
     assert.deepEqual(row.metadata, {height: 24, gap: '4px'}, 'Metadata and title use the Figma rhythm');
-    assert.deepEqual(row.owner, {nameSize: '13px', nameLine: '18px', nameWeight: '400', nameTracking: '-0.039px', roleSize: '13px', roleLine: '18px', avatarWidth: 32, avatarHeight: 32, avatarChildren: 0, avatarHidden: 'true'});
+    assert.deepEqual(row.owner, {nameSize: '13px', nameLine: '18px', nameWeight: '400', nameTracking: '-0.039px', roleSize: '13px', roleLine: '18px', avatarWidth: 32, avatarHeight: 32, avatarChildren: 1, avatarHidden: 'true'});
+    assert.equal(row.portrait.tag, 'SPAN'); assert.equal(row.portrait.hidden, 'true'); assert.notEqual(row.portrait.background, 'none');
+    near(row.portrait.width,32,'Portrait fills the unchanged avatar width'); near(row.portrait.height,32,'Portrait fills the unchanged avatar height');
     assert.deepEqual(row.efficiency, {background: 'rgba(0, 0, 0, 0)', radius: '0px', leftPadding: '40px'}, 'Card efficiency has no pill background or rounding and matches the Figma inset');
     near(row.glyph.width, 24, 'Card efficiency glyph width'); near(row.glyph.height, 24, 'Card efficiency glyph height');
     row.buttons.forEach(button => assert.deepEqual(button, {tag: 'BUTTON', type: 'button'}, 'Actions retain native keyboard activation without form submission'));
@@ -234,14 +251,17 @@ async function reciprocalOwnerAppearance(page) {
     const appearance = await page.locator('.structure-incoming-owner').evaluate(owner => {
       const name = owner.querySelector('.structure-incoming-owner-name'), style = getComputedStyle(name);
       const avatar = owner.querySelector('.avatar'), circle = avatar.getBoundingClientRect(), text = name.getBoundingClientRect();
+      const portrait = avatar.firstElementChild, photo = portrait.getBoundingClientRect();
       return {font: [style.fontSize, style.lineHeight, style.fontWeight, style.letterSpacing], width: circle.width, height: circle.height,
-        blank: avatar.childNodes.length === 0, hidden: avatar.getAttribute('aria-hidden'), circleCenter: circle.y + circle.height / 2, textCenter: text.y + text.height / 2};
+        children: avatar.childElementCount, hidden: avatar.getAttribute('aria-hidden'), portraitTag:portrait.tagName, portraitHidden:portrait.getAttribute('aria-hidden'), background:getComputedStyle(portrait).backgroundImage, portraitWidth:photo.width, portraitHeight:photo.height, circleCenter: circle.y + circle.height / 2, textCenter: text.y + text.height / 2};
     });
     assert.deepEqual(appearance.font, ['13px', '18px', '400', '-0.039px'], `${entity}: Additional/R owner typography matches the rest of the structure`);
-    assert.deepEqual([appearance.width, appearance.height, appearance.blank, appearance.hidden], [32, 32, true, 'true'], `${entity}: retain the blank 32px decorative circle`);
+    assert.deepEqual([appearance.width, appearance.height, appearance.children, appearance.hidden], [32, 32, 1, 'true'], `${entity}: retain the 32px decorative avatar wrapper with one portrait`);
+    assert.deepEqual([appearance.portraitTag,appearance.portraitHidden],['SPAN','true']); assert.notEqual(appearance.background,'none');
+    near(appearance.portraitWidth,32,`${entity}: portrait width`); near(appearance.portraitHeight,32,`${entity}: portrait height`);
     near(appearance.circleCenter, appearance.textCenter, `${entity}: one-line owner remains centered on the circle`);
   }
-  report('Both related directions use Additional/R 13/18, blank 32px circles and centered one-line owner names');
+  report('Both related directions use Additional/R 13/18, shared decorative portraits in unchanged 32px circles and centered one-line owner names');
 }
 
 async function delegatedActions(page) {
@@ -293,7 +313,11 @@ async function pagingAndEdgeCases(page) {
   await render(page, [sparse]);
   const text = await page.locator('.structure-incoming-table tbody').innerText();
   assert.doesNotMatch(text, /undefined|null|NaN|Владелец процесса|Типовой/);
-  assert.equal(await page.locator('.structure-incoming .efficiency').getAttribute('aria-label'), 'Эффективность не оценивалась');
+  const sparseOwner = await page.locator('.structure-incoming-owner-name').textContent();
+  const expectedSparseOwner = await page.evaluate(id => window.BpmAvatars.displayName('',`${id}:owner`), sparse.id);
+  assert.equal(sparseOwner,expectedSparseOwner,'Missing owner displays the same stable demo name as other registry views');
+  assert.match(sparseOwner,/^[А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+$/);
+  assert.equal(await page.locator('.structure-incoming .efficiency').getAttribute('aria-label'), 'Эффективность не посчитана');
   await render(page, []);
   assert.equal(await page.locator('.structure-incoming [data-structure-record]').count(), 0);
   report('Parent-sorted page slices, repeated IDs, pagination passthrough, escaped fields and empty/unrated metadata');

@@ -5,6 +5,9 @@
 .special-task-flow h3,.stf-heading{margin:0;font-size:17px;line-height:24px;font-weight:590;letter-spacing:-.051px;overflow-wrap:anywhere}
 .special-task-flow .tf-sheet-heading>h2{font-size:26px;line-height:31px;font-weight:700;letter-spacing:-.078px}
 .stf-help{margin:0;color:var(--secondary);font-size:13px;line-height:18px;white-space:pre-wrap}
+.stf-create-copy{margin:0;color:var(--secondary);font-size:17px;line-height:24px;overflow-wrap:anywhere}
+.special-task-flow[data-type="insight-work"][data-mode="create"] .tf-textarea{height:128px;min-height:128px}
+.special-task-flow[data-type="insight-work"] #stf-assignees-input::placeholder{color:var(--placeholder);opacity:1}
 .stf-date-field{display:flex;align-items:center;gap:8px;height:50px;padding:6px 12px}
 .stf-date-field .tf-field-content{display:flex;flex-direction:column;flex:1;min-width:0}
 .stf-date-field input{width:100%;min-width:0;height:24px;border:0;background:transparent;outline:none;font:inherit;font-size:17px;line-height:24px;color:var(--text)}

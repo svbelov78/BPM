@@ -112,7 +112,7 @@ async function main() {
       assert.equal(await page.locator('#insights-tabs [data-insight-tab]').count(),normalTabCount);
       assert.equal(await page.locator('dialog[open]').count(),0,'Viewing an insight uses internal tabs, not dialogs');
       await noHover(page);
-      if (index < original.length - 1) {await page.locator('#insights-back').click(); await ready(page);}
+      if (index < original.length - 1) {await page.locator('.insights-view-controls button[aria-pressed="true"]').click(); await ready(page);}
     }
     assert.equal(normalTabCount,16,'All sixteen detail and approval examples open in internal tabs');
     const initialTabs = await dimensions(page), originalActive = original.at(-1);

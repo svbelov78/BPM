@@ -257,6 +257,21 @@
     commit(rows.map((item,i) => i === index ? checked : item),'update',id);
     return clone(checked);
   }
+  function resetDemo() {
+    const examples = new Map(seed.map(row => [row.id,row]));
+    const restored = [];
+    // Explicit prototype replay, not a filter reset. Restore the complete
+    // scenario so statuses, decisions, bank responses and counters agree.
+    // Locally created records (including legacy ID collisions) are untouched.
+    const next = rows.map(row => {
+      const example = examples.get(row.id);
+      if (!example || row.local === true) return row;
+      restored.push(row.id);
+      return clone(example);
+    });
+    if (restored.length) commit(next,'reset-demo',null);
+    return restored;
+  }
   function subscribe(listener) {
     if (typeof listener !== 'function') fail('Ожидался обработчик изменений инсайтов.');
     listeners.add(listener);
@@ -268,5 +283,5 @@
     try {rows = event.newValue === null ? clone(seed) : readSaved(event.newValue);} catch (_) {return;}
     notify('sync',null);
   });
-  window.BpmInsightStore = Object.freeze({list,get,create,update,subscribe,currentUser,persistenceAvailable:() => persistent,isPersistent:() => persistent});
+  window.BpmInsightStore = Object.freeze({list,get,create,update,resetDemo,subscribe,currentUser,persistenceAvailable:() => persistent,isPersistent:() => persistent});
 })();

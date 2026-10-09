@@ -141,7 +141,8 @@
       if (e.key === 'Enter') {e.preventDefault();if (!this.popup) this.open();else if (this.visible.length) this.choose(this.visible[Math.max(0,this.active)].value);}
     }
   }
-  function optionsFor(key) { return [...new Set(data.filter(row=>row.entity===state.entity).map(row=>row[key]))].sort((a,b)=>a.localeCompare(b,'ru')).map(value=>({value,label:value})); }
+  function ownerName(row) { return window.BpmAvatars.displayName(row.owner,`${row.id}:owner`); }
+  function optionsFor(key) { return [...new Set(data.filter(row=>row.entity===state.entity).map(row=>key==='owner'?ownerName(row):row[key]))].sort((a,b)=>a.localeCompare(b,'ru')).map(value=>({value,label:value})); }
   const sortCollator = new Intl.Collator('ru',{numeric:true,sensitivity:'base'});
   function setSort(sort) {
     state.sort=sort;state.sorts[state.view]=sort;
@@ -157,17 +158,18 @@
       comparison=a.efficiency-b.efficiency;
     }
     else if(key==='tags')comparison=sortCollator.compare(a.tags.join(', '),b.tags.join(', '));
+    else if(key==='owner')comparison=sortCollator.compare(ownerName(a),ownerName(b));
     else comparison=sortCollator.compare(a[key]||'',b[key]||'');
     return (direction==='desc'?-comparison:comparison)||a.number-b.number;
   }
   function filteredRows() {
     const query=normalize(state.query.trim()).replace(/^(?:кп|п)\s*(?=\d)/,'');
-    return data.filter(row=>row.entity===state.entity && (!query || normalize(`${row.number} ${row.title} ${row.owner} ${row.block} ${row.division}`).includes(query)) && Object.entries(state.filters).every(([key,values])=>!values.length || values.includes(row[key])) && (!state.from || row.date>=state.from) && (!state.to || row.date<=state.to) && (!state.favoritesOnly || state.favorites.has(row.id)) && (!state.top || row.efficiency>=85)).sort((a,b)=>{
+    return data.filter(row=>row.entity===state.entity && (!query || normalize(`${row.number} ${row.title} ${row.owner} ${ownerName(row)} ${row.block} ${row.division}`).includes(query)) && Object.entries(state.filters).every(([key,values])=>!values.length || values.includes(key==='owner'?ownerName(row):row[key])) && (!state.from || row.date>=state.from) && (!state.to || row.date<=state.to) && (!state.favoritesOnly || state.favorites.has(row.id)) && (!state.top || row.efficiency>=85)).sort((a,b)=>{
       return compareRows(a,b);
     });
   }
   function selectedPage(rows = filteredRows()) {return rows.slice((state.page-1)*state.size,state.page*state.size);}
-  function owner(row) { return `<div class="owner"><span class="avatar">${image('person')}</span><span class="owner-name" title="${esc(row.owner)}">${esc(row.owner)}</span></div>`; }
+  function owner(row) { const name=ownerName(row);return `<div class="owner"><span class="avatar">${window.BpmAvatars.portrait(name)}</span><span class="owner-name" title="${esc(name)}">${esc(name)}</span></div>`; }
   function efficiency(row, table = false) {
     return window.BpmCardVisuals.efficiency(row,table);
   }
@@ -422,6 +424,7 @@
   document.querySelectorAll('.nav-item').forEach(button=>button.setAttribute('aria-label',button.dataset.tooltip || button.textContent.trim()));
   document.querySelectorAll('[data-service]').forEach(button=>button.addEventListener('click',()=>toast(`«${button.dataset.service}» — раздел вне демонстрационного реестра.`)));
   $('notifications').addEventListener('click',()=>toast('Счётчик взят из макета. Сервис уведомлений не подключён.'));
+  $('profile').innerHTML=window.BpmAvatars.portrait(window.BpmTaskStore.currentUser,'profile');
   $('profile').addEventListener('click',()=>toast('Демонстрационный профиль. Авторизация не подключена.'));
   document.addEventListener('pointerdown',e=>{keyboardMode=false;if(!$('sidebar').contains(e.target))setMenuPeek(false);if(activeSelect&&!activeSelect.host.contains(e.target)&&!activeSelect.popup?.contains(e.target))activeSelect.close();if(actionMenu&&!actionMenu.contains(e.target)&&!e.target.closest('[data-menu]'))closeAction();});
   document.addEventListener('focusin',e=>{if(activeSelect&&!activeSelect.host.contains(e.target)&&!activeSelect.popup?.contains(e.target))activeSelect.close();});
@@ -524,7 +527,37 @@
   topKp=window.BpmTopKp.create({openDetail,copyText,toast,closePopups,hideTooltip,createSelect:(id,config)=>new BpmSelect(id,config)});
   insights=window.BpmInsights.create({createSelect:(id,config)=>new BpmSelect(id,config),toast,copyText,closePopups,openProcess:openTaskProcess,
     openSection:()=>navigateService('insights'),
-    createTask:({insightId,processId,trigger}) => {closePopups();window.BpmSpecialTaskFlow.open({typeId:'insight',mode:'create',insightId,processId,trigger});},
+    createTask:({insightId,processId,trigger,takeInWork=false}) => {
+      const insight=window.BpmInsightStore.get(insightId);
+      const available=record=>record && (takeInWork ? window.BpmInsightWorkflow.canDecideTeam(record) : window.BpmInsightWorkflow.canonicalize(record.status)==='В работе');
+      if(!available(insight)){toast(takeInWork?'Взятие инсайта в работу недоступно или решение уже принято.':'Создание задачи доступно только для инсайта в статусе «В работе».');return;}
+      closePopups();window.BpmSpecialTaskFlow.open({typeId:'insight-work',mode:'create',insightId,processId,trigger,
+        // Opening a form is not a decision. Check the latest record again before
+        // creating a task, including changes arriving from another browser tab.
+        beforeCreate:payload=>{
+          if(payload.insightId!==insightId||!available(window.BpmInsightStore.get(insightId)))throw new Error('Состояние инсайта изменилось. Закройте форму и проверьте его состояние.');
+        },
+        onCreated:task=>{
+          const latest=window.BpmInsightStore.get(insightId);
+          if(!latest){toast('Задача создана, но связанный инсайт больше недоступен.');return;}
+          try{
+            const accepted=takeInWork && window.BpmInsightWorkflow.canDecideTeam(latest);
+            if(!accepted && window.BpmInsightWorkflow.canonicalize(latest.status)!=='В работе'){
+              // A late external decision must not be overwritten by the form.
+              toast('Задача создана. Решение по инсайту изменилось в другой вкладке.');return;
+            }
+            const patch=accepted?window.BpmInsightWorkflow.decideTeam(latest,{decision:'accept',taskId:task.id}):{};
+            const detail={...(patch.detail||latest.detail||{})};
+            const linked=window.BpmTaskStore.list().filter(record=>record.insightId===insightId).map(record=>record.id);
+            detail.taskIds=[...new Set([...(detail.taskIds||[]),...linked,task.id])];
+            if(!accepted)detail.history=[{date:new Date().toLocaleDateString('ru-RU'),text:`Создана задача по инсайту: ${task.id}`},...(detail.history||[])];
+            window.BpmInsightStore.update(insightId,{...patch,detail});
+            insights.taskCreated(insightId,task.id);
+            toast(accepted?'Задача создана. Инсайт взят в работу.':'Задача создана',{success:true});
+          }catch(error){toast(error.message||'Не удалось связать созданную задачу с инсайтом.');}
+        }
+      });
+    },
     openTask:(id,trigger) => {
       const task=window.BpmTaskStore.get(id);
       if(!task){toast('Задача не найдена в прототипе.');return;}

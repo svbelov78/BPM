@@ -135,11 +135,11 @@ async function geometry(page, width, entry) {
   const metrics = await popup(page).evaluate(popup => {
     const r = popup.getBoundingClientRect();
     return {x: r.x, right: r.right, width: innerWidth, scroll: document.documentElement.scrollWidth,
-      avatars: [...popup.querySelectorAll('.structure-search-person-avatar')].map(avatar => {const a = avatar.getBoundingClientRect(); return {w: a.width, h: a.height, content: avatar.textContent, children: avatar.childElementCount};}),
+      avatars: [...popup.querySelectorAll('.structure-search-person-avatar')].map(avatar => {const a = avatar.getBoundingClientRect(), portrait=avatar.firstElementChild, photo=portrait.getBoundingClientRect(); return {w: a.width, h: a.height, content: avatar.textContent, children: avatar.childElementCount, hidden:avatar.getAttribute('aria-hidden'), portraitTag:portrait.tagName, portraitHidden:portrait.getAttribute('aria-hidden'), background:getComputedStyle(portrait).backgroundImage, portraitWidth:photo.width, portraitHeight:photo.height};}),
       broken: [...document.images].filter(image => !image.complete || !image.naturalWidth).map(image => image.src)};
   });
   assert.ok(metrics.avatars.length, `${width}: person has an avatar`);
-  metrics.avatars.forEach(avatar => {near(avatar.w, 32, 'Avatar width'); near(avatar.h, 32, 'Avatar height'); assert.equal(avatar.content.trim(), ''); assert.equal(avatar.children, 0, 'Blank avatar has no person icon, photo or initials');});
+  metrics.avatars.forEach(avatar => {near(avatar.w, 32, 'Avatar width'); near(avatar.h, 32, 'Avatar height'); assert.equal(avatar.content.trim(), ''); assert.equal(avatar.children, 1, 'Avatar has one shared portrait instead of a person icon or initials'); assert.deepEqual([avatar.hidden,avatar.portraitTag,avatar.portraitHidden],['true','SPAN','true']); assert.notEqual(avatar.background,'none'); near(avatar.portraitWidth,32,'Portrait fills avatar width'); near(avatar.portraitHeight,32,'Portrait fills avatar height');});
   assert.ok(metrics.x >= -1 && metrics.right <= width + 1, `${width}: suggestions fit viewport`);
   assert.ok(metrics.scroll <= width + 1, `${width}: no horizontal page overflow`);
   assert.deepEqual(metrics.broken, [], `${width}: assets loaded`);
@@ -226,7 +226,7 @@ async function geometry(page, width, entry) {
     for (const width of [1920, 390, 320]) await geometry(page, width, examples.processOwner);
     assert.equal(await page.evaluate(() => JSON.stringify([window.BPM_STRUCTURE, window.BPM_STRUCTURE_PATHS])), baseline, 'Source records and graph values unchanged');
     assert.deepEqual(errors, [], 'No runtime errors'); assert.deepEqual(failed, [], 'No failed assets'); assert.deepEqual(external, [], 'No external requests');
-    report(`1920/390/320px names and blank 32px avatars fit; source immutable and no network/runtime failures; ${standalone ? 'relocated standalone' : 'source'}; screenshots: ${output}`);
+    report(`1920/390/320px names and shared portraits in unchanged 32px avatars fit; source immutable and no network/runtime failures; ${standalone ? 'relocated standalone' : 'source'}; screenshots: ${output}`);
     await context.close();
   } finally {await browser.close();}
 })().catch(error => {console.error(error); process.exitCode = 1;});

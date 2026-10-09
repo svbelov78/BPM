@@ -25,6 +25,7 @@
   const date = value => day(value) ? day(value).split('-').reverse().join('.') : String(value || '—');
   const initials = name => String(name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toLocaleUpperCase('ru');
   const nameOf = person => typeof person === 'object' && person !== null ? person.name || person.label || '' : String(person || '');
+  const displayName = (person,key) => window.BpmAvatars.displayName(nameOf(person),key);
   function typeTag(type = 'Тип задачи') {
     const label = String(type || 'Тип задачи');
     // Registry records carry the full type name; drawers use its short tag.
@@ -62,18 +63,18 @@
     const late = Boolean(task.overdue);
     return `<span class="task-deadline${late ? ' is-overdue' : ''}"${late ? ' title="Срок задачи истёк"' : ''}>${icon(late ? 'deadline-overdue' : 'deadline-ontime')}<span>${task.deadline ? `${late || !withPrefix ? '' : '<span class="task-deadline-prefix">до </span>'}${escape(date(task.deadline))}` : 'Без срока'}</span></span>`;
   }
-  function avatar(person, {personIcon = false} = {}) {
-    const name = nameOf(person);
-    return `<span class="task-avatar" title="${escape(name)}" aria-label="${escape(name)}">${personIcon || !name ? icon('person') : escape(initials(name))}</span>`;
+  function avatar(person, {fallbackKey = 'task-person'} = {}) {
+    const name = displayName(person,fallbackKey);
+    return `<span class="task-avatar" title="${escape(name)}" aria-label="${escape(name)}">${name === 'Система' || name === 'SYS' ? 'SYS' : window.BpmAvatars.portrait(name,fallbackKey)}</span>`;
   }
-  function assignees(people = [], compact = false) {
-    const names = people.map(nameOf).filter(Boolean);
-    if (!names.length) return '<span class="task-unassigned">Не назначены</span>';
+  function assignees(people = [], compact = false, fallbackKey = 'task-assignees') {
+    const names = people.map(nameOf).filter(Boolean).map((name,index)=>displayName(name,`${fallbackKey}:${index}`));
+    if (!names.length) return `<span class="task-unassigned">${escape(displayName('',`${fallbackKey}:0`))}</span>`;
     if (compact) return `<span class="task-avatar task-avatar-overflow" title="${escape(names.join(', '))}" aria-label="Исполнители: ${escape(names.join(', '))}">+${names.length}</span>`;
-    return `<span class="task-avatar-group" aria-label="Исполнители: ${escape(names.join(', '))}">${names.slice(0, 3).map(person => avatar(person, {personIcon:true})).join('')}${names.length > 3 ? `<span class="task-avatar task-avatar-overflow" title="${escape(names.slice(3).join(', '))}">+${names.length - 3}</span>` : ''}</span>`;
+    return `<span class="task-avatar-group" aria-label="Исполнители: ${escape(names.join(', '))}">${names.slice(0, 3).map((person,index) => avatar(person,{fallbackKey:`${fallbackKey}:${index}`})).join('')}${names.length > 3 ? `<span class="task-avatar task-avatar-overflow" title="${escape(names.slice(3).join(', '))}">+${names.length - 3}</span>` : ''}</span>`;
   }
-  function tableAssignees(people = []) {
-    return `<span class="task-assignees-wide">${assignees(people)}</span>`;
+  function tableAssignees(people = [], fallbackKey = 'task-assignees') {
+    return `<span class="task-assignees-wide">${assignees(people,false,fallbackKey)}</span>`;
   }
   function card(task) {
     const processCode = task.processCode || task.processId;
@@ -81,7 +82,7 @@
     return `<article class="task-card${task.highlight ? ' task-highlight' : ''}" data-task-id="${escape(task.id)}" aria-label="${escape(task.title)}">
       <div class="task-card-header">${status(task, true)}<div class="task-card-tags">${typeTag(task.type)}${idBadge(task.id)}${process}</div></div>
       <div class="task-card-body"><button type="button" class="task-card-title" data-task-id="${escape(task.id)}" title="${escape(task.title)}">${escape(task.title)}</button><p class="task-card-description">${escape(task.description)}</p></div>
-      <div class="task-card-footer"><span class="task-participant-route">${avatar(task.initiator)}${icon('direction-flow', 'task-direction')}${assignees(task.assignees, true)}</span>${deadline(task)}</div>
+      <div class="task-card-footer"><span class="task-participant-route">${avatar(task.initiator,{fallbackKey:`${task.id}:initiator`})}${icon('direction-flow', 'task-direction')}${assignees(task.assignees,true,`${task.id}:assignee`)}</span>${deadline(task)}</div>
     </article>`;
   }
   const shape = (className = '', style = '') => `<span class="skeleton-shape ${className}"${style ? ` style="${style}"` : ''}></span>`;
@@ -106,8 +107,8 @@
     return `<tr class="task-table-row${task.highlight ? ' task-highlight' : ''}" data-task-id="${escape(task.id)}">
       <td class="task-table-task"><div class="task-table-tags">${typeTag(task.type)}${idBadge(task.id)}</div><button type="button" class="task-table-title" data-task-id="${escape(task.id)}" title="${escape(task.title)}">${escape(task.title)}</button><p class="task-table-description">${escape(task.description)}</p></td>
       <td class="task-table-process">${task.processId ? idBadge(task.processCode || task.processId) : ''}${processLink}</td>
-      <td class="task-table-initiator"><span class="task-owner">${avatar(task.initiator, {personIcon:true})}<span class="task-owner-name">${escape(nameOf(task.initiator))}</span></span></td>
-      <td class="task-table-assignees">${tableAssignees(task.assignees)}</td>
+      <td class="task-table-initiator"><span class="task-owner">${avatar(task.initiator,{fallbackKey:`${task.id}:initiator`})}<span class="task-owner-name">${escape(displayName(task.initiator,`${task.id}:initiator`))}</span></span></td>
+      <td class="task-table-assignees">${tableAssignees(task.assignees,`${task.id}:assignee`)}</td>
       <td class="task-table-created"><time datetime="${escape(task.created)}">${escape(date(task.created))}${createdTime ? `<br>${escape(createdTime)}` : ''}</time></td>
       <td class="task-table-deadline">${deadline(task, {withPrefix:false})}</td>
       <td class="task-table-status">${status(task)}</td>

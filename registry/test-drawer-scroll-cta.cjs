@@ -32,6 +32,14 @@ async function setScroll(page, selector, fraction) {
   }, fraction);
   await paint(page);
 }
+async function viewedProgress(page, selector) {
+  return page.locator(selector).evaluate(node => Math.min(1,(node.scrollTop + node.clientHeight) / node.scrollHeight));
+}
+async function followsViewedExtent(page, button, scroll, label) {
+  const value=await state(page,button),expected=await viewedProgress(page,scroll);
+  assert.ok(Math.abs(value.progress-expected)<=.0001,`${label}: progress reflects the viewed portion of the entire form (${value.progress} / ${expected})`);
+  return value;
+}
 async function state(page, button) {
   return page.locator(button).evaluate(node => ({
     disabled: node.disabled,
@@ -77,7 +85,7 @@ async function loaderGeometry(page, button, label) {
   const stop=geometry.mask.match(/rgba?\([^)]*\)\s+([\d.e+-]+)deg/);
   assert.ok(stop,`${label}: conic fill exposes an explicit angle: ${geometry.mask}`);
   const angle=Number(stop[1]),minimum=2/10*180/Math.PI;
-  assert.ok(Math.abs(angle-(minimum+geometry.progress*(360-minimum)))<.025,`${label}: visual progress starts with 2px along the radius-10 centerline ${JSON.stringify(geometry)}`);
+  assert.ok(Math.abs(angle-Math.max(minimum,geometry.progress*360))<.025,`${label}: fill equals the viewed percentage, with a minimum 2px seed ${JSON.stringify(geometry)}`);
   assert.ok(Math.abs(geometry.aria-geometry.progress*100)<=1,`${label}: initial visual segment does not falsify accessible scroll progress`);
   const raster=PNG.sync.read(await meter.screenshot({path:path.join(output,`loader-${label}.png`)}));
   const {width,height,data}=raster,cx=width/2,cy=height/2,scale=Math.min(width,height)/24;
@@ -94,8 +102,7 @@ async function loaderGeometry(page, button, label) {
   const blue=[];
   for(let y=0;y<height;y++)for(let x=0;x<width;x++){const color=pixel(x,y);if(color[0]<90&&color[1]<185&&color[2]>230)blue.push({x:x+.5,y:y+.5});}
   assert.ok(blue.length>=2,`${label}: real opaque blue segment is visible`);
-  if(geometry.progress===0){
-    assert.equal(geometry.aria,0,'Zero scroll still announces zero percent');
+  if(geometry.progress*360<=minimum){
     assert.ok(Math.abs(angle/180*Math.PI*10-2)<.005,'Initial segment is 2px along the circle centerline');
     assert.ok(blue.every(point=>point.y<height*.25&&point.x>=cx-1.5&&point.x<=cx+4*scale),`${label}: the initial segment is at twelve o'clock, not on another side: ${JSON.stringify(blue)}`);
     assert.ok(blue.length<18*scale*scale,`${label}: initial segment is small, not a prefilled quadrant`);
@@ -120,7 +127,8 @@ async function checkForm(page, config, label, {validation = true} = {}) {
   if (overflow) {
     let emptyLoader;
     locked(await state(page, config.button), label);
-    assert.equal((await state(page, config.button)).progress, 0, `${label}: starts at zero`);
+    const initial=await followsViewedExtent(page,config.button,config.scroll,`${label}: initially visible content`);
+    assert.ok(initial.progress>0,`${label}: visible content contributes to initial progress`);
     if(label==='Insight create'){await page.screenshot({path:path.join(output,'insight-cta-empty.png')});emptyLoader=await loaderGeometry(page,config.button,'empty');}
     await page.locator(config.form).evaluate(form => {
       form.dispatchEvent(new SubmitEvent('submit', {bubbles: true, cancelable: true}));
@@ -134,16 +142,17 @@ async function checkForm(page, config, label, {validation = true} = {}) {
     assert.equal(await page.evaluate(kind => (kind === 'insights' ? window.BpmInsightStore : window.BpmTaskStore).list().length, config.kind), count, `${label}: Enter/requestSubmit/direct click cannot bypass reading`);
     assert.equal(await page.locator(`${config.form} [aria-invalid=true]`).count(), 0, `${label}: blocked submission does not prematurely validate`);
     await setScroll(page, config.scroll, .4);
-    const partial = await state(page, config.button); locked(partial, label);
-    assert.ok(partial.progress > .3 && partial.progress < .5, `${label}: intermediate progress follows scrolling`);
+    const partial = await followsViewedExtent(page,config.button,config.scroll,`${label}: partial scroll`); locked(partial, label);
+    assert.ok(partial.progress>initial.progress,`${label}: scrolling increases the viewed portion`);
     if(label==='Insight create'){
       await page.screenshot({path:path.join(output,'insight-cta-partial.png')});
       const partialLoader=await loaderGeometry(page,config.button,'partial');
-      assert.ok(partialLoader.angle>emptyLoader.angle&&partialLoader.bluePixels>emptyLoader.bluePixels*5,'Scrolling grows the actual blue fill, not only ARIA or a counter');
-      report('closed 24px loader ring, visible initial 2px segment at twelve o’clock, zero accessible progress and raster-verified progressive fill');
+      assert.ok(partialLoader.angle>emptyLoader.angle&&partialLoader.bluePixels>emptyLoader.bluePixels,'Scrolling grows the actual blue fill, not only ARIA or a counter');
+      report('closed 24px loader ring, initially visible content counted, minimum 2px seed and raster-verified proportional fill');
     }
     await setScroll(page, config.scroll, 0);
-    assert.equal((await state(page, config.button)).progress, 0, `${label}: scrolling back before completion reduces progress`);
+    const reversed=await followsViewedExtent(page,config.button,config.scroll,`${label}: scrolling back before completion`);
+    assert.ok(reversed.progress<partial.progress,`${label}: scrolling back reduces progress without discarding the visible top portion`);
     await setScroll(page, config.scroll, 1);
   }
   complete(await state(page, config.button), label);
@@ -176,6 +185,7 @@ async function closeTask(page, config) {
   await page.locator(`${config.root}[open]`).waitFor({state:'hidden'});
 }
 async function contracts(page) {
+  await page.setViewportSize({width:1440,height:1200});
   await page.goto(url('insights')); await ready(page, 'insights');
   assert.equal(await page.evaluate(() => typeof window.BpmDrawerScroll?.create), 'function', 'The shared controller is loaded');
   await page.evaluate(() => {
@@ -223,17 +233,47 @@ async function contracts(page) {
     const p=window.__scrollGateQA.parent;
     p.gate.end();p.gate.begin();p.gate.bind({root:p.root,scroll:p.scroll,buttons:[p.button],form:p.form});
   });
-  await paint(page); locked(await state(page, button), 'A new session resets completion');
+  await paint(page); locked(await followsViewedExtent(page,button,'#qa-parent .qa-scroll','A new session resets completion'), 'A new session resets completion');
   assert.ok(await page.locator('#qa-parent .qa-cancel').isEnabled(), 'Cancel is not gated');
   await page.evaluate(() => window.__scrollGateQA.short = window.__scrollGateQA.make('qa-short', 20));
   await paint(page); complete(await state(page, '#qa-short .primary-button'), 'Forms without overflow start ready');
   await page.locator('#qa-short .qa-content').evaluate(node => node.style.height = '500px');
   await paint(page); complete(await state(page, '#qa-short .primary-button'), 'Already-complete no-overflow form stays ready after resize/content growth');
+  const metrics=[
+    {id:'qa-viewed-90',total:1000,viewport:900,middle:50,initial:.9,partial:.95},
+    {id:'qa-viewed-long',total:1000,viewport:100,middle:450,initial:.1,partial:.55},
+    {id:'qa-travel-100',total:220,viewport:120,middle:50,initial:120/220,partial:170/220},
+    {id:'qa-form-100',total:100,viewport:60,middle:20,initial:.6,partial:.8}
+  ];
+  await page.evaluate(metrics=>{
+    const qa=window.__scrollGateQA;qa.metrics=metrics.map(config=>{
+      const entry=qa.make(config.id,config.total);
+      entry.form.querySelector('input').style.display='none';
+      entry.scroll.style.height=`${config.viewport}px`;
+      entry.gate.begin();entry.gate.bind({root:entry.root,scroll:entry.scroll,buttons:[entry.button],form:entry.form});
+      return entry;
+    });
+  },metrics);
+  await paint(page);
+  for(const config of metrics){
+    const button=`#${config.id} .primary-button`,scroll=`#${config.id} .qa-scroll`;
+    const geometry=await page.locator(scroll).evaluate(node=>({total:node.scrollHeight,viewport:node.clientHeight,top:node.scrollTop}));
+    assert.deepEqual(geometry,{total:config.total,viewport:config.viewport,top:0},`${config.id}: deterministic form geometry`);
+    const initial=await followsViewedExtent(page,button,scroll,`${config.id}: initial`);locked(initial,`${config.id}: initial`);
+    assert.ok(Math.abs(initial.progress-config.initial)<=.0001,`${config.id}: expected initial viewed fraction`);
+    await page.locator(scroll).evaluate((node,top)=>{node.scrollTop=top;node.dispatchEvent(new Event('scroll'));},config.middle);await paint(page);
+    const partial=await followsViewedExtent(page,button,scroll,`${config.id}: partial`);locked(partial,`${config.id}: partial`);
+    assert.ok(Math.abs(partial.progress-config.partial)<=.0001,`${config.id}: expected viewed fraction after a pixel scroll`);
+    await setScroll(page,scroll,0);await followsViewedExtent(page,button,scroll,`${config.id}: reverse before completion`);
+    await setScroll(page,scroll,1);complete(await state(page,button),`${config.id}: actual bottom`);
+    await setScroll(page,scroll,0);complete(await state(page,button),`${config.id}: latched after reverse`);
+  }
   await page.evaluate(() => {
     for (const key of ['parent','child','short']) {const p=window.__scrollGateQA[key];p.gate.end();p.root.remove();}
+    window.__scrollGateQA.metrics.forEach(p=>{p.gate.end();p.root.remove();});
     delete window.__scrollGateQA;
   });
-  report('shared API: progress, accessibility, submit guard, nested scopes, dynamic range, business-disabled state, rebind, session reset and no-overflow');
+  report('shared API: entire-form progress (1000/900px: 90%→95%→100%), long form, 100px travel and 100px form, reverse/latch, accessibility, submit guard, nested scopes, dynamic geometry, validation, rebind, session reset and no-overflow');
 }
 async function actualForms(page) {
   await page.setViewportSize({width:1440,height:700});
@@ -326,7 +366,7 @@ async function lifecycleAndEditing(page) {
   complete(await state(page,approval),'Insight approval unlocks');
   await setScroll(page,'#insights-detail-view .id-detail-scroll',0);
   complete(await state(page,approval),'Insight approval latch persists');
-  await page.locator('#insights-back').click();await ready(page,'insights');
+  await page.locator('.insights-view-controls button[aria-pressed="true"]').click();await ready(page,'insights');
   report('primary task completion, specialised lifecycle and insight approval are gated; secondary rejection and existing edit validation stay intact');
 }
 async function nestedInsight(page) {
@@ -376,7 +416,7 @@ async function nestedSpecial(page) {
   assert.ok(before.scroll<=before.client+1&&before.bottom<=568,'Mobile special sheet keeps footer on screen without horizontal overflow');
   locked(await state(page,button),'Actual mobile variant sheet starts gated');
   await setScroll(page,body,.4);const partial=await state(page,button);locked(partial,'Actual variant sheet partial progress');
-  assert.ok(partial.progress>.3&&partial.progress<.5,'Actual variant sheet tracks its own scroll');
+  await followsViewedExtent(page,button,body,'Actual variant sheet tracks its own viewed extent');
   complete(await state(page,config.button),'Child scrolling preserves completed parent');
   await setScroll(page,body,1);complete(await state(page,button),'Actual variant sheet complete');
   const after=await edges();
