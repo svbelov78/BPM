@@ -244,6 +244,7 @@ body.insight-tab-open main { padding-bottom: 0; }
 }
 .insights-table .insights-main-cell { padding-bottom: 16px; }
 .insights-table tbody tr { background: var(--white); }
+.insights-table-row { cursor: pointer; }
 .insights-table tbody tr.is-problem { background: var(--cabinet-problem-gradient, linear-gradient(90deg, #ffeefd 0%, #fff2e7 55%, #fff 100%)); }
 .insights-table tbody tr:is(:hover, :focus-within) { background: var(--hover); }
 .insights-table tbody tr:last-child td { border-bottom: 0; }
@@ -260,7 +261,7 @@ body.insight-tab-open main { padding-bottom: 0; }
   text-align: left;
   overflow-wrap: anywhere;
 }
-.insights-row-title:is(:hover, :focus-visible) { color: var(--blue); }
+.insights-row-title:focus-visible { color: var(--blue); }
 .insights-row-description {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -300,7 +301,8 @@ body.insight-tab-open main { padding-bottom: 0; }
 .insights-owner { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .insights-owner > :is(img, .avatar, .task-avatar, .cabinet-avatar) { width: 32px; height: 32px; flex: none; border-radius: 50%; }
 .insights-owner > img { object-fit: cover; }
-.insights-owner > span:not(.avatar):not(.task-avatar):not(.cabinet-avatar) { min-width: 0; overflow-wrap: anywhere; }
+.insights-owner-name { flex: 1; min-width: 0; overflow-wrap: normal; word-break: normal; }
+.insights-owner-name > span { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: top; }
 .insights-table .date-cell { white-space: nowrap; }
 .insights-status { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .insights-status > :is(img, .status-dot) { width: 12px; height: 12px; flex: none; }
@@ -311,6 +313,9 @@ body.insight-tab-open main { padding-bottom: 0; }
 .insights-score { display: inline-flex; align-items: flex-start; gap: 8px; min-width: 0; }
 .insights-score > img { width: 24px; height: 24px; flex: none; }
 .insights-score > span { min-width: 0; text-align: center; }
+.insights-rating-values { display: inline-flex; flex-direction: column; align-items: center; white-space: nowrap; }
+.insights-rating-arrow { display: flex; align-items: center; justify-content: center; height: 24px; }
+.insights-rating-arrow > img { width: 16px; height: 16px; }
 .insights-pagination.pagination { margin-top: 24px; }
 .insights-empty {
   display: flex;

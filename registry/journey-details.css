@@ -1,7 +1,7 @@
 /* Figma Customer Journey Details/Content. Responsive reflow, not scaled text. */
 .jd-drawer .pd-layout{grid-template-columns:minmax(0,1fr) 253px}
 .jd-overview-block{display:flex;flex-direction:column;gap:24px;min-width:0;flex:none}
-.jd-heading{gap:4px}.jd-heading .pd-title-actions{align-items:center}.jd-heading .pd-process-actions{gap:16px}
+.jd-heading{gap:4px}.jd-heading .pd-title-actions{align-items:center}.jd-heading .pd-process-actions{gap:16px;min-width:0;max-width:100%}
 .jd-icon-action{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;flex:none}
 .jd-icon-action:hover{background:var(--hover)}
 .jd-synthesis.pd-ai-summary{display:flex;flex-direction:column;align-items:stretch;gap:16px;padding:16px;border-radius:24px;background:linear-gradient(90deg,#ffeefd,#f1ffea 55%,#fff)}
@@ -22,7 +22,7 @@
 .jd-rating>.jd-score{font-size:26px;line-height:31px;font-weight:700}
 .jd-leader{display:inline-flex;gap:8px;align-items:center;background:#34c7591a;border-radius:12px;padding:8px;min-width:0}
 .jd-person{display:flex;align-items:center;gap:8px;min-width:0;flex:none;color:var(--text);font-size:17px;line-height:24px}
-.jd-person-copy{min-width:0}.jd-person-copy p{margin:0;overflow-wrap:break-word}.jd-person--compact .jd-person-role{font-size:13px;line-height:18px}
+.jd-person-copy{min-width:0;flex:1}.jd-person-copy p{margin:0;overflow-wrap:break-word}.jd-person-name{display:flex;align-items:center;gap:4px}.jd-person-name>span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.jd-person-name>.pd-icon{flex:none}.jd-person-role{font-size:13px;line-height:18px;letter-spacing:-.039px}
 .jd-widget.pd-overview-panel{height:334px;min-height:334px;gap:4px;padding:24px;overflow:hidden}
 .jd-widget .pd-sphere-viewport{height:183px;align-items:center;min-height:0}
 .jd-widget .pd-sphere-curtain{border-top:0}

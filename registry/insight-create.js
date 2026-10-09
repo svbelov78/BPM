@@ -34,6 +34,10 @@
       .sort((a,b) => b.score - a.score || String(a.row.id).localeCompare(String(b.row.id),'ru')).map(match => match.row);
   }
   const choices = values => [...new Set(values.filter(Boolean))].map(value => ({value,label:value}));
+  const creationSources = ['SberBPM ЦА','ТБ','Process Mining'];
+  const canonicalCreationSource = value => creationSources.find(source => normalize(source).replace(/\s/g,'') === normalize(value).replace(/\s/g,'')) || '';
+  const requiresCompleteDescription = source => source === 'SberBPM ЦА' || source === 'ТБ';
+  const populatedEffect = effect => ['name','description','current','target','unit'].some(key => String(effect[key] ?? '').trim());
   const effectCatalog = [
     ['Финансы','Рост операционного дохода','Количественный'],['Финансы','Сокращение ФОТ','Количественный'],
     ['Финансы','Сокращение операционных расходов без ФОТ','Количественный'],['Финансы','Снижение операционных потерь (фрод, штрафы, компенсации)','Количественный'],
@@ -68,6 +72,27 @@
       error.textContent=message;error.hidden=!message;
       const control=error.closest('.ic-field-wrap');control?.classList.toggle('has-error',!!message);
       const input=control?.querySelector('input,textarea');if(input){input.setAttribute('aria-invalid',String(!!message));error.id=`ic-error-${name}`;const description=(input.getAttribute('aria-describedby')||'').split(' ').filter(id=>id&&id!==error.id);if(message)description.push(error.id);if(description.length)input.setAttribute('aria-describedby',description.join(' '));else input.removeAttribute('aria-describedby');}
+    }
+    function updateRequirements() {
+      const complete=requiresCompleteDescription(draft.source);
+      const fields=[['title',true],['description',true],['rootCauses',complete],['solution',complete],['ic-source-input',true],['ic-process-input',true],['ic-bank-input',draft.source==='ТБ']];
+      fields.forEach(([name,required])=>{
+        const control=form.elements.namedItem(name)||form.querySelector(`#${name}`);if(!control)return;
+        control.required=required;control.setAttribute('aria-required',String(required));
+        const label=control.closest('.ic-field-wrap')?.querySelector('.internal-label');if(!label)return;
+        label.dataset.requiredLabel ||= label.textContent;
+        label.innerHTML=`${esc(label.dataset.requiredLabel)}${required?' <span aria-hidden="true">*</span>':''}`;
+      });
+      form.querySelector('#ic-effects-title').innerHTML=`Ожидаемые эффекты${complete?' <span aria-hidden="true">*</span>':''}`;
+      form.querySelector('#ic-effects-requirement').hidden=!complete;
+      if(complete&&!draft.effects.length)draft.effects.push(emptyEffect());
+      setError('rootCauses');setError('solution');setEffectsError();
+    }
+    function setEffectsError(message='') {
+      const error=form.querySelector('#ic-effects-error');error.textContent=message;error.hidden=!message;
+      const section=error.closest('.ic-effects-section');section.classList.toggle('has-error',!!message);
+      const button=section.querySelector('[data-add-effect]');
+      button.setAttribute('aria-invalid',String(!!message));if(message)button.setAttribute('aria-describedby',error.id);else button.removeAttribute('aria-describedby');
     }
     function syncInputs() {
       if(formDraft!==draft)return;
@@ -122,7 +147,7 @@
     }
     function effectMarkup(effect,index) {
       const prefix=`ic-${effect.id}`;
-      return `<article class="ic-effect" data-effect="${effect.id}"><header><span class="ic-effect-number">${index+1}</span><h3>Эффект</h3><button type="button" class="ic-icon-small" data-remove-effect="${effect.id}" aria-label="Удалить эффект ${index+1}" ${draft.effects.length===1?'disabled title="Единственный эффект нельзя удалить"':''}>${icon('remove')}</button></header>${selectHost(prefix+'-name')}${selectHost(prefix+'-type')}${textarea(prefix+'-description','Описание эффекта',effect.description,'Опишите, что конкретно улучшится и как это рассчитано (для количественных эффектов).','data-effect-field="description"')}<div class="ic-effect-numbers">${input(prefix+'-current','Текущее значение',effect.current,'Не указано','inputmode="decimal" data-effect-field="current"')}${input(prefix+'-target','Целевое значение',effect.target,'Не указано','inputmode="decimal" data-effect-field="target"')}${selectHost(prefix+'-unit')}</div><div class="ic-effect-period">${selectHost(prefix+'-frequency')}<div data-effect-period ${effect.frequency==='Регулярно'?'':'hidden'}>${selectHost(prefix+'-period')}</div></div><p class="ic-error" data-effect-error hidden></p></article>`;
+      return `<article class="ic-effect" data-effect="${effect.id}"><header><span class="ic-effect-number">${index+1}</span><h3>Эффект</h3><button type="button" class="ic-icon-small" data-remove-effect="${effect.id}" aria-label="Удалить эффект ${index+1}" ${requiresCompleteDescription(draft.source)&&draft.effects.length===1?'disabled title="Единственный обязательный эффект нельзя удалить"':''}>${icon('remove')}</button></header>${selectHost(prefix+'-name')}${selectHost(prefix+'-type')}${textarea(prefix+'-description','Описание эффекта',effect.description,'Опишите, что конкретно улучшится и как это рассчитано (для количественных эффектов).','data-effect-field="description"')}<div class="ic-effect-numbers">${input(prefix+'-current','Текущее значение',effect.current,'Не указано','inputmode="decimal" data-effect-field="current"')}${input(prefix+'-target','Целевое значение',effect.target,'Не указано','inputmode="decimal" data-effect-field="target"')}${selectHost(prefix+'-unit')}</div><div class="ic-effect-period">${selectHost(prefix+'-frequency')}<div data-effect-period ${effect.frequency==='Регулярно'?'':'hidden'}>${selectHost(prefix+'-period')}</div></div><p class="ic-error" data-effect-error hidden></p></article>`;
     }
     function renderEffects() {
       selectors.filter(item=>item.id?.startsWith('ic-effect-')).forEach(item=>item.close?.());
@@ -167,14 +192,15 @@
       form.querySelector('#ic-comments').innerHTML=draft.commentsDraft.map(comment=>`<article class="ic-draft-comment"><small>${esc(comment.author)} · Черновик</small><p>${esc(comment.text)}</p></article>`).join('') || '<p class="ic-muted">Комментариев пока нет.</p>';
     }
     function buildForm() {
+      draft.source=canonicalCreationSource(draft.source);
       formDraft=draft;
       closeSelects();selectors=[];
       form.innerHTML=`<header class="ic-header"><h2 id="insight-create-title">Новый инсайт</h2>${window.BpmInsightPresentation.sourceBadge(draft,'ic-bank','ic-source-summary')}<button type="button" class="ic-icon ic-close" data-close aria-label="Закрыть создание инсайта">${icon('close')}</button></header><div class="ic-scroll" tabindex="-1" role="region" aria-label="Поля нового инсайта">
         ${input('title','Название инсайта',draft.title,'Введите название инсайта','maxlength="240" required')}
         <section class="ic-context">${selectHost('ic-source','source')}<div id="ic-bank-field" ${draft.source==='ТБ'?'':'hidden'}>${selectHost('ic-bank','bank')}</div>${selectHost('ic-path')}${selectHost('ic-process','process')}</section>
         ${accordion('ic-relations','Связи процесса','<div id="ic-relations-content"></div>',true)}
-        <section class="ic-description"><h3>Описание инсайта</h3><div class="ic-description-and-status">${textarea('description','Проблема / наблюдение',draft.description,'Опишите проблему или наблюдение','required aria-describedby="ic-duplicate-status"')}<div id="ic-duplicate-status" class="ic-duplicate-status" role="status" aria-live="polite" hidden></div></div>${textarea('rootCauses','Корневые причины',draft.rootCauses,'Укажите причины возникновения проблемы')}${textarea('solution','Предложение/решение',draft.solution,'Опишите предлагаемое решение','required')}</section>
-        <section class="ic-effects-section"><header class="ic-effects-heading"><div><h3>Ожидаемые эффекты</h3><p>Укажите эффекты и цифры своего территориального банка. Остальные банки позже оценят воспроизводимость и эти эффекты у них.</p></div><button type="button" class="ic-link-button" data-add-effect>${icon('plus')}добавить эффект</button></header><div id="ic-effects"></div></section>
+        <section class="ic-description"><h3>Описание инсайта</h3><div class="ic-description-and-status">${textarea('description','Проблема / наблюдение',draft.description,'Опишите проблему или наблюдение','required aria-describedby="ic-duplicate-status"')}<div id="ic-duplicate-status" class="ic-duplicate-status" role="status" aria-live="polite" hidden></div></div>${textarea('rootCauses','Корневые причины',draft.rootCauses,'Укажите причины возникновения проблемы')}${textarea('solution','Предложение/решение',draft.solution,'Опишите предлагаемое решение')}</section>
+        <section class="ic-effects-section"><header class="ic-effects-heading"><div><h3 id="ic-effects-title">Ожидаемые эффекты</h3><p>Укажите эффекты и цифры своего территориального банка. Остальные банки позже оценят воспроизводимость и эти эффекты у них.</p><p id="ic-effects-requirement">Обязательно: не менее одного эффекта.</p></div><button type="button" class="ic-link-button" data-add-effect>${icon('plus')}добавить эффект</button></header><p id="ic-effects-error" class="ic-error" hidden></p><div id="ic-effects"></div></section>
         ${accordion('ic-attachments','Вложения <span id="ic-attachment-count">0</span>',`<div class="ic-dropzone"><p>Перетащите или <button type="button" class="ic-link-button" data-add-files>добавьте файл ${icon('addFile')}</button></p><small>Допустимые форматы: PDF, XLSX, DOCX, TXT, JPG, JPEG, PNG, GIF, WEBP, PPTX</small><input id="ic-file-input" type="file" multiple accept=".pdf,.xlsx,.docx,.txt,.jpg,.jpeg,.png,.gif,.webp,.pptx" hidden></div><p class="ic-muted ic-file-help">Максимальное количество файлов за один раз загрузки: 10 файлов. Максимальный объём файлов суммарно — 10 МБ.</p><p id="ic-file-error" class="ic-error" role="alert" hidden></p><div id="ic-files"></div>`,true)}
         <section class="ic-participants"><h3>Участники инсайта</h3><div class="ic-people"><div class="ic-person"><span class="ic-avatar">${icon('person')}</span><div><small>Владелец процесса</small><span id="ic-owner-name"></span></div></div><div class="ic-person"><span class="ic-avatar">${icon('person')}</span><div><small>Автор</small><span>${esc(draft.author)}</span></div></div></div></section>
         ${accordion('ic-tasks','Задачи 0','<p class="ic-muted">Задачи можно добавить после создания инсайта.</p>')}
@@ -183,13 +209,13 @@
         ${accordion('ic-history','История изменений 0','<p class="ic-muted">История появится после создания инсайта.</p>')}
         <p id="ic-submit-error" class="ic-error" role="alert" hidden></p></div><footer class="ic-actions"><button type="button" class="button secondary-button" data-close>Отменить</button><button type="submit" class="button primary-button" data-submit>Создать инсайт</button></footer>`;
       const sourceSummary=()=>{const badge=form.querySelector('#ic-source-summary'), text=window.BpmInsightPresentation.source(draft);badge.querySelector('.insight-source-text').textContent=text;badge.title=text;form.querySelector('#ic-bank-field').hidden=draft.source!=='ТБ';};
-      select('ic-source','Источник',choices(['ТБ','Sber BPM ЦА',...rows().map(row=>row.source)]),[draft.source],value=>{draft.source=value;setError('source');sourceSummary();});
+      select('ic-source','Источник',choices(creationSources),draft.source?[draft.source]:[],value=>{syncInputs();draft.source=value;setError('source');sourceSummary();updateRequirements();renderEffects();});
       select('ic-bank','Территориальный банк',choices([...banks,...rows().map(row=>row.bank)]),[draft.bank],value=>{draft.bank=value;setError('bank');sourceSummary();});
       select('ic-path','Клиентский путь',pathRecords().map(row=>({value:row.title,label:`КП${row.number} ${row.title}`})),draft.path?[draft.path]:[],value=>{draft.path=value;});
       select('ic-process','Процесс',processRecords().map(row=>({value:row.id,label:`${row.code||`П${row.number}`} ${row.title}`})),draft.related.map(row=>row.id),value=>{
         const found=processInfo(value);draft.related=found?[{...found,variants:[]}]:[];draft.products=[];draft.owner=processRecords().find(row=>row.id===value)?.owner||'';setError('process');renderRelations();renderParticipants();
       });
-      renderRelations();renderEffects();renderAttachments();renderParticipants();renderComments();form.querySelectorAll('textarea').forEach(resizeTextarea);
+      updateRequirements();renderRelations();renderEffects();renderAttachments();renderParticipants();renderComments();form.querySelectorAll('textarea').forEach(resizeTextarea);
       if(matches.length)renderMatchStatus('found');
     }
     function renderMatchStatus(state) {
@@ -233,14 +259,20 @@
     function closeMatches(restore=true) {if(sheet.open)sheet.close();if(restore&&dialog.open)form.querySelector('[data-show-matches]')?.focus({preventScroll:true});}
     function validation() {
       let valid=true;const require=(name,value,message)=>{setError(name,value?'':message);if(!value)valid=false;};
-      require('title',draft.title.trim(),'Укажите название инсайта.');require('source',draft.source,'Выберите источник.');require('process',draft.related.length,'Выберите процесс.');
+      require('title',draft.title.trim(),'Укажите название инсайта.');require('source',creationSources.includes(draft.source),'Выберите источник.');require('process',draft.related.length,'Выберите процесс.');
       require('bank',draft.source!=='ТБ'||draft.bank,'Выберите территориальный банк.');
-      require('description',draft.description.trim(),'Опишите проблему или наблюдение.');require('solution',draft.solution.trim(),'Укажите предлагаемое решение.');
+      const complete=requiresCompleteDescription(draft.source);
+      require('description',draft.description.trim(),'Опишите проблему или наблюдение.');
+      require('rootCauses',!complete||draft.rootCauses.trim(),'Укажите корневые причины.');
+      require('solution',!complete||draft.solution.trim(),'Укажите предлагаемое решение.');
+      const effectsMissing=complete&&!draft.effects.length;
+      setEffectsError(effectsMissing?'Добавьте хотя бы один ожидаемый эффект.':'');if(effectsMissing)valid=false;
       draft.effects.forEach(effect=>{
         const box=form.querySelector(`[data-effect="${effect.id}"]`);let message='',field='name';
         const numeric=value=>/^[+-]?(?:\d+(?:[.,]\d+)?|[.,]\d+)$/.test(String(value).trim())&&Number.isFinite(Number(String(value).replace(',','.')));
         const current=String(effect.current).trim(),target=String(effect.target).trim();
-        if(effect.name.trim().length<3||effect.name.trim().length>60)message='Название эффекта должно содержать от 3 до 60 символов.';
+        if(!complete&&!populatedEffect(effect)) { /* An untouched placeholder is not an optional effect. */ }
+        else if(effect.name.trim().length<3||effect.name.trim().length>60)message='Название эффекта должно содержать от 3 до 60 символов.';
         else if(!['Количественный','Качественный'].includes(effect.type)){message='Выберите тип эффекта.';field='type';}
         else if(effect.description.trim().length<10||effect.description.trim().length>4000){message='Описание эффекта должно содержать от 10 до 4000 символов.';field='description';}
         else if((current&&!numeric(current))||(target&&!numeric(target))){message='Введите корректное десятичное число.';field=current&&!numeric(current)?'current':'target';}
@@ -265,7 +297,8 @@
       const error=form.querySelector('#ic-submit-error');error.hidden=true;
       try {
         if(typeof onCreate!=='function')throw new Error('Сохранение инсайтов пока не подключено.');
-        const payload=structuredClone(draft);payload.title=payload.title.trim();payload.description=payload.description.trim();payload.solution=payload.solution.trim();
+        const payload=structuredClone(draft);payload.title=payload.title.trim();payload.description=payload.description.trim();payload.rootCauses=payload.rootCauses.trim();payload.solution=payload.solution.trim();
+        if(!requiresCompleteDescription(payload.source))payload.effects=payload.effects.filter(populatedEffect);
         if(payload.source!=='ТБ')payload.bank='';
         payload.detail={duplicateIds:matches.map(row=>row.id),duplicateCheck:{...check,title:payload.title,description:payload.description,accepted:!!matches.length}};
         const created=await onCreate(payload);if(!created)throw new Error('Не удалось сохранить инсайт. Попробуйте ещё раз.');
@@ -285,7 +318,7 @@
         const button=event.target.closest('button');if(!button)return;
         if(button.hasAttribute('data-close'))close();
         if(button.hasAttribute('data-add-effect'))addEffect();
-        if(button.dataset.removeEffect&&draft.effects.length>1){syncInputs();draft.effects=draft.effects.filter(effect=>effect.id!==button.dataset.removeEffect);dirty=true;renderEffects();}
+        if(button.dataset.removeEffect&&(!requiresCompleteDescription(draft.source)||draft.effects.length>1)){syncInputs();draft.effects=draft.effects.filter(effect=>effect.id!==button.dataset.removeEffect);dirty=true;renderEffects();}
         if(button.hasAttribute('data-add-files'))form.querySelector('#ic-file-input').click();
         if(button.dataset.removeFile){draft.attachments=draft.attachments.filter(file=>file.id!==button.dataset.removeFile);dirty=true;renderAttachments();}
         if(button.hasAttribute('data-show-matches'))showMatches();

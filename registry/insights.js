@@ -14,7 +14,7 @@
     info:'assets/insights/241-1742-icon16-info.svg', plus:'assets/insights/241-1742-icon24-plus-add.svg', search:'assets/insights/241-1742-icon24-search.svg',
     calendar:'assets/insights/241-1742-icon24-one-date.svg', copy:'assets/insights/241-1742-icon16-copy.svg', direction:'assets/insights/241-1742-related-direction.svg',
     person:'assets/insights/241-1742-icon24-person.svg', star:'assets/insights/241-1742-rating-icon.svg', comments:'assets/insights/241-1742-comments-icon.svg',
-    starOutline:'assets/insights/241-2705-rating-icon.svg', sort:'assets/insights/241-2705-sort-insight.svg', avatar:'assets/insights/241-2705-owner-avatar.png',
+    starOutline:'assets/insights/241-2705-rating-icon.svg', sort:'assets/tasks/table-sort.svg', ratingArrow:'assets/arrow-down.svg', avatar:'assets/insights/241-2705-owner-avatar.png',
     blue:'assets/insights/241-1742-dot.svg', red:'assets/insights/241-2705-dot.svg', orange:'assets/insights/241-2705-dot1.svg', green:'assets/insights/241-2705-dot2.svg',
     exit:'assets/insights/245-5699-icon24-exit.svg', arrow:'assets/insights/245-5700-arrow.svg', close:'assets/close-16.svg',
     back:'assets/insight-tabs/back.svg', tabClose:'assets/insight-tabs/exit.svg'
@@ -263,6 +263,12 @@
       return `<div class="insights-meta${card ? ' card-tags cabinet-insight-tags' : ''}">${window.BpmInsightPresentation.sourceBadge(row,'insights-source tag cabinet-source-tag')}${idBadge(row.id)}${img('direction',16,'insights-relation-arrow')}${card ? relatedButton(row) : `${first ? idBadge(first.code) : ''}${row.related.length > 1 ? relatedButton(row) : ''}`}</div>`;
     }
     const rating = row => `${row.previousRating != null ? `${number(row.previousRating)} ↓ ` : ''}${number(row.rating)}`;
+    const ownerName = row => `<span class="insights-owner-name" title="${esc(row.owner || 'Не назначен')}">${(row.owner || '---').trim().split(/\s+/).map(word => `<span>${esc(word)}</span>`).join(' ')}</span>`;
+    function tableRating(row) {
+      const own = row.detail?.userRating ?? row.previousRating;
+      if (!(own > 0)) return `<span>${number(row.rating)}</span>`;
+      return `<span class="insights-rating-values" role="img" aria-label="Моя оценка: ${number(own)}; общая оценка: ${number(row.rating)}"><span aria-hidden="true">${number(own)}</span><span class="insights-rating-arrow" aria-hidden="true">${img('ratingArrow',16)}</span><span aria-hidden="true">${number(row.rating)}</span></span>`;
+    }
     function card(row) {
       const owner = row.owner || 'Не назначен';
       return `<article class="entity-card cabinet-card cabinet-insight-card insights-card" data-insight-id="${esc(row.id)}" aria-label="${esc(row.title)}">
@@ -272,7 +278,7 @@
     function table(rows, isLoading = false) {
       const columns = [['id','ID, Инсайт, источник, процесс'],['owner','Владелец КП / процесса'],['created','Дата создания'],['status','Статус'],['comments','Комментарии'],['rating','Рейтинг']];
       const [sortKey, direction] = state.sort.split('-');
-      return `<div class="insights-table-wrap" tabindex="0" role="region" aria-label="Таблица инсайтов; на узком экране прокручивается горизонтально"><table class="insights-table"><colgroup><col><col style="width:240px"><col style="width:136px"><col style="width:153px"><col style="width:100px"><col style="width:100px"></colgroup><thead><tr>${columns.map(([key,label],index) => `<th scope="col"${sortKey === key ? ` aria-sort="${direction === 'desc' ? 'descending' : 'ascending'}"` : ''}><button type="button" data-insight-sort="${key}" aria-label="Сортировать: ${label}">${index === 4 ? img('comments') : index === 5 ? img('starOutline') : index === 1 ? '<span>Владелец<br>КП / процесса</span>' : esc(label)}${index < 4 && sortKey === key ? img('sort',16, direction === 'asc' ? 'is-ascending' : '') : ''}</button></th>`).join('')}</tr></thead><tbody>${isLoading ? skeletonRows(rows.length || Math.min(data.length,6) || 4) : rows.map(row => `<tr data-insight-id="${esc(row.id)}" class="${row.problem ? 'is-problem' : ''}"><td class="insights-main-cell"><button type="button" class="insights-row-title" data-insight-open="${esc(row.id)}">${esc(row.title)}</button><p class="insights-row-description">${esc(row.description)}</p>${metadata(row)}</td><td class="owner-cell"><div class="insights-owner">${row.owner ? img('avatar',32,'insights-owner-avatar') : `<span class="task-avatar cabinet-avatar">${img('person',18)}</span>`}<span>${esc(row.owner || '---')}</span></div></td><td class="date-cell"><time datetime="${row.created}">${date(row.created)}</time></td><td class="status-cell">${status(row)}</td><td class="comment-cell"><span class="insights-score">${img('comments')}<span>${row.comments}</span></span></td><td class="rating-cell"><span class="insights-score">${img('starOutline')}<span>${esc(rating(row))}</span></span></td></tr>`).join('')}</tbody></table></div>`;
+      return `<div class="insights-table-wrap" tabindex="0" role="region" aria-label="Таблица инсайтов; на узком экране прокручивается горизонтально"><table class="insights-table"><colgroup><col><col style="width:240px"><col style="width:136px"><col style="width:153px"><col style="width:100px"><col style="width:100px"></colgroup><thead><tr>${columns.map(([key,label],index) => `<th scope="col"${sortKey === key ? ` aria-sort="${direction === 'desc' ? 'descending' : 'ascending'}"` : ''}><button type="button" data-insight-sort="${key}" aria-label="Сортировать: ${label}">${index === 4 ? img('comments') : index === 5 ? img('starOutline') : index === 1 ? '<span>Владелец<br>КП / процесса</span>' : esc(label)}${index < 4 && sortKey === key ? img('sort',16, direction === 'asc' ? 'is-ascending' : '') : ''}</button></th>`).join('')}</tr></thead><tbody>${isLoading ? skeletonRows(rows.length || Math.min(data.length,6) || 4) : rows.map(row => `<tr data-insight-id="${esc(row.id)}" class="insights-table-row${row.problem ? ' is-problem' : ''}"><td class="insights-main-cell"><button type="button" class="insights-row-title" data-insight-open="${esc(row.id)}">${esc(row.title)}</button><p class="insights-row-description">${esc(row.description)}</p>${metadata(row)}</td><td class="owner-cell"><div class="insights-owner">${row.owner ? img('avatar',32,'insights-owner-avatar') : `<span class="task-avatar cabinet-avatar">${img('person',18)}</span>`}${ownerName(row)}</div></td><td class="date-cell"><time datetime="${row.created}">${date(row.created)}</time></td><td class="status-cell">${status(row)}</td><td class="comment-cell"><span class="insights-score">${img('comments')}<span>${row.comments}</span></span></td><td class="rating-cell"><span class="insights-score">${img('starOutline')}${tableRating(row)}</span></td></tr>`).join('')}</tbody></table></div>`;
     }
     function appliedFilters() {
       const groups = Object.entries(state.filters).filter(([,values]) => values.length).map(([key,values]) => ({key,label:labels[key],values}));
@@ -391,8 +397,8 @@
       if (event.target.closest('[data-insight-reset]')) {reset(); return;}
       const create = event.target.closest('#insights-create'); if (create) {closePopups(); creator.open(create); return;}
       const open = event.target.closest('[data-insight-open]');
-      const card = event.target.closest('.insights-card');
-      if (open || card && !event.target.closest('button,a,input') && !window.getSelection()?.toString()) openRecord(open?.dataset.insightOpen || card.dataset.insightId,open || card.querySelector('[data-insight-open]'));
+      const record = event.target.closest('.insights-card, .insights-table-row');
+      if (open || record && !event.target.closest('button,a,input,select,textarea') && !window.getSelection()?.toString()) openRecord(open?.dataset.insightOpen || record.dataset.insightId);
     });
     panel.addEventListener('pointerover',event => {const anchor = event.target.closest('[data-insight-related]'); if (anchor && !anchor.contains(event.relatedTarget)) showRelations(anchor);});
     panel.addEventListener('pointerout',event => {const anchor = event.target.closest('[data-insight-related]'); if (anchor && !anchor.contains(event.relatedTarget) && !relations?.contains(event.relatedTarget) && !relations?.contains(document.activeElement)) closeRelations();});

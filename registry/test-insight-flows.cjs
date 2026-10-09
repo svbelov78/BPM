@@ -96,6 +96,7 @@ async function main() {
     report('Spinner, actual duplicate matching, automatic bottom sheet, draft and latest-input safety');
 
     await drawer.locator('[name=solution]').fill('Установить датчики присутствия и автоматическое отключение освещения.');
+    await drawer.locator('[name=rootCauses]').fill('Отсутствует автоматическое отключение освещения архивного помещения.');
     await selectFirst(page,'ic-process');
     const effect=drawer.locator('.ic-effect').first(), effectId=await effect.getAttribute('data-effect');
     await selectFirst(page,`ic-${effectId}-name`);
