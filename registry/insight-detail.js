@@ -4,6 +4,7 @@
 (() => {
   'use strict';
   const esc = value => window.BpmTaskVisuals.escape(value);
+  const copy = value => esc(window.BpmCopyTypography?.format(value) ?? value);
   const clone = value => JSON.parse(JSON.stringify(value));
   const formatDate = value => /^\d{4}-\d{2}-\d{2}/.test(value || '') ? value.slice(0,10).split('-').reverse().join('.') : String(value || '');
   const today = () => new Date().toLocaleDateString('ru-RU');
@@ -461,14 +462,14 @@
       const showOpinions = canonicalStatus(row) !== 'Новый' && (row.source === 'ТБ' || !!opinionDue);
       const path = (window.BPM_DATA || []).find(item => item.entity === 'paths' && item.title === row.path);
       const links = (process?.variants || (row.local ? [] : ['Выдача автокредита с кредитным потенциалом','Оформление кредитной документации и выдача кредита на приобретение ТС'])).map(value => `<button type="button" class="id-detail-relation" data-id-process="${esc(process?.id || '')}">${esc(value)}</button>`).join('');
-      const products = row.products?.length ? row.products.map(value => esc(typeof value === 'string' ? value : value.name || value.title)).join(', ') : row.local ? 'Не указаны' : 'Система SberBPM';
+      const products = row.products?.length ? row.products.map(value => copy(typeof value === 'string' ? value : value.name || value.title)).join(', ') : row.local ? 'Не указаны' : 'Система SberBPM';
       const relations = `${label('Варианты предоставления результата процесса',`<div class="id-detail-relation-list">${links || '<p class="secondary">Не указаны</p>'}</div>`)}${label('Продукты ЕКОУ',`<div class="id-detail-product">${row.local ? '' : badge('ID0000')}<span>${products}</span></div>`)}`;
       const fileList = row.attachments || (row.local ? [] : [{name:'file_name1.pdf'},{name:'file_name long naming 2.pdf'}]);
       const attachments = fileList.length ? fileList.map(file => `<button type="button" class="id-detail-file" data-id-file="${esc(file.name)}">${img('file')}<span>${esc(file.name)}</span></button>`).join('') : '<p class="secondary">Вложения отсутствуют.</p>';
       const tracker = window.BpmInsightApproval.tracker(row);
       host.dataset.insightId = id;
       host.innerHTML = `<div class="id-detail-scroll" tabindex="-1"><header class="id-detail-header"><div class="id-detail-drawer-actions" hidden><button type="button" class="id-detail-link" data-id-open-tab>Открыть во вкладке</button><button type="button" class="task-drawer-close" data-id-drawer-close aria-label="Закрыть инсайт">${img('close')}</button></div><span class="internal-label">Инсайт</span><h2 id="insight-detail-title">${esc(row.title)}</h2><div class="id-detail-meta">${window.BpmInsightPresentation.sourceBadge(row,'tag')}${badge(row.id)}<span class="id-detail-status">${statusMarkup(row)}</span></div></header>
-        <div class="id-detail-overview${tracker ? ' has-tracker' : ''}"><div class="id-detail-description-column"><div class="id-detail-context">${label('Клиентский путь',`${path ? `<div>${badge(`КП${path.number}`)}</div>` : ''}<p>${esc(row.path || 'Не указан')}</p>`)}${label('Процесс',`${process ? `<div>${badge(process.code)}</div><button type="button" class="id-detail-process-name" data-id-process="${esc(process.id)}">${esc(process.title)}</button>` : '<p>Не указан</p>'}`)}</div>
+        <div class="id-detail-overview${tracker ? ' has-tracker' : ''}"><div class="id-detail-description-column"><div class="id-detail-context">${label('Клиентский путь',`${path ? `<div>${badge(`КП${path.number}`)}</div>` : ''}<p>${copy(row.path || 'Не указан')}</p>`)}${label('Процесс',`${process ? `<div>${badge(process.code)}</div><button type="button" class="id-detail-process-name" data-id-process="${esc(process.id)}">${copy(process.title)}</button>` : '<p>Не указан</p>'}`)}</div>
         <section class="id-detail-description"><h3>Описание инсайта</h3>${label('Проблема / наблюдение',`<p>${esc(draft.problem)}</p>`)}${label('Корневые причины',`<p>${esc(draft.causes)}</p>`)}${label('Предложение/решение',`<p>${esc(draft.proposal)}</p>`)}</section></div>${tracker}</div>
         <div class="id-detail-pair">${accordion('relations','Связи процесса',relations)}${accordion('attachments',`Вложения ${fileList.length}`,attachments)}</div>
         ${showOpinions ? `<section class="id-detail-reproduction"><div class="id-detail-section-heading"><h3>Оценка воспроизводимости в ТБ</h3>${canonicalStatus(row) === 'Согласовано' && opinionDue ? `<span class="id-detail-deadline">${img('ringer')}до ${formatDate(opinionDue)}</span>` : ''}</div>${editable ? `<div class="id-detail-reproduction-alert" data-id-reproduction-alert ${opinionSelected ? 'hidden' : ''}>${alert(`Оцените инсайт и его эффекты применительно к своему территориальному банку — ${actor().bank}`)}</div><div class="id-detail-opinion-form"><strong class="id-detail-opinion-label${opinionSelected ? ' is-selected' : ''}">Ваша оценка ${img(opinionSelected ? 'arrow' : 'purpleArrow')}</strong><div><div class="id-detail-reproduction-buttons" role="group" aria-label="Ваша оценка воспроизводимости">${reproductionLabels.map(value => `<button type="button" class="button secondary-button" data-id-reproduction="${value}" aria-pressed="${value === draft.reproduction}">${value}<span class="id-detail-reproduction-check" ${value === draft.reproduction ? '' : 'hidden'}>${img('tick')}</span></button>`).join('')}</div><label class="field id-detail-textarea"><span class="internal-label">Комментарий</span><textarea data-id-field="reproductionComment" maxlength="1000" aria-label="Комментарий к воспроизводимости">${esc(draft.reproductionComment)}</textarea></label></div></div>` : ''}${opinions()}</section>` : ''}
@@ -544,7 +545,7 @@
       if (!active || approvalDecision?.id !== id || approvalDecision.value === 'approve' && !gate()?.allow()) return;
       try {
         row = getRow(id) || row;
-        const snapshot = approvalDecision.value === 'approve' ? approvalMotion.capture(host.querySelector('[data-id-approval="approve"]'),row) : null;
+        const snapshot = approvalMotion.capture(host.querySelector(`[data-id-approval="${approvalDecision.value}"]`),row);
         const patch = workflow().decide(row,{decision:approvalDecision.value,comment:confirmation.querySelector('textarea').value.trim()});
         const message = approvalDecision.value === 'approve' ? 'Инсайт согласован' : 'Решение об отклонении сохранено';
         confirmation.close(); applyWorkflowPatch(patch,message);

@@ -3,6 +3,14 @@
   'use strict';
   const $ = (id) => document.getElementById(id);
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  // Typography belongs to displayed copy; source names, values and IDs stay intact.
+  const formatCopy = value => String(value ?? '').replace(/"([^"\n]+)"|“([^”\n]+)”/g, (match, straight, curly, offset, text) => {
+    const depth = [...text.slice(0, offset)].reduce((level, character) => character === '«' ? level + 1 : character === '»' ? Math.max(0, level - 1) : level, 0);
+    const content = straight ?? curly;
+    return depth ? '„' + content + '“' : '«' + content + '»';
+  });
+  window.BpmCopyTypography = Object.freeze({format:formatCopy});
+  const copy = value => esc(formatCopy(value));
   const image = (name, cls = '') => `<img src="assets/${esc(name)}.svg" alt=""${cls ? ` class="${cls}"` : ''}>`;
   const fieldIcon = (name = 'field-chevron-down-16') => image(name, ['field-chevron-down-16','field-chevron-disabled-16','field-clear-16','chevron-down-pagination'].includes(name) ? 'field-action-icon' : '');
   const favoriteIcon = (cls='',name='liked',label='В избранном') => `<span class="favorite-heart ${cls}" ${label?`role="img" aria-label="${esc(label)}"`:'aria-hidden="true"'}>${image(name)}</span>`;
@@ -13,16 +21,81 @@
   try { const saved = JSON.parse(localStorage.getItem('bpm-registry-favorites')); if (Array.isArray(saved)) state.favorites = new Set(saved.filter(id => allRecords.some(row => row.id === id))); } catch (_) { /* Storage may be unavailable for local files. */ }
   let structureMode=false, structure, tasksMode=false, tasks, cabinetMode=false, cabinet, topKpMode=false, topKp, insightsMode=false, insights, resumeStructure=false;
   const selects = {};
-  let activeSelect = null, datePopup = null, actionMenu = null, tooltip = null, toastTimer;
+  let activeSelect = null, datePopup = null, actionMenu = null, tooltip = null, toastTimer, toastExitTimer, toastRevision=0, toastResize, toastAnnouncement;
   const LOADING_DURATION = 2000;
   let isLoading = false, loadingTimer;
-  const normalize = value => String(value).toLocaleLowerCase('ru').replace(/ё/g,'е');
+  const normalize = value => String(value).toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/[«»„“”]/g,'"');
   const dateLabel = iso => iso ? iso.split('-').reverse().join('.') : 'Любая';
-  function toast(message,{success=false}={}) {
-    const element=$('toast');element.textContent=message;element.classList.toggle('is-success',success);
-    if(success){const icon=document.createElement('img');icon.src='assets/dropdown-tick-green.svg';icon.alt='';icon.width=24;icon.height=24;element.prepend(icon);}
-    element.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>{element.hidden=true;},3500);
+  function smoothToastCorners(element) {
+    // Circular arc + tangent Beziers: radius 16, iOS corner smoothing 60%.
+    // Geometry: https://www.figma.com/blog/desperately-seeking-squircles/
+    const width=element.offsetWidth,height=element.offsetHeight;
+    if(!width||!height)return;
+    const radius=Math.min(16,width/2,height/2),smooth=Math.min(.6,Math.min(width,height)/(2*radius)-1);
+    const p=(1+smooth)*radius,angle=smooth*Math.PI/4;
+    const arc=Math.sin((1-smooth)*Math.PI/4)*radius*Math.SQRT2;
+    const c=radius*Math.tan(angle/2)*Math.cos(angle),d=c*Math.tan(angle);
+    const b=(p-arc-c-d)/3,a=2*b,x=a+b+c;
+    const turns=[[width-p,0,1,0],[width,height-p,0,1],[p,height,-1,0],[0,p,0,-1]];
+    const segments=turns.map(([left,top,cos,sin],index)=>{
+      const point=(u,v)=>`${(left+u*cos-v*sin).toFixed(3)} ${(top+u*sin+v*cos).toFixed(3)}`;
+      return `${index?'L':'M'} ${point(0,0)} C ${point(a,0)} ${point(a+b,0)} ${point(x,d)} A ${radius} ${radius} 0 0 1 ${point(x+arc,d+arc)} C ${point(x+arc+d,d+arc+c)} ${point(x+arc+d,d+arc+b+c)} ${point(p,p)}`;
+    });
+    element.style.setProperty('--toast-shape',`path("${segments.join(' ')} Z")`);
   }
+  function finishToast(element,revision) {
+    if(revision!==toastRevision)return;
+    clearTimeout(toastTimer);clearTimeout(toastExitTimer);
+    if(typeof element.hidePopover==='function'&&element.matches(':popover-open'))element.hidePopover();
+    toastAnnouncement?.remove();toastAnnouncement=null;
+    element.hidden=true;element.classList.remove('is-entering','is-leaving');element.dataset.phase='hidden';
+  }
+  function toast(message,{success=false}={}) {
+    const element=$('toast'),revision=++toastRevision;
+    clearTimeout(toastTimer);clearTimeout(toastExitTimer);
+    if(typeof element.hidePopover==='function'&&element.matches(':popover-open'))element.hidePopover();
+    toastAnnouncement?.remove();toastAnnouncement=null;
+    element.classList.remove('is-entering','is-leaving');
+    const text=document.createElement('span');text.className='toast-message';text.textContent=formatCopy(message);
+    element.replaceChildren(text);element.classList.toggle('is-success',success);
+    if(success){const icon=document.createElement('img');icon.src='assets/dropdown-tick-green.svg';icon.alt='';icon.width=24;icon.height=24;element.prepend(icon);}
+    element.hidden=false;
+    // A manual popover enters the native top layer without taking keyboard focus.
+    if(typeof element.showPopover==='function')element.showPopover();
+    // Native modals make outside live regions inert, even when a popover paints above them.
+    // Announce inside the active modal; keep a single visual toast in the top layer.
+    const focusedModal=document.activeElement?.closest('dialog');
+    const modal=focusedModal?.matches(':modal')?focusedModal:[...document.querySelectorAll('dialog[open]')].reverse().find(node=>node.matches(':modal'));
+    // Exactly one live region is exposed, including browsers that retain a popover in AX.
+    element.setAttribute('aria-hidden',modal?'true':'false');
+    if(modal){
+      const announcement=document.createElement('div');
+      announcement.className='sr-only toast-announcement';announcement.setAttribute('role','status');
+      announcement.setAttribute('aria-live','polite');announcement.setAttribute('aria-atomic','true');
+      modal.append(announcement);toastAnnouncement=announcement;
+      requestAnimationFrame(()=>{if(revision===toastRevision&&announcement.isConnected)announcement.textContent=text.textContent;});
+    }
+    smoothToastCorners(element);
+    if(!toastResize&&typeof ResizeObserver==='function'){
+      toastResize=new ResizeObserver(()=>smoothToastCorners(element));toastResize.observe(element);
+    }
+    void element.offsetWidth; // Restart the entrance when a visible toast is replaced.
+    const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+    element.dataset.phase=reduced?'visible':'entering';
+    if(!reduced)element.classList.add('is-entering');
+    element.onanimationend=event=>{
+      if(event.target!==element||revision!==toastRevision)return;
+      if(event.animationName==='toast-enter')element.dataset.phase='visible';
+      if(event.animationName==='toast-exit')finishToast(element,revision);
+    };
+    toastTimer=setTimeout(()=>{
+      if(revision!==toastRevision)return;
+      if(matchMedia('(prefers-reduced-motion: reduce)').matches){finishToast(element,revision);return;}
+      element.classList.remove('is-entering');element.classList.add('is-leaving');element.dataset.phase='leaving';
+      toastExitTimer=setTimeout(()=>finishToast(element,revision),280);
+    },4000);
+  }
+  window.BpmToast=Object.freeze({show:toast});
   function positionPopup(popup, anchor, minWidth = 260, placement = 'auto') {
     const r = anchor.getBoundingClientRect(), margin = 12;
     const width = Math.min(Math.max(r.width,minWidth),innerWidth-margin*2);
@@ -38,7 +111,7 @@
     constructor(id, config) {
       this.host = $(id); this.id = id; this.config = config; this.options = config.options; this.values = config.values || []; this.query = ''; this.active = -1;
       this.shown = config.visibility?.shown !== false; this.disabled = !!config.visibility && !this.shown;
-      this.host.innerHTML = `<div class="bpm-select"><div class="field select-control">${config.visibility ? '<button type="button" class="select-visibility"></button>' : ''}<div class="select-content"><label class="internal-label" for="${id}-input">${esc(config.label)}</label><input class="select-input" id="${id}-input" type="text" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="${id}-list" autocomplete="off" spellcheck="false"></div><button type="button" class="select-toggle" tabindex="-1" aria-label="Открыть список: ${esc(config.label)}">${fieldIcon(config.icon)}</button></div></div>`;
+      this.host.innerHTML = `<div class="bpm-select"><div class="field select-control">${config.visibility ? '<button type="button" class="select-visibility"></button>' : ''}<div class="select-content"><label class="internal-label" for="${id}-input">${copy(config.label)}</label><input class="select-input" id="${id}-input" type="text" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="${id}-list" autocomplete="off" spellcheck="false"></div><button type="button" class="select-toggle" tabindex="-1" aria-label="Открыть список: ${copy(config.label)}">${fieldIcon(config.icon)}</button></div></div>`;
       this.input = $(`${id}-input`); this.control = this.host.querySelector('.select-control'); this.toggle = this.host.querySelector('.select-toggle');
       this.visibilityButton = this.host.querySelector('.select-visibility');
       this.visibilityButton?.addEventListener('click', e => {
@@ -69,7 +142,7 @@
       const selected = !!multiple && this.values.length > 0;
       const summary = selected ? `Выбрано ${this.values.length}` : '';
       this.host.classList.toggle('has-selection',selected);
-      if (!this.popup) this.input.value = multiple ? summary : labels[0] || '';
+      if (!this.popup) this.input.value = multiple ? summary : formatCopy(labels[0] || '');
       this.input.placeholder = summary || this.config.placeholder || 'Все';
       this.input.setAttribute('aria-description', multiple ? `${summary || 'Выбраны все'}. Введите текст для поиска.` : 'Введите текст для поиска.');
       this.toggle.classList.toggle('is-clear',selected);
@@ -112,7 +185,7 @@
       this.active = Math.min(this.active,this.visible.length-1);
       this.popup.innerHTML = this.visible.length ? this.visible.map((o,i) => {
         const selected = o.value ? this.values.includes(o.value) : !this.values.length;
-        return `<div role="option" id="${this.id}-option-${i}" class="select-option${i === this.active ? ' active' : ''}" data-option="${esc(o.value)}" aria-selected="${selected}">${this.config.multiple ? `<span class="option-check" aria-hidden="true">${selected ? image('tick') : ''}</span>` : ''}<span class="option-label">${esc(o.label)}</span>${selected && !this.config.multiple ? image('tick','selected-tick') : ''}</div>`;
+        return `<div role="option" id="${this.id}-option-${i}" class="select-option${i === this.active ? ' active' : ''}" data-option="${esc(o.value)}" aria-selected="${selected}">${this.config.multiple ? `<span class="option-check" aria-hidden="true">${selected ? image('tick') : ''}</span>` : ''}<span class="option-label">${copy(o.label)}</span>${selected && !this.config.multiple ? image('tick','selected-tick') : ''}</div>`;
       }).join('') : '<div class="popup-empty">Ничего не найдено</div>';
       if (this.active >= 0) this.input.setAttribute('aria-activedescendant',`${this.id}-option-${this.active}`); else this.input.removeAttribute('aria-activedescendant');
       positionPopup(this.popup,this.control,this.config.minPopupWidth ?? (this.config.multiple ? 300 : 260),this.config.placement);
@@ -175,7 +248,7 @@
   }
   function status(row) {const color={'Исполняется':'#34c759','На согласовании':'#0088ff','Черновик':'#7f7f7f','Завершён':'#7f7f7f'}[row.status]||'#7f7f7f';return `<span class="status-dot" style="background:${color}"></span><span class="status-copy">${esc(row.status)}</span>`;}
   function metadata(row) {return `<button class="id-badge" data-copy="${esc(row.id)}" aria-label="Скопировать ID ${row.entity==='paths'?'КП':'П'} ${row.number}">${row.entity==='paths'?'КП':'П'} ${row.number}${image('copy')}</button>${row.count?`<span class="count-badge">${row.count} ${row.entity==='paths'?(row.count===3?'процесса':'процессов'):'варианта'}${image('info')}</span>`:''}`;}
-  function renderCard(row) {return `<article class="entity-card" data-record="${esc(row.id)}"><button class="card-more" data-menu="${esc(row.id)}" aria-label="Действия с ${row.entity==='paths'?'КП':'процессом'} ${row.number}" aria-haspopup="menu">${image('more')}</button><div class="card-header"><div class="card-id">${state.favorites.has(row.id)?favoriteIcon():''}${metadata({...row,count:0})}</div><div class="status">${status(row)}<span aria-hidden="true">|</span><time datetime="${row.date}">${dateLabel(row.date)}</time></div><div class="card-count">${row.count?`<span class="count-badge">${row.count} ${row.entity==='paths'?(row.count===3?'процесса':'процессов'):'варианта'}${image('info')}</span>`:''}</div></div><div class="card-body"><button class="card-title" data-detail="${esc(row.id)}">${esc(row.title)}</button><p class="card-description">Блок «${esc(row.block)}» / Дивизион «${esc(row.division)}»</p>${row.entity==='processes'?`<div class="card-tags"><span class="tag">${esc(row.type)}</span>${row.tags.map(tag=>`<span class="tag">${esc(tag)}</span>`).join('')}</div>`:''}</div><div class="card-footer">${owner(row)}${efficiency(row)}</div></article>`;}
+  function renderCard(row) {return `<article class="entity-card" data-record="${esc(row.id)}"><button class="card-more" data-menu="${esc(row.id)}" aria-label="Действия с ${row.entity==='paths'?'КП':'процессом'} ${row.number}" aria-haspopup="menu">${image('more')}</button><div class="card-header"><div class="card-id">${state.favorites.has(row.id)?favoriteIcon():''}${metadata({...row,count:0})}</div><div class="status">${status(row)}<span aria-hidden="true">|</span><time datetime="${row.date}">${dateLabel(row.date)}</time></div><div class="card-count">${row.count?`<span class="count-badge">${row.count} ${row.entity==='paths'?(row.count===3?'процесса':'процессов'):'варианта'}${image('info')}</span>`:''}</div></div><div class="card-body"><button class="card-title" data-detail="${esc(row.id)}">${copy(row.title)}</button><p class="card-description">Блок «${copy(row.block)}» / Дивизион «${copy(row.division)}»</p>${row.entity==='processes'?`<div class="card-tags"><span class="tag">${esc(row.type)}</span>${row.tags.map(tag=>`<span class="tag">${esc(tag)}</span>`).join('')}</div>`:''}</div><div class="card-footer">${owner(row)}${efficiency(row)}</div></article>`;}
   function tableHeader(label,key) {
     const active=state.sort.startsWith(`${key}-`),descending=active&&state.sort.endsWith('-desc');
     const nextDirection=active&&!descending?'по убыванию':'по возрастанию';
@@ -185,7 +258,7 @@
   }
   function renderTable(rows, loading = false) {
     const process=state.entity==='processes';
-    return `<div class="table-scroll" tabindex="0" role="region" aria-label="Таблица реестра; прокручивайте по горизонтали для остальных столбцов"><table class="registry-table${process?' processes-table':''}"><caption class="sr-only">${process?'Процессы':'Клиентские пути'}</caption><colgroup><col><col style="width:240px"><col style="width:188px"></colgroup><thead class="table-header"><tr>${tableHeader(process?'Процесс':'Клиентский путь','id')}${tableHeader('Владелец','owner')}${tableHeader('Эффективность','eff')}</tr></thead><tbody>${loading?window.BpmLoading.tableRows(rows.length||6):rows.map(row=>`<tr data-record="${esc(row.id)}"><td class="description-cell"><div class="metadata">${state.favorites.has(row.id)?favoriteIcon('inline-bookmark'):''}${metadata(row)}${process?`<span class="tag">${esc(row.type)}</span>`:''}</div><button class="card-title table-title" data-detail="${esc(row.id)}">${esc(row.title)}</button><p class="card-description">Блок «${esc(row.block)}» / Дивизион «${esc(row.division)}»</p></td><td>${owner(row)}</td><td><div class="efficiency-stack">${efficiency(row,true)}${row.delta?`<span class="table-delta">${row.delta>0?'+':''}${row.delta} п. п. ${row.delta>0?'↑':'↓'}</span>`:''}</div></td></tr>`).join('')}</tbody></table></div>`;
+    return `<div class="table-scroll" tabindex="0" role="region" aria-label="Таблица реестра; прокручивайте по горизонтали для остальных столбцов"><table class="registry-table${process?' processes-table':''}"><caption class="sr-only">${process?'Процессы':'Клиентские пути'}</caption><colgroup><col><col style="width:240px"><col style="width:188px"></colgroup><thead class="table-header"><tr>${tableHeader(process?'Процесс':'Клиентский путь','id')}${tableHeader('Владелец','owner')}${tableHeader('Эффективность','eff')}</tr></thead><tbody>${loading?window.BpmLoading.tableRows(rows.length||6):rows.map(row=>`<tr data-record="${esc(row.id)}"><td class="description-cell"><div class="metadata">${state.favorites.has(row.id)?favoriteIcon('inline-bookmark'):''}${metadata(row)}${process?`<span class="tag">${esc(row.type)}</span>`:''}</div><button class="card-title table-title" data-detail="${esc(row.id)}">${copy(row.title)}</button><p class="card-description">Блок «${copy(row.block)}» / Дивизион «${copy(row.division)}»</p></td><td>${owner(row)}</td><td><div class="efficiency-stack">${efficiency(row,true)}${row.delta?`<span class="table-delta">${row.delta>0?'+':''}${row.delta} п. п. ${row.delta>0?'↑':'↓'}</span>`:''}</div></td></tr>`).join('')}</tbody></table></div>`;
   }
   function hasFilters() {return state.query.trim() || Object.values(state.filters).some(v=>v.length) || state.from!==defaults.from || state.to!==defaults.to || state.favoritesOnly || state.top;}
   function renderSelectedFilters() {
@@ -195,7 +268,7 @@
     if(state.favoritesOnly)groups.push({key:'favorites',label:'Список',values:['Избранное']});
     if(state.top)groups.push({key:'top',label:'Рейтинг',values:['TOP КП']});
     $('selected-filters').hidden=!groups.length;
-    $('selected-filter-groups').innerHTML=groups.map(group=>`<div class="applied-filter-group" role="group" aria-label="${esc(group.label)}"><span class="applied-filter-label">${esc(group.label)}</span>${group.values.map(value=>`<span class="chip applied-filter-chip" title="${esc(value)}"><span class="chip-text">${esc(value)}</span><button data-filter-key="${group.key}" data-filter-value="${esc(value)}" aria-label="Убрать фильтр: ${esc(value)}">${image('close-16')}</button></span>`).join('')}</div>`).join('');
+    $('selected-filter-groups').innerHTML=groups.map(group=>`<div class="applied-filter-group" role="group" aria-label="${esc(group.label)}"><span class="applied-filter-label">${esc(group.label)}</span>${group.values.map(value=>`<span class="chip applied-filter-chip" title="${copy(value)}"><span class="chip-text">${copy(value)}</span><button data-filter-key="${group.key}" data-filter-value="${esc(value)}" aria-label="Убрать фильтр: ${copy(value)}">${image('close-16')}</button></span>`).join('')}</div>`).join('');
   }
   function renderResults(page = selectedPage(), animateEfficiency = false) {
     const results=$('results'),scrollLeft=results.querySelector('.table-scroll')?.scrollLeft||0;
@@ -292,8 +365,8 @@
       window.BpmProcessDrawer.open(row,{trigger,isFavorite:record=>state.favorites.has(record.id),toggleFavorite:favorite,createSelect:(id,config)=>new BpmSelect(id,config),createTask});
       return;
     }
-    $('detail-title').textContent=row.title;
-    $('detail-content').innerHTML=`<p class="secondary">${row.entity==='paths'?'Клиентский путь':'Процесс'} · ${esc(row.numberSimulated?row.code:row.number)}</p><dl><dt>Блок</dt><dd>${esc(row.block)}</dd><dt>Дивизион</dt><dd>${esc(row.division)}</dd><dt>Владелец</dt><dd>${owner(row)}</dd><dt>Статус</dt><dd>${esc(row.status)}</dd><dt>Дата создания</dt><dd>${row.date?dateLabel(row.date):'Не указана'}</dd><dt>Эффективность</dt><dd>${row.efficiency===null?'Нет оценки':efficiency(row)}</dd>${row.linkedProcesses?`<dt>Связанных процессов</dt><dd>${row.linkedProcesses.length}</dd>`:''}</dl><p class="demo-note">${row.numberSimulated?'Название и связи — из Excel. ID КП и эффективность — демонстрационные.':'Демонстрационная запись.'} Редактирование и сохранение на сервер не подключены.</p><div class="modal-actions"><button class="button secondary-button" id="detail-favorite">${state.favorites.has(row.id)?'Удалить из избранного':'В избранное'}</button></div>`;
+    $('detail-title').textContent=formatCopy(row.title);
+    $('detail-content').innerHTML=`<p class="secondary">${row.entity==='paths'?'Клиентский путь':'Процесс'} · ${esc(row.numberSimulated?row.code:row.number)}</p><dl><dt>Блок</dt><dd>${copy(row.block)}</dd><dt>Дивизион</dt><dd>${copy(row.division)}</dd><dt>Владелец</dt><dd>${owner(row)}</dd><dt>Статус</dt><dd>${esc(row.status)}</dd><dt>Дата создания</dt><dd>${row.date?dateLabel(row.date):'Не указана'}</dd><dt>Эффективность</dt><dd>${row.efficiency===null?'Нет оценки':efficiency(row)}</dd>${row.linkedProcesses?`<dt>Связанных процессов</dt><dd>${row.linkedProcesses.length}</dd>`:''}</dl><p class="demo-note">${row.numberSimulated?'Название и связи — из Excel. ID КП и эффективность — демонстрационные.':'Демонстрационная запись.'} Редактирование и сохранение на сервер не подключены.</p><div class="modal-actions"><button class="button secondary-button" id="detail-favorite">${state.favorites.has(row.id)?'Удалить из избранного':'В избранное'}</button></div>`;
     $('detail-favorite').addEventListener('click',()=>{favorite(row);$('detail-favorite').textContent=state.favorites.has(row.id)?'Удалить из избранного':'В избранное';});
     $('detail-dialog').showModal();
   }
@@ -440,7 +513,7 @@
   }
   function showTooltip(target){
     hideTooltip();if(!target||target.closest('.sidebar')||document.querySelector('dialog[open]'))return;
-    tooltipTarget=target;tooltip=document.createElement('div');tooltip.className='tooltip';tooltip.id='bpm-tooltip';tooltip.setAttribute('role','tooltip');tooltip.textContent=target.dataset.tooltip;
+    tooltipTarget=target;tooltip=document.createElement('div');tooltip.className='tooltip';tooltip.id='bpm-tooltip';tooltip.setAttribute('role','tooltip');tooltip.textContent=formatCopy(target.dataset.tooltip);
     if(target.hasAttribute('data-heading-full'))tooltip.classList.add('top-kp-heading-tooltip');
     document.body.append(tooltip);
     target.setAttribute('aria-describedby',`${target.getAttribute('aria-describedby')||''} bpm-tooltip`.trim());

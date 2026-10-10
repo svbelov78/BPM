@@ -3,6 +3,7 @@
 (() => {
   'use strict';
   const V = window.BpmTaskVisuals, esc = V.escape;
+  const copy = value => esc(window.BpmCopyTypography?.format(value) ?? value);
   const assets = {
     backlink:'assets/task-flow/backlink.svg',close:'assets/task-flow/close.svg',
     calendar:'assets/task-flow/calendar.svg',clock:'assets/task-flow/clock.svg',placeholderClock:'assets/task-flow/clock-placeholder.svg',
@@ -182,7 +183,7 @@
   function person(label,name){const role=label==='Инициатор'?'initiator':label==='Исполнитель'?'executor':label,key=`${task?.id||'task-form'}:${role}`;return `<div class="tf-person">${avatars([name],role)}${readonly(label,esc(window.BpmAvatars.displayName(name,key)))}</div>`;}
   function viewMarkup(){
     const due=`<div class="tf-deadline-row">${readonly('Срок задачи',esc(task.deadline?V.date(task.deadline):'Без срока'),'deadline')}<span class="tf-deadline-note">${deadlineMarkup(task)}</span></div>`;
-    const process=`<div class="tf-readonly"><span class="internal-label">Процесс</span><div class="tf-process-value">${task.processId?badge(task.processCode||task.processId):''}${task.processId?`<button type="button" class="tf-value tf-editable" data-tf-action="process" title="Открыть процесс">${esc(task.processTitle)}</button>`:'—'}</div></div>`;
+    const process=`<div class="tf-readonly"><span class="internal-label">Процесс</span><div class="tf-process-value">${task.processId?badge(task.processCode||task.processId):''}${task.processId?`<button type="button" class="tf-value tf-editable" data-tf-action="process" title="Открыть процесс">${copy(task.processTitle)}</button>`:'—'}</div></div>`;
     const variant=task.resultVariant?readonly('Вариант предоставления результата процесса',esc(task.resultVariant),'process'):'';
     const description=readonly('Описание',esc(task.description||'—'),'description');
     const initiator=person('Инициатор',task.initiator);

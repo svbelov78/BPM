@@ -30,9 +30,9 @@
 .ic-input-field { min-height:50px; }
 .ic-input-field input { display:block;width:100%;height:24px;min-width:0;padding:0;border:0;background:transparent;font:inherit;font-size:17px;line-height:24px;letter-spacing:-.119px; }
 .ic-input-field input:focus,.ic-textarea-field textarea:focus { outline:none; }
-.ic-input-field input::placeholder,.ic-textarea-field textarea::placeholder { color:var(--secondary);opacity:1; }
+.ic-input-field input::placeholder,.ic-textarea-field textarea::placeholder { color:var(--placeholder);opacity:1; }
 .ic-drawer .select-input { font-size:17px;line-height:24px;padding:0;letter-spacing:-.119px; }
-.ic-drawer .select-input::placeholder { color:var(--secondary); }
+.ic-drawer .select-input::placeholder { color:var(--placeholder); }
 .ic-context { display:flex;flex-direction:column;gap:8px; }
 .ic-form h3 { margin:0;font-size:17px;font-weight:590;line-height:24px;letter-spacing:-.51px; }
 .ic-description { display:flex;flex-direction:column;gap:16px; }

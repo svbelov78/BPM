@@ -7,7 +7,7 @@
     id:`cabinet-${entity === 'paths' ? 'path' : 'process'}-${i+1}`, entity, kind:entity,
     number:1232, code:entity === 'paths' ? 'КП1232' : 'П1232',
     title:'Название клиентского пути или процесса максимум две строки…',
-    description:'Блок "B2C" / Дивизион "Кошелек клиента" максимум в две строки…',
+    description:'Блок «B2C» / Дивизион «Кошелек клиента» максимум в две строки…',
     block:'B2C', division:'Кошелек клиента', process:'Обслуживание клиентов',
     owner:'Иванов Иван Васильевич', status:'Подтверждён', date:'2026-01-21', created:'2026-01-21',
     executionStatus:i === 2 ? 'Приостановлен' : 'Исполняется', monitoring:i !== 2,

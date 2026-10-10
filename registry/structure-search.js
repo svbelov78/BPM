@@ -4,7 +4,7 @@
 (() => {
   'use strict';
   const esc = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const fold = value => String(value).toLocaleLowerCase('ru').replace(/ё/g,'е');
+  const fold = value => String(value).toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/[«»„“”]/g,'"');
   const groups = {product:'Продукты',paths:'Клиентские пути',processes:'Процессы',divisionLeader:'Руководители подразделений',processOwner:'Владельцы процессов',pathOwner:'Владельцы клиентских путей'};
 
   function highlight(value, query, compact=false) {
@@ -89,7 +89,7 @@
         const entries=results.filter(entry=>entry.kind===kind);if(!entries.length)return '';
         return `<div class="structure-search-group" role="group" aria-label="${label}"><div class="structure-search-group-label" aria-hidden="true">${label}</div>${entries.map(entry=>{
           const itemIndex=index++;
-          const displayTitle=entry.person?window.BpmAvatars.displayName(entry.title,`${entry.id}:owner`):entry.title;
+          const displayTitle=entry.person?window.BpmAvatars.displayName(entry.title,`${entry.id}:owner`):(window.BpmCopyTypography?.format(entry.title) ?? entry.title);
           const leading=entry.person?`<span class="avatar structure-search-person-avatar" aria-hidden="true">${window.BpmAvatars.portrait(displayTitle)}</span>`:`<button type="button" tabindex="-1" class="id-badge structure-search-id" data-search-copy aria-label="Скопировать ${esc(entry.code)}" title="Скопировать ${esc(entry.code)}">${highlight(entry.code,input.value,true)}<img src="assets/search-suggest-copy.svg" width="16" height="16" alt=""></button>`;
           const label=[entry.code,displayTitle].filter(Boolean).join(' ');
           return `<div class="select-option structure-search-option${entry.person?' structure-search-person':''}" role="option" aria-selected="false" id="structure-search-option-${itemIndex}" data-search-kind="${kind}" data-search-id="${esc(entry.id)}" data-search-index="${itemIndex}" aria-label="Добавить в фильтры: ${esc(label)}">${leading}<span class="option-label">${highlight(displayTitle,input.value)}</span></div>`;

@@ -66,7 +66,10 @@
       const respondent = {id:`${row.id}:respondent`,name:'Васильева Ольга Александровна',role:'Ответственный от ТБ',bank:'Поволжский банк'};
       workflow.currentActor = respondent;
       const responseBanks = ['Уральский банк','Сибирский банк','Среднерусский банк'];
-      workflow.opinions.responses = responseBanks.filter(bank => bank !== row.bank).map((bank,i) => ({bank,person:['Тихонов Денис Олегович','Котова Ирина Петровна','Серов Михаил Андреевич'][i],actorId:`${row.id}:opinion-${i}`,reproduction:i === 1 ? 'Частично' : 'Воспроизводится',comment:i === 1 ? 'Подтверждаем для части операций в офисах.' : 'Проблема воспроизводится, ожидаемый эффект подтверждаем.',createdAt:workflowApi.addDays(row.created,3 + i),updatedAt:workflowApi.addDays(row.created,3 + i),effects:[{id:'time',applicable:true,current:String(90 + 15 * i),target:'30',unit:'мин.',comment:'Расчёт для типового обращения.'}]}));
+      workflow.opinions.responses = responseBanks.filter(bank => bank !== row.bank).map((bank,i) => ({bank,person:['Тихонов Денис Олегович','Котова Ирина Петровна','Серов Михаил Андреевич'][i],actorId:`${row.id}:opinion-${i}`,reproduction:i === 1 ? 'Частично' : 'Воспроизводится',comment:i === 1 ? 'Подтверждаем для части операций в офисах.' : 'Проблема воспроизводится, ожидаемый эффект подтверждаем.',createdAt:workflowApi.addDays(row.created,3 + i),updatedAt:workflowApi.addDays(row.created,3 + i),effects:[
+        {id:'time',applicable:true,current:String(90 + 15 * i),target:'30',unit:'мин.',comment:'Расчёт для типового обращения.'},
+        {id:'quality',applicable:true,comment:'Ожидаемый эффект для нашего банка подтверждаем.'}
+      ]}));
       if (scenario === 'opinions') workflow.opinions.dueDate = '2026-10-12';
       if (scenario === 'collected') workflow.opinions.dueDate = '2026-10-02';
     }

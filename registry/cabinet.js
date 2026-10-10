@@ -3,6 +3,7 @@
 (() => {
   'use strict';
   const esc = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const copy = value => esc(window.BpmCopyTypography?.format(value) ?? value);
   const asset = (name, shared=false) => {
     const path = `assets/${shared ? '' : 'cabinet/'}${name}.svg`;
     return window.BPMEmbeddedAsset ? window.BPMEmbeddedAsset(path) : path;
@@ -169,7 +170,7 @@
       const menu=makePopup(trigger,'Связанные процессы');
       menu.className='insights-relations-tooltip cabinet-relations';menu.setAttribute('role','dialog');
       menu.style.overflowY='auto';
-      menu.innerHTML=`<p>Связанные процессы: ${row.related.length}</p>${row.related.map(item=>`<div class="insights-related-row"><button type="button" class="insights-id" data-cabinet-copy="${esc(item.code)}" aria-label="Скопировать ${esc(item.code)}">${esc(item.code)}${img('copy',true)}</button><button type="button" data-insight-process="${esc(item.id)}" title="${esc(item.title)}">${esc(item.title)}</button></div>`).join('')}`;
+      menu.innerHTML=`<p>Связанные процессы: ${row.related.length}</p>${row.related.map(item=>`<div class="insights-related-row"><button type="button" class="insights-id" data-cabinet-copy="${esc(item.code)}" aria-label="Скопировать ${esc(item.code)}">${esc(item.code)}${img('copy',true)}</button><button type="button" data-insight-process="${esc(item.id)}" title="${copy(item.title)}">${copy(item.title)}</button></div>`).join('')}`;
       menu.addEventListener('click',event=>{
         const copy=event.target.closest('[data-cabinet-copy]');if(copy){api.copyText(copy.dataset.cabinetCopy);return;}
         const button=event.target.closest('[data-insight-process]');if(!button)return;

@@ -3,9 +3,10 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const copy = value => esc(window.BpmCopyTypography?.format(value) ?? value);
   const icon = name => `<img src="assets/${name}.svg" alt="">`;
   const format = n => Number(n).toLocaleString('ru-RU');
-  const normalize = value => String(value).toLocaleLowerCase('ru').replace(/ё/g,'е');
+  const normalize = value => String(value).toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/[«»„“”]/g,'"');
   const labels = {block:'Блоки',division:'Подразделения',query:'Поиск',favorites:'Список',product:'Продукты',paths:'Клиентские пути',processes:'Процессы',people:'Люди',divisionLeader:'Руководители подразделений',processOwner:'Владельцы процессов',pathOwner:'Владельцы клиентских путей'};
   const kindLabels = {block:'Блок',division:'Подразделение',product:'Продукт'};
   const PAGINATION_THRESHOLD = 50, DEFAULT_PAGE_SIZE = 50, PAGE_SIZES = [25,50,75,100], LOAD_MS = 2000, ANIMATION_MS = 1100;
@@ -85,7 +86,7 @@
         if(entry.kind==='product')selects.product.set(entityFilters.product);
         clearTimeout(searchTimer);query='';$('structure-search').value='';
         revealSelection=true;opened.clear();openedPaths.clear();pages.clear();detailTables.clear();reload();
-        $('structure-search-status').textContent=`Добавлен фильтр: ${[entry.code,entry.title].filter(Boolean).join(' ')}`;
+        $('structure-search-status').textContent=`Добавлен фильтр: ${window.BpmCopyTypography.format([entry.code,entry.title].filter(Boolean).join(' '))}`;
         $('structure-search').focus({preventScroll:true});
       }});
 
@@ -173,7 +174,7 @@
     function nodeMarkup(node) {
       if(node.synthetic)return `<div class="structure-flat" id="panel-${node.id}" role="region" aria-label="${entity==='paths'?'Все клиентские пути':'Все процессы'}">${table(node)}</div>`;
       const isOpen=opened.has(node.id);
-      return `<article class="structure-node" data-kind="${node.kind}" data-node="${node.id}" style="--level:${node.depth}"><button class="structure-heading" id="heading-${node.id}" aria-expanded="${isOpen}" aria-controls="panel-${node.id}" data-expand="${node.id}"><span class="structure-title">${icon(node.kind)}<span class="structure-title-copy"><span class="structure-kind">${kindLabels[node.kind]}</span><span class="structure-name">${esc(node.name)}</span></span></span>${owner(node.owner,node.owners,node.ownerSimulated,`${node.id}:owner`)}${showAverage?averageChart(node):''}${chart(node)}<span class="structure-chevron">${icon('chevron-down')}</span></button><div class="structure-children" id="panel-${node.id}" aria-labelledby="heading-${node.id}"${isOpen?'':' hidden'}>${isOpen?content(node):''}</div></article>`;
+      return `<article class="structure-node" data-kind="${node.kind}" data-node="${node.id}" style="--level:${node.depth}"><button class="structure-heading" id="heading-${node.id}" aria-expanded="${isOpen}" aria-controls="panel-${node.id}" data-expand="${node.id}"><span class="structure-title">${icon(node.kind)}<span class="structure-title-copy"><span class="structure-kind">${kindLabels[node.kind]}</span><span class="structure-name">${copy(node.name)}</span></span></span>${owner(node.owner,node.owners,node.ownerSimulated,`${node.id}:owner`)}${showAverage?averageChart(node):''}${chart(node)}<span class="structure-chevron">${icon('chevron-down')}</span></button><div class="structure-children" id="panel-${node.id}" aria-labelledby="heading-${node.id}"${isOpen?'':' hidden'}>${isOpen?content(node):''}</div></article>`;
     }
     function content(node) {return !node.children.length?(node.total?table(node):`<div class="structure-empty"><p>${entity==='paths'?'В источнике нет связанного клиентского пути.':'В источнике нет связанного процесса с корректным кодом.'} Группа сохранена в структуре.</p></div>`):node.children.map(nodeMarkup).join('');}
     function compareRows(a,b,key,direction) {
@@ -206,7 +207,7 @@
       const efficiency=`<span class="structure-efficiency structure-bucket-${row.bucket}">${row.efficiency===null?'<span class="structure-no-efficiency">Нет оценки</span>':window.BpmCardVisuals.efficiency(row,true)}</span>`;
       const more=`<button class="structure-row-more icon-button" data-structure-menu="${row.id}" aria-label="Действия с ${isPath?'клиентским путём':'процессом'} ${row.number}" aria-haspopup="menu">${icon('more')}</button>`;
       const metrics=isPath?`<td class="structure-path-efficiency-cell">${efficiency}</td><td class="structure-path-chart-cell">${pathProcessChart(row,node)}${more}</td>`:`<td class="structure-process-efficiency-cell">${efficiency}${more}</td>`;
-      const main=`<tr data-structure-record="${row.id}" data-record-entity="${row.entity}" data-expanded="${pathOpen}"><td class="structure-row-title-cell"><div class="structure-row-meta">${favorite?'<span class="favorite-heart" role="img" aria-label="В избранном">'+icon('liked')+'</span>':''}<button class="id-badge" data-structure-copy="${row.id}" aria-label="Скопировать ${esc(idLabel)}"${row.numberSimulated?' title="Демонстрационный ID: в исходном Excel идентификатор КП отсутствует"':''}>${esc(idLabel)}${icon('copy')}</button>${row.type?`<span class="tag">${esc(row.type)}</span>`:''}${variantCount?`<span class="count-badge">${variantCount} ${variantCount%10===1&&variantCount%100!==11?'вариант':variantCount%10>=2&&variantCount%10<=4&&(variantCount%100<12||variantCount%100>14)?'варианта':'вариантов'}${icon('info')}</span>`:''}</div><button class="structure-row-title" data-structure-detail="${row.id}">${esc(row.title)}</button>${expansion}</td><td class="structure-row-owner-cell">${owner(row.owner,row.owners,false,`${row.id}:owner`)}</td>${metrics}</tr>`;
+      const main=`<tr data-structure-record="${row.id}" data-record-entity="${row.entity}" data-expanded="${pathOpen}"><td class="structure-row-title-cell"><div class="structure-row-meta">${favorite?'<span class="favorite-heart" role="img" aria-label="В избранном">'+icon('liked')+'</span>':''}<button class="id-badge" data-structure-copy="${row.id}" aria-label="Скопировать ${esc(idLabel)}"${row.numberSimulated?' title="Демонстрационный ID: в исходном Excel идентификатор КП отсутствует"':''}>${esc(idLabel)}${icon('copy')}</button>${row.type?`<span class="tag">${esc(row.type)}</span>`:''}${variantCount?`<span class="count-badge">${variantCount} ${variantCount%10===1&&variantCount%100!==11?'вариант':variantCount%10>=2&&variantCount%10<=4&&(variantCount%100<12||variantCount%100>14)?'варианта':'вариантов'}${icon('info')}</span>`:''}</div><button class="structure-row-title" data-structure-detail="${row.id}">${copy(row.title)}</button>${expansion}</td><td class="structure-row-owner-cell">${owner(row.owner,row.owners,false,`${row.id}:owner`)}</td>${metrics}</tr>`;
       if(!linked.length)return main;
       const linkedNode={id:drillId,parentId:node.id,name:row.title,records:linked,total:linked.length,recordEntity:relatedEntity};
       detailTables.set(drillId,linkedNode);
@@ -220,10 +221,10 @@
     }
     function paginationMarkup(node,page,size,total,maxPage) {
       const numbers=[...new Set([1,page-1,page,page+1,maxPage].filter(n=>n>0&&n<=maxPage))].sort((a,b)=>a-b);
-      const button=(target,label,body,extra='')=>`<button class="page-button${target===page&&!extra?' active':''}" data-structure-page="${node.id}" data-page="${target}" aria-label="${esc(label)}: ${esc(node.name)}" ${extra|| (target===page?'aria-current="page"':'')}>${body}</button>`;
+      const button=(target,label,body,extra='')=>`<button class="page-button${target===page&&!extra?' active':''}" data-structure-page="${node.id}" data-page="${target}" aria-label="${copy(label)}: ${copy(node.name)}" ${extra|| (target===page?'aria-current="page"':'')}>${body}</button>`;
       let last=0;
       const numbered=numbers.map(n=>{const gap=last&&n-last>1?'<span class="page-button" aria-hidden="true">…</span>':'';last=n;return gap+button(n,`Страница ${n}`,n);}).join('');
-      const navigation=maxPage>1?`<nav aria-label="Страницы: ${esc(node.name)}">${button(page-1,'Предыдущая страница',icon('chevron-left'),`data-direction="previous"${page===1?' disabled':''}`)}${numbered}${button(page+1,'Следующая страница',icon('chevron-right'),`data-direction="next"${page===maxPage?' disabled':''}`)}</nav>`:'';
+      const navigation=maxPage>1?`<nav aria-label="Страницы: ${copy(node.name)}">${button(page-1,'Предыдущая страница',icon('chevron-left'),`data-direction="previous"${page===1?' disabled':''}`)}${numbered}${button(page+1,'Следующая страница',icon('chevron-right'),`data-direction="next"${page===maxPage?' disabled':''}`)}</nav>`:'';
       return `<div class="pagination structure-pagination" data-structure-pagination="${node.id}" data-total="${total}"><div class="select-host structure-page-size" id="structure-size-${node.id}" data-structure-size="${node.id}"></div>${navigation}<span class="sr-only" role="status">${(page-1)*size+1}–${Math.min(page*size,total)} из ${format(total)}</span></div>`;
     }
     function table(node) {
@@ -237,7 +238,7 @@
       const pagination=paginate?paginationMarkup(node,page,size,rows.length,maxPage):'';
       const isPathTable=tableEntity==='paths';
       const columns=isPathTable?'<col><col><col><col>':'<col><col><col>';
-      return `<div class="structure-table-scroll" tabindex="0" role="region" aria-label="${entityName}: ${esc(node.name)}; таблицу можно прокручивать по горизонтали"><table class="structure-table ${isPathTable?'structure-path-table':'structure-process-table'}" data-table-entity="${tableEntity}"><caption class="sr-only">${esc(node.name)} — ${entityName}</caption><colgroup>${columns}</colgroup><thead><tr>${headings.map(([label,key])=>{const active=sortValue.startsWith(`${key}-`),desc=active&&sortValue.endsWith('desc');return `<th scope="col"${active?` aria-sort="${desc?'descending':'ascending'}"`:''}><button class="table-sort-button" data-structure-sort="${node.id}" data-column="${key}" data-active="${active}" aria-label="${label}: по ${active&&!desc?'убыванию':'возрастанию'}"><span class="structure-column-label">${label==='Эффективность'?'Эф\u00adфек\u00adтив\u00adность':label}</span><img class="table-sort-arrow${desc?' is-reversed':''}" src="assets/arrow-down.svg" alt=""></button></th>`;}).join('')}${isPathTable?'<th scope="col" class="structure-path-chart-heading"><span class="structure-column-label">Процессы</span></th>':''}</tr></thead><tbody>${selected.map(row=>rowMarkup(row,node)).join('')}</tbody></table></div>${pagination}`;
+      return `<div class="structure-table-scroll" tabindex="0" role="region" aria-label="${entityName}: ${copy(node.name)}; таблицу можно прокручивать по горизонтали"><table class="structure-table ${isPathTable?'structure-path-table':'structure-process-table'}" data-table-entity="${tableEntity}"><caption class="sr-only">${copy(node.name)} — ${entityName}</caption><colgroup>${columns}</colgroup><thead><tr>${headings.map(([label,key])=>{const active=sortValue.startsWith(`${key}-`),desc=active&&sortValue.endsWith('desc');return `<th scope="col"${active?` aria-sort="${desc?'descending':'ascending'}"`:''}><button class="table-sort-button" data-structure-sort="${node.id}" data-column="${key}" data-active="${active}" aria-label="${label}: по ${active&&!desc?'убыванию':'возрастанию'}"><span class="structure-column-label">${label==='Эффективность'?'Эф\u00adфек\u00adтив\u00adность':label}</span><img class="table-sort-arrow${desc?' is-reversed':''}" src="assets/arrow-down.svg" alt=""></button></th>`;}).join('')}${isPathTable?'<th scope="col" class="structure-path-chart-heading"><span class="structure-column-label">Процессы</span></th>':''}</tr></thead><tbody>${selected.map(row=>rowMarkup(row,node)).join('')}</tbody></table></div>${pagination}`;
     }
 
     function disposePageSelects(root=list) {
@@ -264,7 +265,7 @@
       if(query.trim())groups.unshift({key:'query',values:[query]});
       if(favoritesOnly)groups.push({key:'favorites',values:['Избранное']});
       $('structure-selected').hidden=!groups.length;
-      $('structure-chips').innerHTML=groups.map(({key,values})=>`<div class="applied-filter-group"><span class="applied-filter-label">${labels[key]}</span>${values.map(value=>{const entry=searchCatalog.get(key,value),label=entry?[entry.code,entry.title].filter(Boolean).join(' · '):baseNodes.get(value)?.name||value;return `<span class="chip applied-filter-chip" title="${esc(label)}"><span class="chip-text">${esc(label)}</span><button data-structure-filter="${key}" data-value="${esc(value)}" aria-label="Убрать фильтр ${esc(label)}">${icon('close-16')}</button></span>`;}).join('')}</div>`).join('');
+      $('structure-chips').innerHTML=groups.map(({key,values})=>`<div class="applied-filter-group"><span class="applied-filter-label">${labels[key]}</span>${values.map(value=>{const entry=searchCatalog.get(key,value),label=entry?[entry.code,entry.title].filter(Boolean).join(' · '):baseNodes.get(value)?.name||value;return `<span class="chip applied-filter-chip" title="${copy(label)}"><span class="chip-text">${copy(label)}</span><button data-structure-filter="${key}" data-value="${esc(value)}" aria-label="Убрать фильтр ${copy(label)}">${icon('close-16')}</button></span>`;}).join('')}</div>`).join('');
       $('structure-clear-search').hidden=!query;
     }
     function syncSummary() {

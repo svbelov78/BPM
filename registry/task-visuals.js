@@ -3,6 +3,7 @@
 (() => {
   'use strict';
   const escape = value => String(value ?? '').replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
+  const copy = value => escape(window.BpmCopyTypography?.format(value) ?? value);
   const asset = name => `assets/tasks/${name}.svg`;
   const icon = (name, className = '') => `<img class="${className}" src="${asset(name)}" alt="" aria-hidden="true">`;
   // Status/Success (276:7) and Status/Info (276:10), with exact labels.
@@ -103,7 +104,7 @@
   }
   function tableRow(task) {
     const createdTime = String(task.created || '').match(/[T ](\d{2}:\d{2})/)?.[1] || '';
-    const processLink = task.processId ? `<button type="button" class="task-process-link" data-task-process="${escape(task.processId)}" title="Открыть процесс ${escape(task.processId)}">${escape(task.processTitle || task.processId)}</button>` : '<span class="task-muted">—</span>';
+    const processLink = task.processId ? `<button type="button" class="task-process-link" data-task-process="${escape(task.processId)}" title="Открыть процесс ${escape(task.processId)}">${copy(task.processTitle || task.processId)}</button>` : '<span class="task-muted">—</span>';
     return `<tr class="task-table-row${task.highlight ? ' task-highlight' : ''}" data-task-id="${escape(task.id)}">
       <td class="task-table-task"><div class="task-table-tags">${typeTag(task.type)}${idBadge(task.id)}</div><button type="button" class="task-table-title" data-task-id="${escape(task.id)}" title="${escape(task.title)}">${escape(task.title)}</button><p class="task-table-description">${escape(task.description)}</p></td>
       <td class="task-table-process">${task.processId ? idBadge(task.processCode || task.processId) : ''}${processLink}</td>

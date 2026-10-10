@@ -7,15 +7,13 @@
   const section = (id,title,count,content,options={}) => `<details class="pd-section ${esc(options.className || '')}" id="pd-${esc(id)}"${options.open === false ? '' : ' open'}><summary class="pd-section-heading"><h2>${esc(title)}${count !== null && count !== undefined && count !== '' ? ` <span class="pd-counter">${esc(count)}</span>` : ''}</h2>${icon('chevron-up','pd-section-chevron')}</summary><div class="pd-section-content">${content}</div></details>`;
   const processAnchors = [['about','О процессе'],['monitoring','Мониторинг'],['insights','Инсайты'],['tasks','Задачи'],['documents','Документы']];
   let anchors=processAnchors;
-  let dialog,main,row,options,selects=[],scrollFrame,toastTimer,returnFocus,loadingTimer,closingTimer;
+  let dialog,main,row,options,selects=[],scrollFrame,returnFocus,loadingTimer,closingTimer;
   let opening=0,closing=false,dynamicsCleanup;
   const LOADING_DURATION=2000;
   const filters = {insights:{status:'all',source:''},monitoring:{status:'all'}};
 
   function notify(message) {
-    const target=dialog.querySelector('.pd-notice');
-    target.textContent=message;target.hidden=false;
-    clearTimeout(toastTimer);toastTimer=setTimeout(()=>{target.hidden=true;},4500);
+    window.BpmToast.show(message);
   }
   async function copy(value) {
     try { await navigator.clipboard.writeText(value); notify('Скопировано'); }
@@ -190,7 +188,7 @@
     dialog.classList.remove('pd-is-closing','pd-has-entered');
     window.BpmProcessMotion?.cancel(dialog);finishLoading(false);
     document.body.classList.remove('pd-drawer-open');selects.forEach(select=>select.close());selects=[];
-    window.BpmCardVisuals.cancelCounters(dialog);cancelAnimationFrame(scrollFrame);clearTimeout(toastTimer);
+    window.BpmCardVisuals.cancelCounters(dialog);cancelAnimationFrame(scrollFrame);
     const id=CSS.escape(row?.id || '');
     const trigger=returnFocus?.isConnected ? returnFocus : document.querySelector(`[data-detail="${id}"],[data-structure-detail="${id}"]`);
     if(restoreFocus)(trigger || document.getElementById(row?.entity==='paths'?'paths-tab':'processes-tab'))?.focus({preventScroll:true});
@@ -227,7 +225,7 @@
     const utilities={esc,icon,tag,section,efficiency:window.BpmCardVisuals.efficiency,isFavorite:options.isFavorite?.(row) || false};
     const content=isJourney?window.BpmJourneyDetails.render(row,utilities):`${window.BpmProcessOverview.render(row,utilities)}${window.BpmProcessSections.render(row,utilities)}`;
     const backlink=options.backRecord?`<button type="button" class="pd-backlink" data-pd-action="back">${icon('calendar-arrow-left')}<span>Назад к клиентскому пути</span></button>`:'';
-    dialog.innerHTML=`<div class="pd-layout"><div class="pd-main" tabindex="-1">${backlink}${content}</div><aside class="pd-navigation" aria-label="Разделы ${entityTitle}"><div class="pd-navigation-actions"><button class="pd-control pd-share" data-pd-action="share" aria-label="Скопировать ссылку ${isJourney?'на клиентский путь':'на процесс'}" title="Поделиться">${icon('imgIcon24Share')}</button><button class="pd-control pd-close" data-pd-action="close" aria-label="Закрыть деталку ${entityTitle}" title="Закрыть (Esc)" autofocus>${icon('imgIcon24Exit')}</button></div><nav class="pd-anchors">${anchors.map(([id,label],index)=>`<button type="button" data-pd-anchor="${id}" class="pd-anchor${index===0?' is-active':''}"${index===0?' aria-current="location"':''}>${label}</button>`).join('')}</nav></aside></div><div class="pd-notice" role="status" aria-live="polite" hidden></div>`;
+    dialog.innerHTML=`<div class="pd-layout"><div class="pd-main" tabindex="-1">${backlink}${content}</div><aside class="pd-navigation" aria-label="Разделы ${entityTitle}"><div class="pd-navigation-actions"><button class="pd-control pd-share" data-pd-action="share" aria-label="Скопировать ссылку ${isJourney?'на клиентский путь':'на процесс'}" title="Поделиться">${icon('imgIcon24Share')}</button><button class="pd-control pd-close" data-pd-action="close" aria-label="Закрыть деталку ${entityTitle}" title="Закрыть (Esc)" autofocus>${icon('imgIcon24Exit')}</button></div><nav class="pd-anchors">${anchors.map(([id,label],index)=>`<button type="button" data-pd-anchor="${id}" class="pd-anchor${index===0?' is-active':''}"${index===0?' aria-current="location"':''}>${label}</button>`).join('')}</nav></aside></div>`;
     const announcement=document.createElement('div');announcement.className='sr-only pd-loading-announcement';announcement.setAttribute('role','status');announcement.setAttribute('aria-live','polite');announcement.textContent=`Загрузка деталки ${entityTitle}…`;dialog.append(announcement);
     main=dialog.querySelector('.pd-main');main.addEventListener('scroll',syncAnchor,{passive:true});
     dynamicsCleanup=window.BpmDynamics.bind(dialog);

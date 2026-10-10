@@ -3,6 +3,7 @@
 (() => {
   'use strict';
   const esc = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const copy = value => esc(window.BpmCopyTypography?.format(value) ?? value);
   const data=window.BPM_TOP_KP, records=new Map(data.records.map(record=>[record.id,record]));
   const categories=new Map();
   data.blocks.forEach(block=>{categories.set(block.sourceCell,block);block.departments.forEach(dept=>{categories.set(dept.sourceCell,dept);dept.groups.forEach(group=>{if(group.sourceCell)categories.set(group.sourceCell,group);});});});
@@ -178,7 +179,7 @@
   }
   function card(item) {
     const record=records.get(item.id),value=score(record),label=`${code(record)}. ${record.title}. Эффективность ${value}%, демонстрационная оценка. Открыть карточку`;
-    return `<button type="button" class="top-kp-card" data-top-kp-id="${esc(record.id)}" data-top-kp-code="${esc(code(record))}" data-band="${band(value)}" aria-label="${esc(label)}"><span class="top-kp-card-title">${esc(record.title)}</span></button>`;
+    return `<button type="button" class="top-kp-card" data-top-kp-id="${esc(record.id)}" data-top-kp-code="${esc(code(record))}" data-band="${band(value)}" aria-label="${copy(label)}"><span class="top-kp-card-title">${copy(record.title)}</span></button>`;
   }
   function renderNode(node,maxColumns,spacing,cardWidth) {
     // max(row widths) is piecewise linear: evaluating at 0 and 1 would choose
@@ -188,10 +189,10 @@
     const item=categories.get(node.cell),headingId=`top-kp-heading-${item.key}`;
     if(node.kind==='group') {
       const columns=Math.min(maxColumns,node.columns),metric=groupMetrics(node);
-      return `<section class="top-kp-group" data-source-category="${node.cell}" style="--top-columns:${columns};--top-column-gap:${metric.columnGap}px;--top-row-gap:${metric.rowGap}px;--top-label-gap:${metric.labelGap}px;--top-group-right:${metric.right}px" aria-labelledby="${headingId}"><h4 class="top-kp-group-title" id="${headingId}" title="${esc(item.name)}">${esc(item.name)}</h4><div class="top-kp-cards">${cardsFor(item).map(card).join('')}</div></section>`;
+      return `<section class="top-kp-group" data-source-category="${node.cell}" style="--top-columns:${columns};--top-column-gap:${metric.columnGap}px;--top-row-gap:${metric.rowGap}px;--top-label-gap:${metric.labelGap}px;--top-group-right:${metric.right}px" aria-labelledby="${headingId}"><h4 class="top-kp-group-title" id="${headingId}" title="${copy(item.name)}">${copy(item.name)}</h4><div class="top-kp-cards">${cardsFor(item).map(card).join('')}</div></section>`;
     }
     const heading=node.kind==='block'?'h2':'h3';
-    return `<section class="top-kp-${node.kind}${node.cell==='A21'?' top-kp-department--major':''}" style="${sizing}" data-source-category="${node.cell}" aria-labelledby="${headingId}"><${heading} id="${headingId}" title="${esc(item.name)}"><span>${esc(item.name)}</span></${heading}>${node.children.map(child=>renderNode(child,maxColumns,spacing,cardWidth)).join('')}</section>`;
+    return `<section class="top-kp-${node.kind}${node.cell==='A21'?' top-kp-department--major':''}" style="${sizing}" data-source-category="${node.cell}" aria-labelledby="${headingId}"><${heading} id="${headingId}" title="${copy(item.name)}"><span>${copy(item.name)}</span></${heading}>${node.children.map(child=>renderNode(child,maxColumns,spacing,cardWidth)).join('')}</section>`;
   }
   function closeHover() {
     const trigger=hoverTrigger,popup=hover;
@@ -220,7 +221,7 @@
     hover.setAttribute('role','tooltip');
     hover.setAttribute('aria-labelledby','top-kp-tooltip-title');hover.setAttribute('aria-describedby','top-kp-tooltip-path');
     const hierarchy=[record.block,record.division,record.group].filter(Boolean).join(' / ');
-    hover.innerHTML=`<div class="top-kp-hover-bubble"><div class="top-kp-hover-top"><span class="id-badge"><span>${esc(code(record))}</span></span>${window.BpmCardVisuals.efficiency({efficiency:score(record)})}</div><strong id="top-kp-tooltip-title">${esc(record.title)}</strong><p class="top-kp-hover-path" id="top-kp-tooltip-path">${esc(hierarchy)}</p></div><img class="top-kp-hover-arrow" src="assets/top-kp/tooltip-arrow.svg" width="24" height="8" alt="" aria-hidden="true">`;
+    hover.innerHTML=`<div class="top-kp-hover-bubble"><div class="top-kp-hover-top"><span class="id-badge"><span>${esc(code(record))}</span></span>${window.BpmCardVisuals.efficiency({efficiency:score(record)})}</div><strong id="top-kp-tooltip-title">${copy(record.title)}</strong><p class="top-kp-hover-path" id="top-kp-tooltip-path">${copy(hierarchy)}</p></div><img class="top-kp-hover-arrow" src="assets/top-kp/tooltip-arrow.svg" width="24" height="8" alt="" aria-hidden="true">`;
     document.body.append(hover);
     const descriptions=(trigger.getAttribute('aria-describedby')||'').split(/\s+/).filter(Boolean);
     trigger.setAttribute('aria-describedby',[...new Set([...descriptions,hover.id])].join(' '));
@@ -297,7 +298,7 @@
     filterModel.fields.forEach(field=>{
       const select=api.createSelect(`top-filter-${field.key}`,{label:field.label,options:field.options,multiple:false,icon:'top-kp/filter-chevron',popupClass:'top-kp-filter-popup',minPopupWidth:field.key==='block'?460:field.key==='ssp'?360:280,onChange:values=>{
         filters[field.key]=values[0]||'';
-        select.input.title=field.options.find(option=>option.value===values[0])?.label||'Все';
+        select.input.title=window.BpmCopyTypography.format(field.options.find(option=>option.value===values[0])?.label||'Все');
         applyFilters();
       }});
       select.input.title='Все';select.host.querySelector('.internal-label').title=field.label;

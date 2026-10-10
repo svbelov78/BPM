@@ -4,6 +4,7 @@
 (() => {
   'use strict';
   const V=window.BpmTaskVisuals, esc=V.escape, clone=value=>JSON.parse(JSON.stringify(value));
+  const copy = value => esc(window.BpmCopyTypography?.format(value) ?? value);
   const $=id=>document.getElementById(id), store=()=>window.BpmTaskStore;
   const assets={back:'assets/task-flow/backlink.svg',close:'assets/task-flow/close.svg',calendar:'assets/task-flow/calendar.svg',clock:'assets/task-flow/clock.svg',emptyClock:'assets/task-flow/clock-placeholder.svg',tick:'assets/task-flow/tick-white.svg',reject:'assets/task-flow/reject-orange.svg',reset:'assets/task-flow/reset.svg',copy:'assets/task-flow/copy.svg',info:'assets/task-types/info-16.svg',lightning:'assets/task-types/lightning-16.svg',check:'assets/task-types/tick-16.svg',ring:'assets/task-types/radio-ring.svg',ringOff:'assets/task-types/radio-off.svg',dot:'assets/task-types/radio-dot.svg',chevron:'assets/field-chevron-down-16.svg',plus:'assets/tasks/plus-blue.svg',completed:'assets/task-flow/completed.svg'};
   const img=(name,size=24)=>`<img src="${assets[name]||window.BpmTaskTypeAssets?.[name]||assets.info}" alt="" width="${size}" height="${size}">`;
@@ -150,7 +151,7 @@
     }
     if((!editing&&!writable)||f.kind==='readonly'){
       let text=value;
-      if(f.kind==='process'){const row=context().processes.find(p=>p.id===value);return `<div class="tf-readonly"><span class="internal-label">${esc(f.label||'Процесс')}</span><div class="tf-process-value">${value?badge(row?.code||data.processCode||value):''}${value?`<button class="tf-value tf-editable" type="button" data-stf-action="process" data-process-id="${esc(value)}">${esc(row?.title||data.processTitle||value)}</button>`:'—'}</div>${err}</div>`;}
+      if(f.kind==='process'){const row=context().processes.find(p=>p.id===value);return `<div class="tf-readonly"><span class="internal-label">${esc(f.label||'Процесс')}</span><div class="tf-process-value">${value?badge(row?.code||data.processCode||value):''}${value?`<button class="tf-value tf-editable" type="button" data-stf-action="process" data-process-id="${esc(value)}">${copy(row?.title||data.processTitle||value)}</button>`:'—'}</div>${err}</div>`;}
       if(f.kind==='date')return `<div class="tf-deadline-row"><div class="tf-readonly"><span class="internal-label">${esc(f.label)}</span><span class="tf-value">${value?esc(V.date(value)):'Без срока'}</span></div>${key==='deadline'?`<span class="tf-deadline-note">${deadline(value)}</span>`:''}</div>`;
       if(f.kind==='people')return `<div class="tf-assignees"><div class="tf-readonly"><span class="internal-label">${esc(f.label)}</span><span class="tf-value">Выбрано ${(value||[]).length}</span></div><div class="tf-avatar-group">${(value||[]).map((name,index)=>avatar(name,`${task?.id||draft?.insightId||prefix}:${key==='assignees'?'assignee':key}:${index}`)).join('')}</div>${err}</div>`;
       if(f.kind==='multiselect')return `<div class="tf-readonly"><span class="internal-label">${esc(f.label)}</span><div class="stf-readonly-chips">${(value||[]).map(v=>`<span class="chip">${esc(f.options?.find(o=>o.value===v)?.label||v)}</span>`).join('')||'—'}</div>${help}${err}</div>`;

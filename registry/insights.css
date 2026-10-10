@@ -41,9 +41,12 @@
    leave the close button visible after the cursor leaves the tab. */
 .insights-tab:is(:hover, :has(:focus-visible), .is-keyboard-active) { flex-shrink: 0; min-width: max-content; }
 .insights-tab:is(:hover, :has(:focus-visible), .is-keyboard-active) [role=tab] { padding-right: 8px; }
+/* The ID and its separate close action share the complete tab focus boundary. */
+.insights-tab:has(:focus-visible) { outline: 2px solid var(--blue); outline-offset: 3px; }
+.insights-tab :is([role=tab], .insights-tab-close):focus-visible { outline: none; }
 .insights-tab-close { display: none; align-items: center; justify-content: center; flex: none; width: 24px; height: 34px; margin-right: 12px; border-radius: 8px; }
 .insights-tab:is(:hover, :has(:focus-visible), .is-keyboard-active) .insights-tab-close { display: inline-flex; }
-.insights-tab-close:hover { background: #0088ff1a; }
+.insights-tab-close:is(:hover, :focus-visible) { background: #0088ff1a; }
 .insights-tab-close img { width: 24px; height: 24px; }
 .insights-detail-view { min-width: 0; }
 .insights-panel.has-insight-tabs .insights-title-row { min-height: 66px; }

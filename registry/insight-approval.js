@@ -3,6 +3,7 @@
 (() => {
   'use strict';
   const esc = value => window.BpmTaskVisuals.escape(value);
+  const copy = value => esc(window.BpmCopyTypography?.format(value) ?? value);
   const ui = () => window.BpmInsightPresentation;
   const workflow = () => window.BpmInsightWorkflow;
   const assets = {
@@ -24,22 +25,39 @@
     : img(state,state==='pending'?23:24);
   const accordion = (key,title,body,open=true) => `<details class="ia-accordion" data-ia-section="${key}"${open?' open':''}><summary>${esc(title)}${img('chevron',16)}</summary><div class="ia-accordion-body">${body}</div></details>`;
   function tracker(row,{completionPreview=false}={}) {
-    if (row?.source !== 'ТБ') return '';
+    const status = workflow().canonicalize(row?.status), rejected = status === 'Отклонено';
+    if (!rejected && row?.source !== 'ТБ') return '';
     const model = workflow().getWorkflow(row);
     const ownId = model.currentActor?.id;
-    const hasOwnApproval = !!ownId && (model.stages || []).some(stage => (stage.decisions || []).some(decision => decision.actorId===ownId && decision.decision==='approve'));
-    if (!completionPreview && workflow().canonicalize(row.status)!=='Новый' && !hasOwnApproval) return '';
+    const hasOwnDecision = !!ownId && (model.stages || []).some(stage => (stage.decisions || []).some(decision => decision.actorId===ownId && ['approve','reject'].includes(decision.decision)));
+    if (!completionPreview && status!=='Новый' && !hasOwnDecision && !rejected) return '';
     const mayApprove = workflow().canApprove(row);
     const items = (model.stages || []).flatMap(stage => {
-      const decisions = (stage.decisions || []).map(decision => ({state:decision.decision==='approve'?'approved':'rejected',role:decision.role,person:decision.actorName,date:decision.date,comment:decision.comment,own:decision.decision==='approve'&&decision.actorId===ownId}));
-      if (model.stage !== 'complete' && ['current','next'].includes(stage.status)) {
+      const decisions = (stage.decisions || []).map(decision => ({state:decision.decision==='approve'?'approved':'rejected',role:decision.role,person:decision.actorName,date:decision.date,comment:decision.comment,own:['approve','reject'].includes(decision.decision)&&decision.actorId===ownId}));
+      if (!rejected && model.stage !== 'complete' && ['current','next'].includes(stage.status)) {
         const remaining=(stage.actors || []).filter(actor => !(stage.decisions || []).some(d=>d.actorId===actor.id));
         decisions.push({state:stage.status==='current'?'current':'pending',role:remaining.map(a=>a.role).join(' / ') || stage.title,person:remaining.map(a=>a.name).join(' / '),due:stage.status==='current'?stage.dueDate:'',own:mayApprove&&stage.status==='current'&&remaining.some(actor=>actor.id===ownId)});
       }
       return decisions;
     });
-    if (!items.length) return '';
-    return `<aside class="ia-tracker"><h3>Ход согласования</h3><ol>${items.map((item,index)=>`<li class="ia-stage" data-stage-state="${item.state}"${item.own?' data-ia-own-stage':''}><span class="ia-stage-rail">${stageIcon(item.state)}</span><div class="ia-stage-copy">${item.due?`<div class="ia-stage-date-line"><small class="ia-stage-deadline">до ${esc(ui().date(item.due))}</small>${item.own?'<span class="ia-stage-own">Ваше согласование</span>':''}</div>`:''}<strong>${esc(item.role)}</strong><small>${esc(window.BpmAvatars.displayName(item.person,`${row.id}:approval:${index}`))}${item.date&&!item.own?` | ${esc(ui().date(item.date))}`:''}</small>${item.date&&item.own?`<div class="ia-stage-date-line"><small>${esc(ui().date(item.date))}</small><span class="ia-stage-own">Ваше согласование</span></div>`:''}${item.comment?`<p>${esc(item.comment)}</p>`:''}</div></li>`).join('')}</ol></aside>`;
+    if (rejected && model.teamDecision?.decision === 'reject') {
+      const decision = model.teamDecision;
+      items.push({state:'rejected',role:decision.role || 'Решение команды процесса',person:decision.actorName,date:decision.date,comment:decision.comment,own:!!ownId && decision.actorId===ownId});
+    }
+    // Read-only legacy fallback: use recorded history/reason, never invent the
+    // approver, decision date or a new workflow. Do not duplicate stage history.
+    if (rejected && !items.length) {
+      const history = (row.detail?.history || []).filter(item => /^(?:Согласовано|Отклонено)\s*[:—-]|^Инсайт (?:согласован|отклон[её]н)(?:[.\s:]|$)/i.test(item.text || '')).slice().reverse();
+      history.forEach(item => {
+        const declined = /^(?:Отклонено\s*[:—-]|Инсайт отклон[её]н(?:[.\s:]|$))/i.test(item.text || '');
+        items.push({state:declined?'rejected':'approved',role:declined?'Отклонение инсайта':'Согласование инсайта',date:item.date,comment:item.text});
+      });
+    }
+    if (rejected && !items.some(item => item.state==='rejected') && String(row.rejection || '').trim()) {
+      items.push({state:'rejected',role:'Отклонение инсайта',comment:row.rejection});
+    }
+    if (!items.length) return rejected ? '<aside class="ia-tracker"><h3>Ход согласования</h3><p class="ia-tracker-empty">Записи согласования не сохранены.</p></aside>' : '';
+    return `<aside class="ia-tracker"><h3>Ход согласования</h3><ol>${items.map((item,index)=>`<li class="ia-stage" data-stage-state="${item.state}"${item.own?' data-ia-own-stage':''}><span class="ia-stage-rail">${stageIcon(item.state)}</span><div class="ia-stage-copy">${item.due?`<div class="ia-stage-date-line"><small class="ia-stage-deadline">до ${esc(ui().date(item.due))}</small>${item.own?'<span class="ia-stage-own">Ваше согласование</span>':''}</div>`:''}<strong>${esc(item.role)}</strong>${item.person?`<small>${esc(window.BpmAvatars.displayName(item.person,`${row.id}:approval:${index}`))}${item.date&&!item.own?` | ${esc(ui().date(item.date))}`:''}</small>`:''}${item.date&&item.own?`<div class="ia-stage-date-line"><small>${esc(ui().date(item.date))}</small><span class="ia-stage-own">Ваше согласование</span></div>`:item.date&&!item.person?`<small>${esc(ui().date(item.date))}</small>`:''}${item.comment?`<p>${esc(item.comment)}</p>`:''}</div></li>`).join('')}</ol></aside>`;
   }
   // The flight is a visual projection of an already committed decision. It
   // never changes permissions, stages or storage and never fakes success.
@@ -95,7 +113,7 @@
       // anchored above the actions rather than letting the new copy cover them.
       top=Math.max(12,anchorTop-view.top-card.getBoundingClientRect().height-12);
       card.style.top=`${top}px`;
-      const ownIcon=card.querySelector('[data-ia-own-stage][data-stage-state="approved"] .ia-stage-rail > img');
+      const ownIcon=card.querySelector('[data-ia-own-stage]:is([data-stage-state="approved"],[data-stage-state="rejected"]) .ia-stage-rail > img');
       if(ownIcon)void animate(ownIcon,[{transform:'scale(.65)',opacity:.35},{transform:'scale(1.16)',opacity:1},{transform:'scale(1)',opacity:1}],{duration:360,easing:'ease-out'});
       if(!await wait(650)||!live())return;
       root.dataset.iaApprovalPhase='returning';
@@ -148,8 +166,8 @@
       }).join('');
       const tasks=(window.BpmTaskStore?.list?.()||[]).filter(task=>(detail.taskIds||[]).includes(task.id)||task.insightId===row.id||task.sourceInsightId===row.id);
       const taskBody=tasks.length?tasks.map(task=>`<button class="ia-task" type="button" data-ia-task="${esc(task.id)}"><span class="task-id-badge">${esc(task.id)}</span><strong>${esc(task.title)}</strong></button>`).join(''):`<div class="ia-empty">${img('empty',40)}<p>Нет ни одной задачи</p><small>К данному инсайту не заведено ни одной задачи</small></div>`;
-      scroll.innerHTML=`<div class="ia-overview"><div class="ia-description-column"><div class="ia-context">${label('Клиентский путь',`${path?badge(`КП${path.number}`):''}<p>${esc(row.path||'Не указан')}</p>`)}${label('Процесс',`${process?`${badge(process.code)}<button type="button" class="ia-process-name" data-ia-process="${esc(process.id)}">${esc(process.title)}</button>`:'<p>Не указан</p>'}`)}</div><section class="ia-description"><h3>Описание инсайта</h3>${label('Проблема / наблюдение',`<p>${esc(detail.problem||row.description)}</p>`)}${label('Корневые причины',`<p>${esc(detail.causes||'Не указаны')}</p>`)}${label('Предложение/решение',`<p>${esc(detail.proposal||'Не указано')}</p>`)}</section></div>${tracker(row)}</div>
-        <div class="ia-pair">${accordion('relations','Связи процесса',`${label('Варианты предоставления результата процесса',`<div class="ia-links">${links}</div>`)}${label('Продукты ЕКОУ',`<p>${esc(row.products?.join(', ')||row.product||'Не указаны')}</p>`)}`)}${accordion('files',`Вложения ${files.length}`,files.length?files.map(file=>`<button type="button" class="ia-file" data-ia-file>${img('file')}<span>${esc(file.name)}</span></button>`).join(''):'<p class="secondary">Вложения отсутствуют</p>')}</div>
+      scroll.innerHTML=`<div class="ia-overview"><div class="ia-description-column"><div class="ia-context">${label('Клиентский путь',`${path?badge(`КП${path.number}`):''}<p>${copy(row.path||'Не указан')}</p>`)}${label('Процесс',`${process?`${badge(process.code)}<button type="button" class="ia-process-name" data-ia-process="${esc(process.id)}">${copy(process.title)}</button>`:'<p>Не указан</p>'}`)}</div><section class="ia-description"><h3>Описание инсайта</h3>${label('Проблема / наблюдение',`<p>${esc(detail.problem||row.description)}</p>`)}${label('Корневые причины',`<p>${esc(detail.causes||'Не указаны')}</p>`)}${label('Предложение/решение',`<p>${esc(detail.proposal||'Не указано')}</p>`)}</section></div>${tracker(row)}</div>
+        <div class="ia-pair">${accordion('relations','Связи процесса',`${label('Варианты предоставления результата процесса',`<div class="ia-links">${links}</div>`)}${label('Продукты ЕКОУ',`<p>${copy(row.products?.join(', ')||row.product||'Не указаны')}</p>`)}`)}${accordion('files',`Вложения ${files.length}`,files.length?files.map(file=>`<button type="button" class="ia-file" data-ia-file>${img('file')}<span>${esc(file.name)}</span></button>`).join(''):'<p class="secondary">Вложения отсутствуют</p>')}</div>
         <section class="ia-effects"><h2>Ожидаемые эффекты</h2>${effects||'<p class="secondary">Эффекты не указаны</p>'}</section>
         ${accordion('tasks',`Задачи ${tasks.length}`,taskBody)}
         <section class="ia-participants"><h3>Участники инсайта</h3><div>${workflow().getParticipants(row).map(({role,name},index)=>{const key=`${row.id}:${role==='Владелец процесса'?'owner':role==='Автор'?'author':`${role}:${index}`}`,displayName=window.BpmAvatars.displayName(name,key);return `<div class="ia-person"><span class="avatar">${displayName==='Система'||displayName==='SYS'?'SYS':window.BpmAvatars.portrait(displayName,key)}</span>${label(role,`<p>${esc(displayName)}</p>`)}</div>`;}).join('')}</div></section>
@@ -201,7 +219,7 @@
     confirmation.addEventListener('submit',event=>{
       event.preventDefault();const text=confirmation.querySelector('textarea').value.trim();
       if(!dialog.open||preview||decision==='approve'&&!scrollGate.allow())return;
-      try{const before=get(),snapshot=decision==='approve'?approvalMotion.capture(dialog.querySelector('[data-ia-decision="approve"]'),before):null;const patch=workflow().decide(before,{decision,comment:text});onChange(rowId,patch);confirmation.close();render();const message=decision==='approve'?'Инсайт согласован':'Решение об отклонении сохранено';dialog.querySelector('[data-ia-announcement]').textContent=message;api.toast?.(message,{success:true});dialog.querySelector('[data-ia-close]')?.focus({preventScroll:true});if(snapshot)void approvalMotion.play(snapshot,get()||{...before,...patch});}
+      try{const before=get(),snapshot=approvalMotion.capture(dialog.querySelector(`[data-ia-decision="${decision}"]`),before);const patch=workflow().decide(before,{decision,comment:text});onChange(rowId,patch);confirmation.close();render();const message=decision==='approve'?'Инсайт согласован':'Решение об отклонении сохранено';dialog.querySelector('[data-ia-announcement]').textContent=message;api.toast?.(message,{success:true});dialog.querySelector('[data-ia-close]')?.focus({preventScroll:true});if(snapshot)void approvalMotion.play(snapshot,get()||{...before,...patch});}
       catch(error){const target=confirmation.querySelector('.ia-error');target.textContent=error.message;target.hidden=false;}
     });
     dialog.addEventListener('click',event=>{

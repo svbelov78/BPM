@@ -21,9 +21,9 @@ async function trackerGeometry(scope, expectedStates=[]) {
 }
 async function trackerVisibility(scope,row,label) {
  const model=row.detail?.workflow,ownId=model?.currentActor?.id;
- const ownApproval=!!ownId&&model.stages?.some(stage=>stage.decisions?.some(decision=>decision.actorId===ownId&&decision.decision==='approve'));
- const expected=row.source==='ТБ'&&(row.status==='Новый'||ownApproval);
- assert.equal(await scope.locator('.ia-tracker').count(),expected?1:0,`${label}: approval tracker shows an active route or our saved approval`);
+ const ownDecision=!!ownId&&model.stages?.some(stage=>stage.decisions?.some(decision=>decision.actorId===ownId&&['approve','reject'].includes(decision.decision)));
+ const expected=row.status==='Отклонено'||row.source==='ТБ'&&(row.status==='Новый'||ownDecision);
+ assert.equal(await scope.locator('.ia-tracker').count(),expected?1:0,`${label}: approval tracker shows a rejected insight, an active route or our saved approval decision`);
  if(expected)assert.equal(await scope.locator('.ia-tracker h3').textContent(),'Ход согласования',`${label}: active route has the correct heading`);
  else assert.equal(await scope.getByText(/^(Ход согласования|История согласования)$/).count(),0,`${label}: neither approval heading remains after hiding the block`);
 }
@@ -93,10 +93,12 @@ async function approvalCopy(scope) {
   assert.ok(approved.detail.workflow.stages.some(stage=>stage.decisions?.some(decision=>decision.decision==='approve')),'Approval decisions remain stored while our completed tracker stays visible');
   assert.equal(await detail.locator('[data-ia-own-stage][data-stage-state="approved"] .ia-stage-own').textContent(),'Ваше согласование');
   await page.locator('.insights-view-controls button[aria-pressed="true"]').click();await ready(page);
-  await page.locator('[data-insight-open="INS-000059"]').click();await trackerGeometry(detail,['rejected','current','pending']);await detail.locator('[data-id-approval="reject"]').click();await confirm.locator('textarea').fill('Подтверждаю отказ: эффект не обоснован.');await confirm.locator('[type=submit]').click();assert.equal(await page.evaluate(()=>BpmInsightStore.get('INS-000059').status),'Отклонено');await trackerVisibility(detail,{source:'ТБ',status:'Отклонено'},'After final rejection');
+  await page.locator('[data-insight-open="INS-000059"]').click();await trackerGeometry(detail,['rejected','current','pending']);await detail.locator('[data-id-approval="reject"]').click();await confirm.locator('textarea').fill('Подтверждаю отказ: эффект не обоснован.');await confirm.locator('[type=submit]').click();assert.equal(await page.evaluate(()=>BpmInsightStore.get('INS-000059').status),'Отклонено');
   const rejected=await page.evaluate(()=>BpmInsightStore.get('INS-000059'));
+  await trackerVisibility(detail,rejected,'After final rejection');
+  assert.equal(await detail.locator('[data-ia-own-stage][data-stage-state="rejected"] .ia-stage-own').textContent(),'Ваше согласование');
   await approvingParticipants(detail,rejected,'Rejected actors are not approving participants');
-  assert.ok(rejected.detail.workflow.stages.some(stage=>stage.decisions?.some(decision=>decision.comment==='Подтверждаю отказ: эффект не обоснован.')),'Rejection comments remain stored after the tracker disappears');
+  assert.ok(rejected.detail.workflow.stages.some(stage=>stage.decisions?.some(decision=>decision.comment==='Подтверждаю отказ: эффект не обоснован.')),'Rejection comments remain stored while our completed rejection stays visible');
   await page.locator('.insights-view-controls button[aria-pressed="true"]').click();await ready(page);
   for(const width of [1440,768,390,320,3840]){
    await page.setViewportSize({width,height:width===3840?2160:920});await page.locator('[data-insight-open="INS-000057"]').click();
@@ -112,7 +114,7 @@ async function approvalCopy(scope) {
   }
   await page.reload();await ready(page);
   for(const [id,snapshot] of [['INS-000058',approved],['INS-000059',rejected]]){
-   assert.deepEqual(await page.evaluate(id=>BpmInsightStore.get(id),id),snapshot,'Hiding the tracker never alters persisted approval results');
+   assert.deepEqual(await page.evaluate(id=>BpmInsightStore.get(id),id),snapshot,'Rendering the tracker never alters persisted approval results');
    await page.locator(`[data-insight-open="${id}"]`).click();await trackerVisibility(detail,snapshot,`${id} after reload`);await approvingParticipants(detail,snapshot,`${id} participants after reload`);await page.locator('.insights-view-controls button[aria-pressed="true"]').click();await ready(page);
   }
   const fixture=await page.evaluate(()=>BpmInsightStore.get('INS-000060'));
@@ -120,17 +122,17 @@ async function approvalCopy(scope) {
   for(const source of ['ТБ','SberBPM ЦА','Process Mining'])for(const status of ['Новый','Согласовано','Мнения собраны','В работе','Реализовано','Отклонено']){
    const model={source,status};
    await page.evaluate(({id,source,status,detail})=>BpmInsightStore.update(id,{source,status,detail}),{id:fixture.id,...model,detail:fixture.detail});await ready(page);
-   await page.locator(`[data-insight-open="${fixture.id}"]`).click();await trackerVisibility(detail,model,`${source}/${status} tab`);
+   await page.locator(`[data-insight-open="${fixture.id}"]`).click();await trackerVisibility(detail,{...fixture,...model},`${source}/${status} tab`);
    await page.evaluate(()=>document.getElementById('cabinet-nav').click());
    await page.waitForFunction(()=>!document.querySelector('#cabinet-panel').hidden&&document.querySelector('#cabinet-feed-insights')?.getAttribute('aria-busy')==='false');
    await page.locator(`#cabinet-feed-insights [data-cabinet-open="${fixture.id}"] .card-title`).click();await page.locator('#cabinet-insight-drawer[open]').waitFor();
-   await trackerVisibility(detail,model,`${source}/${status} Cabinet drawer`);
+   await trackerVisibility(detail,{...fixture,...model},`${source}/${status} Cabinet drawer`);
    await approvingParticipants(detail,{...fixture,...model},`${source}/${status} Cabinet participants`);
    await page.locator('#cabinet-insight-drawer [data-id-drawer-close]').click();await page.locator('#cabinet-insight-drawer[open]').waitFor({state:'hidden'});
    await page.locator('[data-cabinet-nav="insights"]').click();await ready(page);
    if(await page.locator('#insights-panel.is-insight-detail').count()){await page.locator('.insights-view-controls button[aria-pressed="true"]').click();await ready(page);}
   }
   await page.evaluate(row=>BpmInsightStore.update(row.id,{source:row.source,status:row.status,detail:row.detail}),fixture);
-  assert.deepEqual(errors,[]);console.log('PASS: 16 scenarios, six DS status colors, active loader, fixed shell, reject validation, both rejection routes, our completed approval retained in its tracker after final approval/reload, other trackers remain exclusive to ТБ/Новый across three sources and six statuses in tabs and Cabinet drawers, 24px stage geometry at 320–3840px, assets.');
+  assert.deepEqual(errors,[]);console.log('PASS: 16 scenarios, six DS status colors, active loader, fixed shell, reject validation, both rejection routes, our completed approval/rejection retained in its tracker after final decision/reload, every rejected insight retains its history while other trackers stay limited to ТБ active routes or our saved decisions across three sources and six statuses in tabs and Cabinet drawers, 24px stage geometry at 320–3840px, assets.');
  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

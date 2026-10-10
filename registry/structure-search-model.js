@@ -3,7 +3,7 @@
   'use strict';
 
   const normalize = value => String(value ?? '').toLocaleLowerCase('ru').replace(/ё/g, 'е')
-    .replace(/[‐‑‒–—−]/g, '-').replace(/\s+/g, ' ').trim();
+    .replace(/[‐‑‒–—−]/g, '-').replace(/[«»„“”]/g, '"').replace(/\s+/g, ' ').trim();
   const compactCode = value => normalize(value).replace(/[^a-zа-я0-9]/g, '');
   const distinct = values => [...new Set(values.filter(value => value !== null && value !== undefined && String(value).trim()).map(String))];
   const kindOrder = {product: 0, paths: 1, processes: 2, divisionLeader: 3, processOwner: 4, pathOwner: 5};

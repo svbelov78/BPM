@@ -43,6 +43,7 @@
   <link rel="stylesheet" href="top-kp.css">
   <link rel="stylesheet" href="scroll-fades.css">
   <link rel="stylesheet" href="drawer-scroll-cta.css">
+  <link rel="stylesheet" href="toast.css">
   <script src="avatars.js" defer></script>
   <script src="demo-data.js" defer></script>
   <script src="structure-source.js" defer></script>
@@ -186,7 +187,7 @@
     <section id="top-kp-panel" class="top-kp-panel" aria-labelledby="top-kp-title" hidden></section>
   </main>
   <div class="sr-only" id="result-announcement" role="status" aria-live="polite" aria-atomic="true"></div>
-  <div class="toast" id="toast" role="status" hidden></div>
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true" popover="manual" data-phase="hidden" hidden></div>
   <dialog id="export-dialog" class="modal" aria-labelledby="export-title"><form id="export-form"><div class="modal-heading"><h2 id="export-title">Экспорт реестра</h2><button type="button" class="icon-button" data-close-dialog aria-label="Закрыть"><img src="assets/close.svg" alt=""></button></div><p class="secondary">Выберите данные для выгрузки в CSV.</p><label class="radio-row"><input type="radio" name="export-scope" value="filtered" checked>Все результаты с текущими фильтрами</label><label class="radio-row"><input type="radio" name="export-scope" value="page">Только текущая страница</label><div class="modal-actions"><button type="button" class="button secondary-button" data-close-dialog>Отмена</button><button class="button primary-button" type="submit">Скачать CSV</button></div></form></dialog>
   <dialog id="detail-dialog" class="modal detail-modal" aria-labelledby="detail-title"><div class="modal-heading"><h2 id="detail-title"></h2><button class="icon-button" data-close-dialog aria-label="Закрыть"><img src="assets/close.svg" alt=""></button></div><div id="detail-content"></div></dialog>
   <dialog id="process-drawer" class="pd-drawer" aria-labelledby="pd-title"></dialog>

@@ -169,6 +169,27 @@
     return result;
   }
   const seed = validateRows(window.BPM_INSIGHT_DATA || []);
+  function completeLegacyDemoEffects(row,example) {
+    // The old demo supplied only "time" for every bank. Repair that exact seed
+    // response only, never infer an assessment from a user's partial answer or
+    // from effects whose authored definition has since changed. Loading remains
+    // read-only: the corrected in-memory row is persisted by an explicit edit.
+    if (row.local || !Array.isArray(example?.detail?.effects) || row.source !== example.source || row.bank !== example.bank ||
+        JSON.stringify(row.detail?.effects) !== JSON.stringify(example.detail.effects)) return row;
+    const opinions = row.detail?.workflow?.opinions;
+    const examples = example.detail.workflow?.opinions?.responses;
+    if (!Array.isArray(opinions?.responses) || !Array.isArray(examples)) return row;
+    let changed = false;
+    const responses = opinions.responses.map(response => {
+      const expected = examples.find(item => item.actorId === response.actorId && item.bank === response.bank);
+      if (!Array.isArray(expected?.effects) || !expected.effects.some(effect => effect.id === 'quality')) return response;
+      const legacy = {...expected,effects:expected.effects.filter(effect => effect.id !== 'quality')};
+      if (JSON.stringify(response) !== JSON.stringify(legacy)) return response;
+      changed = true;
+      return clone(expected);
+    });
+    return changed ? record({...row,detail:{...row.detail,workflow:{...row.detail.workflow,opinions:{...opinions,responses}}}}) : row;
+  }
   function mergeDemoRows(saved) {
     const byId = new Map(seed.map(row => [row.id,row]));
     const merged = saved.map(row => {
@@ -178,7 +199,7 @@
       if (!row.local && !row.detail?.workflow && example?.detail?.workflow) {
         return record({...row,detail:{...(row.detail || {}),workflow:clone(example.detail.workflow)}});
       }
-      return row;
+      return completeLegacyDemoEffects(row,example);
     });
     const ids = new Set(merged.map(row => row.id));
     const additions = seed.filter(row => !ids.has(row.id));

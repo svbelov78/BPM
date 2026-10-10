@@ -233,7 +233,7 @@ async function inspectWidth(browser, width) {
     const root = page.locator('#structure-list > .structure-node').filter({has: page.locator(':scope > .structure-heading .structure-name', {hasText: 'Развитие клиентского опыта B2C'})});
     const rootHeading = root.locator(':scope > .structure-heading');
     await rootHeading.click();
-    const division = root.locator('.structure-node[data-kind=division]').filter({has: page.locator(':scope > .structure-heading .structure-name', {hasText: /^(Дивизион ")?Прайм("|)$/})});
+    const division = root.locator('.structure-node[data-kind=division]').filter({has: page.locator(':scope > .structure-heading .structure-name', {hasText: /^(Дивизион «)?Прайм(»|)$/})});
     const divisionHeading = division.locator(':scope > .structure-heading');
     await divisionHeading.click();
     const product = division.locator('.structure-node[data-kind=product]').filter({has: page.locator(':scope > .structure-heading .structure-name', {hasText: /^СберПрайм$/})});
@@ -318,7 +318,7 @@ async function inspectWidth(browser, width) {
     await uniformHeadingTypography(page, width, 'paths collapsed');
     const pathRoot = page.locator('#structure-list > .structure-node').filter({has: page.locator(':scope > .structure-heading .structure-name', {hasText: 'Развитие клиентского опыта B2C'})});
     await pathRoot.locator(':scope > .structure-heading').click();
-    const pathDivision = pathRoot.locator('.structure-node[data-kind=division]').filter({has: page.locator(':scope > .structure-heading .structure-name', {hasText: /^(Дивизион ")?Прайм("|)$/})});
+    const pathDivision = pathRoot.locator('.structure-node[data-kind=division]').filter({has: page.locator(':scope > .structure-heading .structure-name', {hasText: /^(Дивизион «)?Прайм(»|)$/})});
     await pathDivision.locator(':scope > .structure-heading').click();
     const pathProduct = pathDivision.locator('.structure-node[data-kind=product]').filter({has: page.locator(':scope > .structure-heading .structure-name', {hasText: /^СберПрайм$/})});
     await pathProduct.locator(':scope > .structure-heading').click();

@@ -37,6 +37,7 @@
 .ia-process-name:hover,.ia-link:hover { color:var(--blue); }
 .ia-tracker { padding:24px;background:var(--white);border-radius:24px;box-shadow:0 4px 6px #1a1a1a1f;min-width:0; }
 .ia-tracker h3 { font-size:17px;line-height:24px;letter-spacing:-.51px;margin-bottom:16px; }
+.ia-tracker-empty { color:var(--secondary);font-size:13px;line-height:18px; }
 .ia-tracker ol { list-style:none;margin:0;padding:0; }
 .ia-stage { display:flex;gap:8px;padding:0 8px;min-width:0; }
 .ia-stage-rail { display:flex;align-items:center;flex-direction:column;width:24px;flex:none;position:relative;padding-top:8px; }

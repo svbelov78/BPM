@@ -4,6 +4,7 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const esc = value => window.BpmTaskVisuals.escape(value);
+  const copy = value => esc(window.BpmCopyTypography?.format(value) ?? value);
   const normalize = value => String(value ?? '').toLocaleLowerCase('ru').replace(/ё/g,'е');
   const collator = new Intl.Collator('ru', {numeric:true, sensitivity:'base'});
   const date = iso => iso ? iso.split('-').reverse().join('.') : 'Любая';
@@ -339,7 +340,7 @@
     function table(rows, isLoading = false) {
       const columns = [['id','ID, Инсайт, источник, процесс'],['owner','Владелец КП / процесса'],['created','Дата создания'],['status','Статус'],['comments','Комментарии'],['rating','Рейтинг']];
       const [sortKey, direction] = state.sort.split('-');
-      return `<div class="insights-table-wrap" tabindex="0" role="region" aria-label="Таблица инсайтов; на узком экране прокручивается горизонтально"><table class="insights-table"><colgroup><col><col style="width:240px"><col style="width:136px"><col style="width:153px"><col style="width:100px"><col style="width:100px"></colgroup><thead><tr>${columns.map(([key,label],index) => `<th scope="col"${sortKey === key ? ` aria-sort="${direction === 'desc' ? 'descending' : 'ascending'}"` : ''}><button type="button" data-insight-sort="${key}" aria-label="Сортировать: ${label}">${index === 4 ? img('comments') : index === 5 ? img('starOutline') : index === 1 ? '<span>Владелец<br>КП / процесса</span>' : esc(label)}${index < 4 && sortKey === key ? img('sort',16, direction === 'asc' ? 'is-ascending' : '') : ''}</button></th>`).join('')}</tr></thead><tbody>${isLoading ? skeletonRows(rows.length || Math.min(data.length,6) || 4) : rows.map(row => `<tr data-insight-id="${esc(row.id)}" class="insights-table-row${row.problem ? ' is-problem' : ''}"><td class="insights-main-cell"><button type="button" class="insights-row-title" data-insight-open="${esc(row.id)}">${esc(row.title)}</button><p class="insights-row-description">${esc(row.description)}</p>${metadata(row)}</td><td class="owner-cell"><div class="insights-owner">${ownerAvatar(row)}${ownerName(row)}</div></td><td class="date-cell"><time datetime="${row.created}">${date(row.created)}</time></td><td class="status-cell">${status(row)}</td><td class="comment-cell"><span class="insights-score">${img('comments')}<span>${row.comments}</span></span></td><td class="rating-cell"><span class="insights-score">${img('starOutline')}${tableRating(row)}</span></td></tr>`).join('')}</tbody></table></div>`;
+      return `<div class="insights-table-wrap" tabindex="0" role="region" aria-label="Таблица инсайтов; на узком экране прокручивается горизонтально"><table class="insights-table"><colgroup><col><col style="width:240px"><col style="width:136px"><col style="width:153px"><col style="width:100px"><col style="width:100px"></colgroup><thead><tr>${columns.map(([key,label],index) => `<th scope="col"${sortKey === key ? ` aria-sort="${direction === 'desc' ? 'descending' : 'ascending'}"` : ''}><button type="button" data-insight-sort="${key}" aria-label="Сортировать: ${label}">${index === 4 ? img('comments') : index === 5 ? img('starOutline') : index === 1 ? '<span>Владелец<br>КП / процесса</span>' : copy(label)}${index < 4 && sortKey === key ? img('sort',16, direction === 'asc' ? 'is-ascending' : '') : ''}</button></th>`).join('')}</tr></thead><tbody>${isLoading ? skeletonRows(rows.length || Math.min(data.length,6) || 4) : rows.map(row => `<tr data-insight-id="${esc(row.id)}" class="insights-table-row${row.problem ? ' is-problem' : ''}"><td class="insights-main-cell"><button type="button" class="insights-row-title" data-insight-open="${esc(row.id)}">${esc(row.title)}</button><p class="insights-row-description">${esc(row.description)}</p>${metadata(row)}</td><td class="owner-cell"><div class="insights-owner">${ownerAvatar(row)}${ownerName(row)}</div></td><td class="date-cell"><time datetime="${row.created}">${date(row.created)}</time></td><td class="status-cell">${status(row)}</td><td class="comment-cell"><span class="insights-score">${img('comments')}<span>${row.comments}</span></span></td><td class="rating-cell"><span class="insights-score">${img('starOutline')}${tableRating(row)}</span></td></tr>`).join('')}</tbody></table></div>`;
     }
     function appliedFilters() {
       const groups = Object.entries(state.filters).filter(([,values]) => values.length).map(([key,values]) => ({key,label:labels[key],values}));
@@ -349,7 +350,7 @@
       $('insights-applied').hidden = !groups.length;
       $('insights-chips').innerHTML = groups.map(group => `<div class="applied-filter-group"><span class="applied-filter-label">${esc(group.label)}</span>${group.values.map(value => {
         const label = group.key === 'process' ? processOptionLabels.get(value) || value : value;
-        return `<span class="chip applied-filter-chip"><span class="chip-text"${group.key === 'process' ? ` title="${esc(label)}"` : ''}>${esc(label)}</span><button type="button" data-insight-filter-key="${group.key}" data-insight-filter-value="${esc(value)}" aria-label="Убрать фильтр: ${esc(label)}">${img('close',16)}</button></span>`;
+        return `<span class="chip applied-filter-chip"><span class="chip-text"${group.key === 'process' ? ` title="${copy(label)}"` : ''}>${copy(label)}</span><button type="button" data-insight-filter-key="${group.key}" data-insight-filter-value="${esc(value)}" aria-label="Убрать фильтр: ${copy(label)}">${img('close',16)}</button></span>`;
       }).join('')}</div>`).join('');
     }
     function render() {
@@ -426,7 +427,7 @@
       relationAnchor = anchor;
       relations = document.createElement('div');
       relations.id = 'insights-relations-tooltip'; relations.className = 'insights-relations-tooltip'; relations.setAttribute('role','dialog'); relations.setAttribute('aria-label','Связанные процессы');
-      relations.innerHTML = `<p>Связан с ${row.related.length} процессами:</p>${row.related.map(item => `<div class="insights-related-row">${idBadge(item.code)}<button type="button" data-insight-process="${esc(item.id)}" title="${esc(item.title)}">${esc(item.title)}</button></div>`).join('')}<img class="insights-tooltip-arrow" src="${assets.arrow}" width="24" height="8" alt="">`;
+      relations.innerHTML = `<p>Связан с ${row.related.length} процессами:</p>${row.related.map(item => `<div class="insights-related-row">${idBadge(item.code)}<button type="button" data-insight-process="${esc(item.id)}" title="${copy(item.title)}">${copy(item.title)}</button></div>`).join('')}<img class="insights-tooltip-arrow" src="${assets.arrow}" width="24" height="8" alt="">`;
       document.body.append(relations); anchor.setAttribute('aria-expanded','true'); anchor.setAttribute('aria-controls',relations.id);
       const rect = anchor.getBoundingClientRect(), box = relations.getBoundingClientRect(), margin = 12;
       const top = rect.top - box.height - 8 >= margin;

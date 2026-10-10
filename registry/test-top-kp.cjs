@@ -114,7 +114,7 @@ async function main() {
       assert.equal(new Set(sourceData.leaves.map(r=>r.id)).size,136);
       const actual=new Map(sourceData.leaves.map(r=>[r.id,r.title]));
       for(const record of sourceData.records) {
-        assert.equal(actual.get(record.id),record.title,record.sourceCell);
+        assert.equal(actual.get(record.id),record.title.replace(/"([^"]+)"/g,'«$1»'),record.sourceCell);
         assert.equal(record.source,'top-kp');assert.equal(record.efficiency,null,'Workbook has no efficiency values');
       }
     });

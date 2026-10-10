@@ -53,7 +53,7 @@ if(!process.env.BPM_PLAYWRIGHT)process.exit(0);
     assert.equal(Number((await page.locator('.structure-total').first().textContent()).replace(/\s/g,'')),biggestBlock);
     const b2c=page.locator('#structure-list > .structure-node').filter({has:page.locator('.structure-name',{hasText:'Развитие клиентского опыта B2C'})});
     await b2c.locator(':scope > .structure-heading').click();
-    const prime=b2c.locator('.structure-node[data-kind=division]').filter({has:page.locator('.structure-name',{hasText:/^(Дивизион ")?Прайм("|)$/})});
+    const prime=b2c.locator('.structure-node[data-kind=division]').filter({has:page.locator('.structure-name',{hasText:/^(Дивизион «)?Прайм(»|)$/})});
     await prime.locator(':scope > .structure-heading').click();
     const product=prime.locator('.structure-node[data-kind=product]').filter({has:page.locator('.structure-name',{hasText:/^СберПрайм$/})});
     await product.locator(':scope > .structure-heading').click();

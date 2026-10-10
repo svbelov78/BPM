@@ -22,7 +22,7 @@ if(localFile&&path.basename(localFile)!=='index.html') {
 }
 const base = (/^(https?:|file:)/.test(target) ? target : pathToFileURL(path.resolve(target)).href).split('#')[0];
 const fieldNames = ['block','ssp','efficiency','csat','techErrors','appeals','variability','pm','benchmarking','gemba'];
-const blockLabels = ['B2B','B2C','Блок "Сервисы"','Блок "Сеть продаж"','Блок "Транзакционный банкинг B2C"','Подразделения вне блоков экосистемы B2C','Блок "Управление благосостоянием"','Блок "Развитие клиентского опыта B2C"','Блок "Корпоративно-инвестиционный бизнес"','Подразделения вне блоков','Блок "Финансы"','Блок "Технологии"','Блок "GR, правовые вопросы, комплаенс и ДЗО"','Блок "Люди и культура"','Блок "Риски"','Блок "Стратегия и развитие"','Блок "Технологическое развитие"','Прямое подчинение Президенту','Блок "Sberbank International"','Блок "Строительство"'];
+const blockLabels = ['B2B','B2C','Блок «Сервисы»','Блок «Сеть продаж»','Блок «Транзакционный банкинг B2C»','Подразделения вне блоков экосистемы B2C','Блок «Управление благосостоянием»','Блок «Развитие клиентского опыта B2C»','Блок «Корпоративно-инвестиционный бизнес»','Подразделения вне блоков','Блок «Финансы»','Блок «Технологии»','Блок «GR, правовые вопросы, комплаенс и ДЗО»','Блок «Люди и культура»','Блок «Риски»','Блок «Стратегия и развитие»','Блок «Технологическое развитие»','Прямое подчинение Президенту','Блок «Sberbank International»','Блок «Строительство»'];
 const sspLabels = ['Банковские счета','Безопасность','Бренд и маркетинг','Документооборот и архив','Закупки','Здания, сооружения, ТМЦ','Карты','Контакт-центр','Кредиты','ЛиК','Лояльность','Обслуживание УС','Привлечение денежных средств','Проблемные активы','Рекомендательные системы','Риски','Розничный бизнес','Стратегия и модель управления','Технологии','Транзакции','Управление благосостоянием','Управление клиентами','Физические каналы','Финансы','Цифровой канал','ЮЛ','GR'];
 const statusLabels = ['Лидер','On track','Есть отставания','Критическое отставание','Нет данных'];
 const expectedMenus = Object.fromEntries(fieldNames.map(key => [key, key==='block' ? blockLabels : key==='ssp' ? sspLabels : ['pm','benchmarking','gemba'].includes(key) ? ['Есть','Нет'] : statusLabels]));
@@ -34,7 +34,8 @@ const state = {};
 let fields;
 
 async function choose(page,key,value) {
-  const label = value ? fields.find(field=>field.key===key).options.find(option=>option.value===value)?.label : 'Все';
+  const optionIndex = fields.find(field=>field.key===key).options.findIndex(option=>option.value===value);
+  const label = value ? expectedMenus[key][optionIndex] : 'Все';
   assert.ok(label, `Known menu value ${key}: ${value}`);
   // Closing an option popup may uncover a card beneath the mouse. Leave
   // that card before returning to controls behind its interactive tooltip.
