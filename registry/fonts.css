@@ -1,0 +1,14 @@
+/* User-supplied SF Pro; no local() source, so installed fonts cannot mask packaging errors. */
+@font-face {
+  font-family: "BPM SF Pro";
+  src: url("assets/fonts/sf-pro-variable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 1 1000;
+  font-stretch: 30% 150%;
+  font-display: swap;
+}
+
+:root {
+  font-family: "BPM SF Pro", -apple-system, BlinkMacSystemFont, "SF Pro", Arial, sans-serif;
+  font-optical-sizing: auto;
+}

@@ -1,5 +1,8 @@
 /* Nordic task forms: 778px five-column drawer, shared tf-* primitives. */
 .special-task-flow .stf-field-group,.stf-input-field,.stf-select-field{display:flex;flex-direction:column;gap:16px;min-width:0}
+/* Nordic field + validation helper use Spacing 4, independent of section gaps. */
+.stf-field-control{display:flex;flex-direction:column;gap:4px;min-width:0}
+.special-task-flow .stf-field-control>.field-error{margin:0}
 .special-task-flow .stf-two-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
 .stf-two-columns>h3,.stf-two-columns>.stf-help{grid-column:1/-1}
 .special-task-flow h3,.stf-heading{margin:0;font-size:17px;line-height:24px;font-weight:590;letter-spacing:-.051px;overflow-wrap:anywhere}

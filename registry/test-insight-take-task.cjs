@@ -99,6 +99,44 @@ async function geometry(page,width,label){
   assert.deepEqual(broken,[],`${label}: visible icons load`);
   await page.screenshot({path:path.join(output,`${label}-${width}.png`),animations:'disabled'});
 }
+async function validationWidths(page,width){
+  await page.setViewportSize({width,height:width===390?844:920});await paint(page);
+  return page.evaluate(()=>Object.fromEntries(['title','description','assignees'].map(key=>{
+    const host=document.getElementById(`stf-${key}`),input=host.matches('input,textarea')?host:host.querySelector('input');
+    return [key,input.closest('.field').getBoundingClientRect().width];
+  })));
+}
+async function validationGeometry(page,width,baseline){
+  await page.setViewportSize({width,height:width===390?844:920});await paint(page);
+  const state=await page.locator(form).evaluate(node=>{
+    const content=node.querySelector('.tf-content'),red=getComputedStyle(node).getPropertyValue('--red').trim();
+    const probe=document.createElement('span');probe.style.color=red;node.append(probe);const redColor=getComputedStyle(probe).color;probe.remove();
+    return {scroll:content.scrollWidth,client:content.clientWidth,page:document.documentElement.scrollWidth,
+      fields:['title','description','assignees'].map(key=>{
+        const host=document.getElementById(`stf-${key}`),input=host.matches('input,textarea')?host:host.querySelector('input'),control=input.closest('.field');
+        const error=document.getElementById(`stf-${key}-error`),fieldBox=control.getBoundingClientRect(),errorBox=error.getBoundingClientRect(),fieldStyle=getComputedStyle(control),errorStyle=getComputedStyle(error);
+        return {key,gap:errorBox.top-fieldBox.bottom,width:fieldBox.width,left:errorBox.left,right:errorBox.right,visible:!error.hidden&&errorBox.height>0,
+          fontSize:errorStyle.fontSize,lineHeight:errorStyle.lineHeight,borderColor:fieldStyle.borderColor,shadow:fieldStyle.boxShadow,redColor};
+      })};
+  });
+  assert.ok(state.scroll<=state.client+1&&state.page<=width+1,`Validation at ${width}: no form or page horizontal overflow`);
+  for(const field of state.fields){
+    assert.ok(field.visible,`${field.key}/${width}: required error remains visible`);
+    assert.ok(Math.abs(field.gap-4)<.1,`${field.key}/${width}: error sits 4 CSS px below the control, actual ${field.gap}`);
+    assert.ok(Math.abs(field.width-baseline[field.key])<.1,`${field.key}/${width}: showing an error preserves control width`);
+    assert.ok(field.left>=-1&&field.right<=width+1,`${field.key}/${width}: error stays within the viewport`);
+    assert.equal(field.fontSize,'13px',`${field.key}/${width}: error uses the component font size`);
+    assert.equal(field.lineHeight,'18px',`${field.key}/${width}: error uses the component line height`);
+    assert.ok([field.redColor,'rgb(255, 59, 48)'].includes(field.borderColor),`${field.key}/${width}: invalid control has a red border`);
+    assert.ok(field.shadow.includes(field.redColor)&&field.shadow.includes('inset'),`${field.key}/${width}: invalid control retains its inset red frame`);
+  }
+  await page.locator('#stf-description-error').scrollIntoViewIfNeeded();await paint(page);
+  const clip=await page.locator('#stf-description').evaluate(input=>{
+    const box=input.closest('.stf-input-field').getBoundingClientRect(),x=Math.max(0,box.left-12),y=Math.max(0,box.top-12);
+    return {x,y,width:Math.min(innerWidth-x,box.right+12-x),height:Math.min(innerHeight-y,box.bottom+12-y)};
+  });
+  await page.screenshot({path:path.join(output,`description-error-${width}.png`),clip,animations:'disabled'});
+}
 async function fill(page,{title,description='Выполнить изменения и проверить результат.',deadline,assignees}={}){
   if(title!==undefined)await page.locator('#stf-title').fill(title);
   await page.locator('#stf-description').fill(description);
@@ -188,13 +226,21 @@ async function submit(page,id,{assignees,expected=1}={}){
     await page.setViewportSize({width:1440,height:920});await paint(page);
     report('Take opens compact five-column form; cancel/Escape preserve business state and tasks');
 
-    await take(page,id);await page.locator('#stf-title').fill('');await review(page);await page.locator(save).click();
+    await take(page,id);
+    const validationBaselines={};
+    for(const width of [1440,390])validationBaselines[width]=await validationWidths(page,width);
+    await page.setViewportSize({width:1440,height:920});await paint(page);
+    await page.locator('#stf-title').fill('');await review(page);await page.locator(save).click();
     assert.equal(await page.locator('#stf-title').getAttribute('aria-invalid'),'true');
     assert.equal(await page.locator('#stf-description').getAttribute('aria-invalid'),'true');
     assert.equal(await page.locator('#stf-assignees-input').getAttribute('aria-invalid'),'true');
     assert.equal(await page.locator('#stf-deadline').getAttribute('aria-invalid'),null,'Deadline is optional');
     assert.equal((await linked(page,id)).length,0,'Invalid submit creates nothing');
+    for(const width of [1440,390])await validationGeometry(page,width,validationBaselines[width]);
+    await page.setViewportSize({width:1440,height:920});await paint(page);
     const title=before.title+' — QA',assignees=await fill(page,{title,deadline:''});
+    for(const key of ['title','description','assignees'])assert.equal(await page.locator(`#stf-${key}-error`).isHidden(),true,`${key}: filling the required control clears its error`);
+    report('Required title, description and responsible errors sit 4px below controls at desktop/mobile; widths, typography, red frame and error clearing are preserved');
     assert.equal(await page.locator('#stf-assignees-input').inputValue(),'Выбрано 2','Two catalog people remain selected together');
     await choose(page,'assignees',assignees[0]);
     assert.equal(await page.locator('#stf-assignees-input').inputValue(),'Выбрано 1','Clicking a selected person deselects only that person');

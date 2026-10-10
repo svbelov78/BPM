@@ -43,7 +43,8 @@ async function assets(page, label) {
   assert.deepEqual(images.filter(img => !img.width || !img.height), [], `${label}: no broken static or dynamically rendered images`);
   assert.ok(images.every(img => /^(data:|blob:)/.test(img.src)), `${label}: images are embedded`);
   const fonts = await page.evaluate(() => [...document.fonts].map(font => ({family: font.family, status: font.status})));
-  assert.ok(fonts.every(font => font.status !== 'error'), `${label}: all declared web fonts load; system-only font stacks require no asset`);
+  assert.ok(fonts.some(font => font.family.replace(/['"]/g, '') === 'BPM SF Pro' && font.status === 'loaded'), `${label}: embedded SF Pro is present and loaded`);
+  assert.ok(fonts.every(font => font.status !== 'error'), `${label}: no failed declared web fonts`);
 }
 
 async function closeDrawer(page) {
